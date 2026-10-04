@@ -1,5 +1,6 @@
 import { Alert, AppShell, Button, Center, Drawer, Loader } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { createSpotlight } from '@mantine/spotlight'
 import { type ComponentProps, useMemo, useState } from 'react'
 
 import type { Bookmark } from './api/client.ts'
@@ -41,10 +42,12 @@ export default function App() {
   const [selecting, setSelecting] = useState(false)
   const [picked, setPicked] = useState<ReadonlySet<number>>(new Set())
   const phone = usePhone()
+  const [spotlight] = useState(createSpotlight)
 
   const categories = useMemo(() => dashboard.data?.categories ?? [], [dashboard.data])
   const hits = useMemo(() => searchBookmarks(categories, query), [categories, query])
-  const searching = !editing && query.trim() !== ''
+  // Phones search through the spotlight instead.
+  const searching = !editing && !phone && query.trim() !== ''
   const empty = categories.every((c) => c.bookmarks.length === 0)
   // Bookmarks deleted elsewhere (another tab, a container gone) drop out of the selection.
   const selected = useMemo(
@@ -135,6 +138,7 @@ export default function App() {
           editing={editing}
           onEditingChange={setEditMode}
           onAdd={() => setPanel({ kind: 'add' })}
+          onSearch={spotlight[1].open}
           onOpenCategories={() => setCategoriesOpen(true)}
         />
       </AppShell.Header>
@@ -228,7 +232,11 @@ export default function App() {
         </div>
       </AppShell.Main>
 
-      <FoyerSpotlight categories={categories} enabled={!editing && !panel && !importing} />
+      <FoyerSpotlight
+        spotlight={spotlight}
+        categories={categories}
+        enabled={!editing && !panel && !importing}
+      />
       <FormPanel panel={livePanel} onPanelChange={setPanel} categories={categories} />
       <ImportModal opened={importing} onClose={() => setImporting(false)} />
     </AppShell>

@@ -52,18 +52,10 @@
     font-size: 19px;
   }
 
-  /* Pushes the menu button right when there's no search box between them. */
+  /* Pushes the search and menu buttons right. */
   .brand,
   .editingTitle {
     flex: 1 1 auto;
-  }
-
-  .search {
-    flex: 1 1 auto;
-  }
-
-  .brand:has(+ .search) {
-    flex: 0 1 auto;
   }
 }
 

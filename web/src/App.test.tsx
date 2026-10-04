@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Dashboard } from './api/client.ts'
+import { PHONE_QUERY } from './hooks/usePhone.ts'
 import { navigation } from './navigation.ts'
 import { stubApi } from './test/fakeApi.ts'
 import { bookmark, category, dockerBookmark, FakeEventSource, stubDashboard } from './test/fakes.ts'
@@ -231,6 +232,45 @@ describe('spotlight', () => {
     await userEvent.keyboard(' ')
 
     expect(screen.queryByRole('textbox', { name: 'Jump to a bookmark' })).toBeNull()
+  })
+})
+
+describe('on a phone', () => {
+  const asPhone = () => {
+    const desktop = window.matchMedia
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      ...desktop(query),
+      matches: query === PHONE_QUERY,
+    }))
+  }
+
+  it('searches through a full-screen spotlight from the top bar, closed by its X', async () => {
+    asPhone()
+    stubDashboard(page)
+    renderApp()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Search bookmarks' }))
+    const box = await screen.findByRole('textbox', { name: 'Jump to a bookmark' })
+    await userEvent.type(box, 'opn')
+    expect(await screen.findByRole('button', { name: /OPNsense/ })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close search' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('textbox', { name: 'Jump to a bookmark' })).toBeNull(),
+    )
+  })
+
+  it('leaves search out of the menu', async () => {
+    asPhone()
+    stubDashboard(page)
+    renderApp()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Open menu' }))
+    const close = await screen.findByRole('button', { name: 'Close menu' })
+    const menu = close.closest<HTMLElement>('[role="dialog"]')!
+
+    expect(within(menu).getByRole('button', { name: 'Add bookmark' })).toBeInTheDocument()
+    expect(within(menu).queryByRole('searchbox')).toBeNull()
   })
 })
 

@@ -19,13 +19,16 @@ interface Props {
   onEditingChange: (editing: boolean) => void
   /** Phone menu's Add bookmark. */
   onAdd: () => void
+  /** Phone search button: opens the spotlight. */
+  onSearch: () => void
   /** Phone edit mode's Categories button; the drawer is a full screen there. */
   onOpenCategories: () => void
 }
 
 /**
  * The Foyer name, a centered search box (/ focuses it), the theme picker and Edit / Done. On a
- * phone: the name and a menu holding the rest, or Categories and Done while editing.
+ * phone: the name, a search button that opens the spotlight, and a menu holding the rest, or
+ * Categories and Done while editing.
  */
 export function TopBar(props: Props) {
   return usePhone() ? <PhoneTopBar {...props} /> : <DesktopTopBar {...props} />
@@ -99,14 +102,7 @@ function DesktopTopBar({ query, onQueryChange, onSubmit, editing, onEditingChang
   )
 }
 
-function PhoneTopBar({
-  query,
-  onQueryChange,
-  editing,
-  onEditingChange,
-  onAdd,
-  onOpenCategories,
-}: Props) {
+function PhoneTopBar({ editing, onEditingChange, onAdd, onSearch, onOpenCategories }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const title = useTitle()
 
@@ -128,20 +124,16 @@ function PhoneTopBar({
     <div className={classes.bar}>
       <div className={classes.inner}>
         <div className={classes.brand}>{title}</div>
-        {/* A search made in the menu stays visible here, so it's clear the page is filtered. */}
-        {query && (
-          <TextInput
-            className={classes.search}
-            type="search"
-            aria-label="Search bookmarks"
-            value={query}
-            onChange={(e) => onQueryChange(e.currentTarget.value)}
-            leftSection={<IconSearch size={16} stroke={2} aria-hidden="true" />}
-            rightSection={
-              <CloseButton aria-label="Clear search" onClick={() => onQueryChange('')} />
-            }
-          />
-        )}
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          size={44}
+          radius="md"
+          aria-label="Search bookmarks"
+          onClick={onSearch}
+        >
+          <IconSearch size={22} />
+        </ActionIcon>
         <ActionIcon
           variant="subtle"
           color="gray"
@@ -158,8 +150,6 @@ function PhoneTopBar({
         title={title}
         opened={menuOpen}
         onClose={() => setMenuOpen(false)}
-        query={query}
-        onQueryChange={onQueryChange}
         onAdd={onAdd}
         onEdit={() => onEditingChange(true)}
       />

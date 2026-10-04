@@ -1,5 +1,5 @@
-import { ActionIcon, Button, Drawer, SimpleGrid, Stack, TextInput } from '@mantine/core'
-import { IconPencil, IconPlus, IconSearch, IconX } from '@tabler/icons-react'
+import { ActionIcon, Button, Drawer, SimpleGrid, Stack } from '@mantine/core'
+import { IconPencil, IconPlus, IconX } from '@tabler/icons-react'
 
 import { ThemePicker } from './ThemePicker.tsx'
 import classes from './TopBar.module.css'
@@ -8,14 +8,12 @@ interface Props {
   title: string
   opened: boolean
   onClose: () => void
-  query: string
-  onQueryChange: (query: string) => void
   onAdd: () => void
   onEdit: () => void
 }
 
-/** The phone menu, dropping from the top: search, Add bookmark and Edit page, then the theme. */
-export function PhoneMenu({ title, opened, onClose, query, onQueryChange, onAdd, onEdit }: Props) {
+/** The phone menu, dropping from the top: Add bookmark and Edit page, then the theme. */
+export function PhoneMenu({ title, opened, onClose, onAdd, onEdit }: Props) {
   const then = (action: () => void) => () => {
     onClose()
     action()
@@ -48,22 +46,6 @@ export function PhoneMenu({ title, opened, onClose, query, onQueryChange, onAdd,
         </ActionIcon>
       </div>
       <Stack gap={14} p={16}>
-        <TextInput
-          type="search"
-          size="md"
-          placeholder="Search bookmarks"
-          aria-label="Search bookmarks"
-          value={query}
-          onChange={(e) => onQueryChange(e.currentTarget.value)}
-          // Enter closes the menu so the results underneath can be seen.
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              onClose()
-            }
-          }}
-          leftSection={<IconSearch size={18} stroke={2} aria-hidden="true" />}
-        />
         <SimpleGrid cols={2} spacing={10}>
           <Button size="md" px="sm" leftSection={<IconPlus size={18} />} onClick={then(onAdd)}>
             Add bookmark
