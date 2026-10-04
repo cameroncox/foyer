@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foyer import preview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1C1C1A}a:hover{color:#2456C9}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; min-height: 760px; background: #F3F3F0; color: #1C1C1A; font-family: 'IBM Plex Sans', system-ui, sans-serif;">
+
+  <div aria-hidden="true" style="position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0.4;">
+    <div style="height: 80px; background: #FFFFFF; border-bottom: 1px solid #D4D4CE;"></div>
+    <div style="height: 40px; background: #E5ECFB;"></div>
+    <div style="flex: 1; display: flex;">
+      <div style="flex: 1; padding: 32px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-content: start;">
+        <div style="height: 62px; background: #FFFFFF; border: 1px solid #C4C4BE; border-radius: 12px;"></div>
+        <div style="height: 62px; background: #FFFFFF; border: 1px solid #C4C4BE; border-radius: 12px;"></div>
+        <div style="height: 62px; background: #FFFFFF; border: 1px solid #C4C4BE; border-radius: 12px;"></div>
+        <div style="height: 62px; background: #FFFFFF; border: 1px solid #C4C4BE; border-radius: 12px;"></div>
+      </div>
+      <div style="width: 380px; background: #FFFFFF; border-left: 1px solid #D4D4CE;"></div>
+    </div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(28, 28, 26, 0.35);"></div>
+
+  <div style="position: relative; padding: 56px 16px; display: flex; justify-content: center;">
+    <div role="dialog" aria-label="Import bookmarks" style="width: 100%; max-width: 600px; background: #FFFFFF; border-radius: 16px; box-shadow: 0 16px 40px rgba(28, 28, 26, 0.22); display: flex; flex-direction: column;">
+      <div style="padding: 22px 24px 16px; border-bottom: 1px solid #E3E3DE; display: flex; align-items: flex-start; gap: 12px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Import bookmarks</h2>
+          <span style="font-size: 13px; color: #5C5C57;"><span style="font-family: 'IBM Plex Mono', monospace;">bookmarks_10_3_26.html</span> · 62 bookmarks in 6 folders</span>
+        </div>
+        <button type="button" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #EDEDE9; color: #1C1C1A; display: grid; place-items: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </div>
+
+      <div style="padding: 8px 12px; display: flex; flex-direction: column;">
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 72px 190px; gap: 8px; padding: 8px 12px; font-size: 12px; font-weight: 500; color: #5C5C57;">
+          <span>Folder</span><span style="text-align: right;">Bookmarks</span><span>Goes to</span>
+        </div>
+        <sc-for list="{{rows}}" as="row" hint-placeholder-count="8">
+          <sc-if value="{{row.root}}" hint-placeholder-val="{{row.root}}">
+            <div style="padding: 12px 12px 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5C5C57;">{{row.name}}</div>
+          </sc-if>
+          <sc-if value="{{row.folder}}" hint-placeholder-val="{{row.folder}}">
+            <label style="display: grid; grid-template-columns: minmax(0, 1fr) 72px 190px; gap: 8px; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 8px; cursor: pointer; opacity: {{row.opacity}};">
+              <span style="display: flex; align-items: center; gap: 10px; padding-left: {{row.indent}}; min-width: 0;">
+                <input type="checkbox" defaultChecked="{{row.checked}}" style="width: 18px; height: 18px; accent-color: #2456C9; flex: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5C5C57" stroke-width="2" stroke-linejoin="round" aria-hidden="true" style="flex: none;"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                <span style="font-size: 14px; font-style: {{row.style}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{row.name}}</span>
+              </span>
+              <span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C5C57;">{{row.count}}</span>
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; min-width: 0;">
+                <span style="color: #5C5C57;">→</span>
+                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{row.dest}}</span>
+                <sc-if value="{{row.isNew}}" hint-placeholder-val="{{row.isNew}}">
+                  <span style="flex: none; font-size: 11px; font-weight: 500; color: #1B3F94; background: #E5ECFB; border-radius: 5px; padding: 2px 6px;">new</span>
+                </sc-if>
+              </span>
+            </label>
+          </sc-if>
+        </sc-for>
+      </div>
+
+      <div style="padding: 16px 24px; border-top: 1px solid #E3E3DE; display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+        <span style="flex: 1 1 200px; font-size: 13px; color: #5C5C57;">3 bookmarks already in Foyer will be skipped.</span>
+        <button type="button" style="height: 42px; padding: 0 16px; border: 1px solid #C4C4BE; border-radius: 9px; background: #FFFFFF; font: inherit; font-size: 14px; color: #1C1C1A;">Cancel</button>
+        <button type="button" style="height: 42px; padding: 0 18px; border: 0; border-radius: 9px; background: #2456C9; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600;">Import 27 bookmarks</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const root = name => ({ name, root: true, folder: false });
+    const f = (name, level, count, dest, isNew, checked, loose) => ({
+      name, root: false, folder: true, indent: (level * 24) + 'px', count, dest, isNew: !!isNew,
+      checked: checked !== false, opacity: checked === false ? 0.5 : 1, style: loose ? 'italic' : 'normal'
+    });
+    return {
+      rows: [
+        root('Bookmarks bar'),
+        f('Not in a folder', 0, 5, 'Uncategorized', false, true, true),
+        f('Homelab', 0, 3, 'Homelab', true),
+        f('Network', 1, 4, 'Network', true),
+        f('Media', 1, 6, 'Media', false),
+        f('Work', 0, 12, 'Work', true),
+        f('Recipes', 0, 9, 'Recipes', true, false),
+        root('Other bookmarks'),
+        f('Reading list', 0, 23, 'Reading list', true, false)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

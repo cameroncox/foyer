@@ -1,0 +1,139 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AddBookmark.dc.html": {
+      "expand": "fill",
+      "h": 760,
+      "title": "3 · Add bookmark (from the + in any mode)",
+      "w": 1280,
+      "x": 0,
+      "y": 1180
+    },
+    "EditBookmark.dc.html": {
+      "expand": "fill",
+      "h": 760,
+      "title": "4 · Edit manual bookmark",
+      "w": 1280,
+      "x": 1360,
+      "y": 1180
+    },
+    "EditDockerBookmark.dc.html": {
+      "expand": "fill",
+      "h": 760,
+      "title": "5 · Edit Docker bookmark",
+      "w": 1280,
+      "x": 0,
+      "y": 2060
+    },
+    "EmptyState.dc.html": {
+      "expand": "fill",
+      "h": 760,
+      "title": "6 · Empty state",
+      "w": 1280,
+      "x": 1360,
+      "y": 2060
+    },
+    "MobileMain.dc.html": {
+      "h": 844,
+      "title": "7 · Phone: menu closed",
+      "w": 390,
+      "x": 0,
+      "y": 2940
+    },
+    "MobileMenu.dc.html": {
+      "h": 844,
+      "title": "8 · Phone: menu open",
+      "w": 390,
+      "x": 470,
+      "y": 2940
+    },
+    "MobileEdit.dc.html": {
+      "h": 844,
+      "title": "9 · Phone: edit mode",
+      "w": 390,
+      "x": 940,
+      "y": 2940
+    },
+    "MobileSheet.dc.html": {
+      "h": 844,
+      "title": "10 · Phone: edit bookmark sheet",
+      "w": 390,
+      "x": 1410,
+      "y": 2940
+    },
+    "MobileCategories.dc.html": {
+      "h": 844,
+      "title": "11 · Phone: categories sheet",
+      "w": 390,
+      "x": 1880,
+      "y": 2940
+    },
+    "SearchResults.dc.html": {
+      "expand": "fill",
+      "h": 760,
+      "title": "12 · Search results",
+      "w": 1280,
+      "x": 2720,
+      "y": 2060
+    },
+    "ImportPreview.dc.html": {
+      "expand": "fill",
+      "h": 760,
+      "title": "13 · Import preview",
+      "w": 1280,
+      "x": 2720,
+      "y": 1180
+    },
+    "MobileImport.dc.html": {
+      "h": 844,
+      "title": "14 · Phone: import preview",
+      "w": 390,
+      "x": 2350,
+      "y": 2940
+    },
+    "EditMode.dc.html": {
+      "expand": "fill",
+      "h": 1060,
+      "title": "2 · Edit mode + category drawer",
+      "w": 1280,
+      "x": 1348,
+      "y": 18
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 980,
+      "title": "1 · Main page",
+      "w": 1280,
+      "x": -12,
+      "y": 18
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-04T00:08:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "EditMode.dc.html",
+    "AddBookmark.dc.html",
+    "EditBookmark.dc.html",
+    "EditDockerBookmark.dc.html",
+    "EmptyState.dc.html",
+    "MobileMain.dc.html",
+    "MobileMenu.dc.html",
+    "MobileEdit.dc.html",
+    "MobileSheet.dc.html",
+    "MobileCategories.dc.html",
+    "SearchResults.dc.html",
+    "ImportPreview.dc.html",
+    "MobileImport.dc.html"
+  ],
+  "pages": [],
+  "title": "Foyer Wireframes"
+}

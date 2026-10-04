@@ -15,6 +15,7 @@ One container: a .NET 10 minimal API that also serves the React app.
 | `src/Foyer.Core` | Domain, sync rules, data, Docker; no ASP.NET dependency |
 | `tests/` | xUnit v3 + Shouldly |
 | `web/` | React + Vite + TypeScript + Mantine |
+| `docs/` | Spec, project layout plan and wireframes |
 | `.gitea/workflows` | CI |
 
 ## Local dev
@@ -104,12 +105,14 @@ doesn't filter Docker's published ports).
 
 In edit mode, the Categories drawer has an **Add to Foyer** link. Drag it to the browser's
 bookmarks bar; clicking it on any page opens a small popup with the Add form filled in from
-that page's URL and title, and closes it once saved. The link points at the address Foyer was
-opened on, so drag it from the address you'll use day to day.
+that page's URL and title, and closes it once saved. Pick a category above the link to have the
+form start there; each category can have its own link. The link points at the address Foyer was
+opened on, so drag it from the address you'll use day to day. It isn't offered on phones, where
+bookmarklets don't see the page they're run from.
 
 ## Configuration
 
-Environment variables only. See the spec for the full list; the essentials:
+Environment variables only. See the [spec](docs/spec.md) for the full list; the essentials:
 
 Docker hosts are optional: with no `FOYER_DOCKERHOSTS_{KEY}_URI` set, Foyer runs as a plain
 bookmark manager with manually added bookmarks only.
@@ -124,3 +127,9 @@ bookmark manager with manually added bookmarks only.
 | `FOYER_DATA_DIR` | `/data` | SQLite file and icon cache |
 | `FOYER_TITLE` | `Foyer` | Name in the top bar and the browser tab (up to 60 characters) |
 | `FOYER_SEARCH_URL` | `https://duckduckgo.com/?q=` | The spotlight's web search; the query replaces `%s`, or is appended. Bangs (`!g …`) go straight to DuckDuckGo |
+
+## Built with AI
+
+Foyer was made with the help of AI. The spec, project layout plan and wireframes in `docs/` were
+drafted with Claude (Anthropic), and much of the code was written with Claude Code, working from
+those documents alongside the maintainer.

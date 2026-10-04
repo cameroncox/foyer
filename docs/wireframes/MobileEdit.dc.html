@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foyer phone edit mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1C1C1A}a:hover{color:#2456C9}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; overflow: hidden; background: #F3F3F0; color: #1C1C1A; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column;">
+
+  <header style="flex: none; display: flex; align-items: center; gap: 8px; height: 60px; padding: 0 12px 0 16px; background: #FFFFFF; border-bottom: 1px solid #D4D4CE;">
+    <div style="flex: 1; font-size: 17px; font-weight: 600;">Editing</div>
+    <button type="button" style="height: 40px; padding: 0 12px; border: 1px solid #C4C4BE; border-radius: 9px; background: #FFFFFF; color: #1C1C1A; font: inherit; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>Categories</button>
+    <button type="button" style="height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: #2456C9; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600;">Done</button>
+  </header>
+
+  <div style="flex: none; padding: 9px 16px; background: #E5ECFB; border-bottom: 1px solid #C7D5F5; font-size: 13px; color: #1B3F94;">Tap a card to edit it. Drag the handle to reorder.</div>
+
+  <main style="flex: 1; overflow: hidden; padding: 18px 16px; display: flex; flex-direction: column; gap: 22px;">
+    <sc-for list="{{categories}}" as="cat" hint-placeholder-count="2">
+      <section style="display: flex; flex-direction: column; gap: 10px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5C5C57;">{{cat.name}}</h2>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <sc-for list="{{cat.items}}" as="item" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 4px; background: #FFFFFF; border: 1px solid {{item.border}}; border-radius: 12px; box-shadow: {{item.shadow}}; transform: {{item.transform}};">
+              <button type="button" aria-label="Edit {{item.name}}" style="flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 0; background: transparent; font: inherit; text-align: left; color: #1C1C1A;">
+                <div style="width: 36px; height: 36px; flex: none; border-radius: 8px; background: #E7E7E2; display: grid; place-items: center; font-weight: 600; color: #5C5C57;">{{item.letter}}</div>
+                <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;">
+                  <span style="font-size: 15px; font-weight: 500; line-height: 1.2;">{{item.name}}</span>
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <sc-for list="{{item.chips}}" as="chip" hint-placeholder-count="1">
+                      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1; color: #5C5C57; border: 1px solid #D4D4CE; border-radius: 5px; padding: 2px 6px;">#{{chip.label}}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </button>
+              <button type="button" aria-label="Drag to reorder {{item.name}}" style="flex: none; width: 48px; height: 60px; border: 0; border-left: 1px solid #E3E3DE; background: transparent; display: grid; place-items: center; touch-action: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#5C5C57" aria-hidden="true"><circle cx="9" cy="6" r="1.7"></circle><circle cx="15" cy="6" r="1.7"></circle><circle cx="9" cy="12" r="1.7"></circle><circle cx="15" cy="12" r="1.7"></circle><circle cx="9" cy="18" r="1.7"></circle><circle cx="15" cy="18" r="1.7"></circle></svg></button>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mk = (name, chips, dragging) => ({
+      name, letter: name[0], chips: chips.map(label => ({ label })),
+      border: dragging ? '#2456C9' : '#D4D4CE',
+      shadow: dragging ? '0 10px 24px rgba(28, 28, 26, 0.2)' : 'none',
+      transform: dragging ? 'scale(1.02)' : 'none'
+    });
+    return {
+      categories: [
+        { name: 'Media', items: [mk('Jellyfin', ['docker-4']), mk('Sonarr', ['docker-4', 'arr'], true), mk('Jellyseerr', ['docker-1']), mk('Radarr', ['docker-4', 'arr']), mk('Prowlarr', ['docker-4'])] },
+        { name: 'Infrastructure', items: [mk('Proxmox', ['pve-1']), mk('OPNsense', ['router', 'dhcp'])] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
