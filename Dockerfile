@@ -17,7 +17,10 @@ COPY src/Foyer.Api/Foyer.Api.csproj src/Foyer.Api/
 RUN dotnet restore src/Foyer.Api/Foyer.Api.csproj
 COPY .editorconfig ./
 COPY src/ src/
-RUN dotnet publish src/Foyer.Api/Foyer.Api.csproj -c Release -o /app --no-restore
+# Set by release.yml: X.Y.Z for version tags, 0.0.0-dev+<sha> for develop.
+ARG VERSION=0.0.0-local
+RUN dotnet publish src/Foyer.Api/Foyer.Api.csproj -c Release -o /app --no-restore \
+    -p:Version="$VERSION" -p:InformationalVersion="$VERSION"
 COPY --from=web /src/web/dist /app/wwwroot
 RUN mkdir -p /data
 

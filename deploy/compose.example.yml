@@ -1,0 +1,73 @@
+# Foyer on docker-1, routed by Traefik at foyer.lan.casadecox.org.
+#
+# Foyer reads this host's containers through its own socket proxy on a private network (the
+# proxy is never published), and the other hosts through their proxies (socket-proxy.example.yml).
+#
+#   docker compose -f compose.example.yml up -d
+
+services:
+  foyer:
+    image: gitea.lan.casadecox.org/foyer/foyer:latest   # or :dev / :<sha> for develop builds
+    container_name: foyer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - socket-proxy
+    environment:
+      FOYER_DOCKERHOSTS_DOCKER1_NAME: docker-1
+      FOYER_DOCKERHOSTS_DOCKER1_URI: http://socket-proxy:2375
+      FOYER_DOCKERHOSTS_DOCKER2_NAME: docker-2
+      FOYER_DOCKERHOSTS_DOCKER2_URI: http://172.16.78.22:2375
+      FOYER_DOCKERHOSTS_DOCKER3_NAME: docker-3
+      FOYER_DOCKERHOSTS_DOCKER3_URI: http://[DOCKER-3 IP]:2375
+      FOYER_DOCKERHOSTS_DOCKER4_NAME: docker-4
+      FOYER_DOCKERHOSTS_DOCKER4_URI: http://[DOCKER-4 IP]:2375
+      # FOYER_HOMEPAGE_LABELS: "true"   # read homepage.* labels as a fallback (default true)
+      # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
+      # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down
+    volumes:
+      # A named volume picks up the image's /data ownership. A bind mount must be writable by
+      # uid 1654 (the image's non-root user): chown 1654:1654 <dir>.
+      - foyer-data:/data
+    networks:
+      - proxy
+      - foyer-docker
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.foyer.entrypoints=http"
+      - "traefik.http.routers.foyer.rule=Host(`foyer.lan.casadecox.org`)"
+      - "traefik.http.middlewares.foyer-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.foyer.middlewares=foyer-https-redirect"
+      - "traefik.http.routers.foyer-secure.entrypoints=https"
+      - "traefik.http.routers.foyer-secure.rule=Host(`foyer.lan.casadecox.org`)"
+      - "traefik.http.routers.foyer-secure.tls=true"
+      - "traefik.http.routers.foyer-secure.service=foyer"
+      # Foyer has no login of its own; Tinyauth's forwardAuth guards it. A bare name resolves in
+      # the docker provider; if tinyauth is defined in Traefik's file provider, use tinyauth@file.
+      - "traefik.http.routers.foyer-secure.middlewares=tinyauth"
+      - "traefik.http.services.foyer.loadbalancer.server.port=8080"
+
+  # Read-only Docker API for Foyer only: containers and events, no writes. Not published.
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: foyer-socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - foyer-docker
+
+volumes:
+  foyer-data:
+
+networks:
+  proxy:
+    external: true
+  foyer-docker:
+    internal: true

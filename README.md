@@ -78,6 +78,25 @@ docker run -p 8080:8080 -v foyer-data:/data foyer
 The runtime image is chiseled and non-root; its healthcheck runs
 `dotnet Foyer.Api.dll --healthcheck`, which probes `/healthz`.
 
+## Releases
+
+`.gitea/workflows/release.yml` pushes images to `gitea.lan.casadecox.org/foyer/foyer`:
+
+| Trigger | Tags |
+| --- | --- |
+| Tag `vX.Y.Z` | `:X.Y.Z`, `:latest` |
+| Push to `develop` | `:dev`, `:<7-char sha>` |
+
+It needs repo secrets `REGISTRY_USERNAME` and `REGISTRY_TOKEN` (a Gitea access token that can
+write packages for the `foyer` owner). The image logs its version at startup.
+
+## Deploy
+
+`deploy/compose.example.yml` runs Foyer on docker-1 behind Traefik at `foyer.lan.casadecox.org`,
+reading docker-1 through a private, unpublished socket proxy. `deploy/socket-proxy.example.yml`
+is the read-only proxy for docker-2/3/4; firewall its port to docker-1 (see the file: ufw
+doesn't filter Docker's published ports).
+
 ## Configuration
 
 Environment variables only. See the spec for the full list; the essentials:
