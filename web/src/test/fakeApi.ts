@@ -17,8 +17,9 @@ const json = (value: unknown, status = 200) =>
   })
 
 /**
- * Stubs fetch with a tiny router: GET /api/dashboard serves `dashboard()`, other calls hit
- * `routes` by "METHOD /path" (default: 204), and every call is recorded with its JSON body.
+ * Stubs fetch with a tiny router: GET /api/dashboard serves `dashboard()`, GET /api/settings
+ * the default title, other calls hit `routes` by "METHOD /path" (default: 204), and every call
+ * except those two reads is recorded with its JSON body.
  */
 export function stubApi(dashboard: () => Dashboard, routes: Record<string, Handler> = {}) {
   const calls: ApiCall[] = []
@@ -28,18 +29,23 @@ export function stubApi(dashboard: () => Dashboard, routes: Record<string, Handl
       const path = new URL(request.url).pathname
       const text = request.method === 'GET' ? '' : await request.text()
       const call = { method: request.method, path, body: text ? JSON.parse(text) : undefined }
-      if (!(request.method === 'GET' && path === '/api/dashboard')) {
+      const route = `${request.method} ${path}`
+      if (route !== 'GET /api/dashboard' && route !== 'GET /api/settings') {
         calls.push(call)
       }
 
-      const handler = routes[`${request.method} ${path}`]
+      const handler = routes[route]
       if (handler) {
         const result = handler(call)
         return result instanceof Response ? result : json(result)
       }
 
-      return request.method === 'GET' && path === '/api/dashboard'
-        ? json(dashboard())
+      if (route === 'GET /api/dashboard') {
+        return json(dashboard())
+      }
+
+      return route === 'GET /api/settings'
+        ? json({ title: 'Foyer' })
         : new Response(null, { status: 204 })
     }),
   )

@@ -16,5 +16,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Whole-app tests type through Mantine forms; CI runners are several times slower than a
+    // desktop, and a file's first test also pays for warming up.
+    testTimeout: 15_000,
   },
 })
