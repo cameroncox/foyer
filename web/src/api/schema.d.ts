@@ -199,7 +199,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A bookmark's cached icon; 404 means show a letter tile */
+        /** A bookmark's cached icon; 204 means it has none, so show a letter tile */
         get: operations["GetIcon"];
         put?: never;
         post?: never;
@@ -216,7 +216,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Resolve an icon value for the Add/Edit form's live preview; 404 means a letter tile */
+        /** Resolve an icon value for the Add/Edit form's live preview; 204 means a letter tile */
         get: operations["PreviewIcon"];
         put?: never;
         post?: never;
@@ -866,6 +866,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -894,8 +901,8 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Not Found */
-            404: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
