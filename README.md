@@ -84,7 +84,8 @@ it; `./data` must be writable by that user). Its healthcheck runs
 ## Releases
 
 The `release` job in `.gitea/workflows/ci.yml` runs after every check job passes and pushes
-images to the Gitea container registry named by the workflow's `IMAGE`:
+images to `<REGISTRY>/<owner>/<repo>`, where `REGISTRY` is a repo variable (Settings › Actions ›
+Variables) holding the Gitea registry's host:
 
 | Trigger | Tags |
 | --- | --- |
