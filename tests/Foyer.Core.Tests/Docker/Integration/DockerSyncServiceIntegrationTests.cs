@@ -51,6 +51,7 @@ public sealed class DockerSyncServiceIntegrationTests(SocketProxyFixture proxies
             new ContainerSource(host),
             _services.GetRequiredService<IServiceScopeFactory>(),
             options,
+            new SyncGate(),
             NullLogger<DockerSyncService>.Instance);
         await _sync.StartAsync(CancellationToken.None);
     }

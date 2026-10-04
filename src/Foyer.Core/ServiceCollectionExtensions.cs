@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
         SyncOptions options)
     {
         services.AddSingleton(options);
+        services.AddSingleton<SyncGate>();
 
         foreach (var host in hosts)
         {
@@ -53,6 +54,7 @@ public static class ServiceCollectionExtensions
                 new ContainerSource(host),
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 options,
+                sp.GetRequiredService<SyncGate>(),
                 sp.GetRequiredService<ILogger<DockerSyncService>>()));
         }
 

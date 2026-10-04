@@ -49,6 +49,7 @@ public sealed class DockerSyncServiceTests : IAsyncLifetime
             _source,
             _services.GetRequiredService<IServiceScopeFactory>(),
             options ?? Fast,
+            new SyncGate(),
             NullLogger<DockerSyncService>.Instance);
         await _sync.StartAsync(CancellationToken.None);
     }

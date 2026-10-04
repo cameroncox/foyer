@@ -20,10 +20,13 @@ public sealed partial class DockerSyncService(
     IContainerSource source,
     IServiceScopeFactory scopes,
     SyncOptions options,
+    SyncGate gate,
     ILogger<DockerSyncService> logger) : BackgroundService
 {
     private readonly Channel<bool> _requests = Channel.CreateBounded<bool>(
         new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
+
+    private readonly SyncGate _gate = gate;
 
     private volatile bool _eventsUp;
     private bool? _reachable;
@@ -112,13 +115,23 @@ public sealed partial class DockerSyncService(
 
         try
         {
-            await using var scope = scopes.CreateAsyncScope();
-            var store = scope.ServiceProvider.GetRequiredService<DockerBookmarkStore>();
-            var known = await store.LoadKnownAsync(host.Name, ct);
-            var plan = BookmarkReconciler.ReconcileHost(host.Name, containers, known, options.HomepageLabels);
-            if (await store.ApplyAsync(plan, ct))
+            // One host at a time from here: reading what's stored and saving the plan must not
+            // interleave with another host's, or both may create the same new category.
+            await _gate.EnterAsync(ct);
+            try
             {
-                LogApplied(host.Name, plan.Creates.Count, plan.Updates.Count, plan.Hides.Count);
+                await using var scope = scopes.CreateAsyncScope();
+                var store = scope.ServiceProvider.GetRequiredService<DockerBookmarkStore>();
+                var known = await store.LoadKnownAsync(host.Name, ct);
+                var plan = BookmarkReconciler.ReconcileHost(host.Name, containers, known, options.HomepageLabels);
+                if (await store.ApplyAsync(plan, ct))
+                {
+                    LogApplied(host.Name, plan.Creates.Count, plan.Updates.Count, plan.Hides.Count);
+                }
+            }
+            finally
+            {
+                _gate.Leave();
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
