@@ -72,10 +72,12 @@ dotnet tool restore && dotnet ef migrations add <Name> -p src/Foyer.Core -o Data
 
 ```bash
 docker build -t foyer .
-docker run -p 8080:8080 -v foyer-data:/data foyer
+mkdir -p data
+docker run -p 8080:8080 --user "$(id -u):$(id -g)" -v "$PWD/data:/data" foyer
 ```
 
-The runtime image is chiseled and non-root; its healthcheck runs
+The runtime image is chiseled and non-root (uid 1654 unless `--user` / compose `user:` overrides
+it; `./data` must be writable by that user). Its healthcheck runs
 `dotnet Foyer.Api.dll --healthcheck`, which probes `/healthz`.
 
 ## Releases
