@@ -1,4 +1,10 @@
 using Foyer.Api;
+using Foyer.Api.Configuration;
+using Foyer.Api.Events;
+using Foyer.Core;
+using Foyer.Core.Data;
+using Foyer.Core.Events;
+using Microsoft.EntityFrameworkCore;
 
 if (args is ["--healthcheck", ..])
 {
@@ -7,9 +13,19 @@ if (args is ["--healthcheck", ..])
 
 var builder = WebApplication.CreateBuilder(args);
 
+var dataDir = FoyerSettings.DataDir(builder.Configuration, builder.Environment);
+Directory.CreateDirectory(dataDir);
+
+builder.Services.AddFoyerCore(dataDir);
+builder.Services.AddSingleton<IChangeNotifier, NullChangeNotifier>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<FoyerDbContext>().Database.MigrateAsync();
+}
 
 app.MapOpenApi();
 

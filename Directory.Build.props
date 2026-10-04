@@ -15,7 +15,8 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <OutputType>Exe</OutputType>
-    <!-- Test names use Method_Scenario_Result underscores. -->
-    <NoWarn>$(NoWarn);CA1707</NoWarn>
+    <!-- CA1707: test names use Method_Scenario_Result underscores.
+         xUnit1051: tests are fast and in-memory; passing TestContext's token everywhere is noise. -->
+    <NoWarn>$(NoWarn);CA1707;xUnit1051</NoWarn>
   </PropertyGroup>
 </Project>

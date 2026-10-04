@@ -1,10 +1,9 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Foyer.Api.Tests;
 
-public sealed class HealthzTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HealthzTests(FoyerApiFactory factory)
+    : IClassFixture<FoyerApiFactory>
 {
     [Fact]
     public async Task Healthz_ReturnsOk()

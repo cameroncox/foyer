@@ -392,3 +392,8 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 indent_size = 2
 indent_style = space
 insert_final_newline = true
+
+# EF Core migrations are generated
+[src/Foyer.Core/Data/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

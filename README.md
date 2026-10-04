@@ -41,6 +41,13 @@ cd web && npm run lint && npm run format:check && npm run typecheck && npm test 
 
 Regenerate API types (API must be running): `cd web && npm run gen:api`.
 
+Migrations live in `src/Foyer.Core/Data/Migrations` and are applied at startup. In dev the
+database goes to `./data` (gitignored). To add one:
+
+```bash
+dotnet tool restore && dotnet ef migrations add <Name> -p src/Foyer.Core -o Data/Migrations
+```
+
 ## Image
 
 ```bash
