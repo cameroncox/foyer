@@ -131,7 +131,7 @@ export function CategoryDrawer({ dashboard, onReorder, onImport, onBack }: Props
       </form>
 
       <div className={classes.footer}>
-        <BookmarkletLink />
+        <BookmarkletLink categories={dashboard.categories} />
         <Button
           fullWidth
           variant="default"

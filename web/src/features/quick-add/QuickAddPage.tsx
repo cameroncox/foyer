@@ -63,6 +63,7 @@ export function QuickAddPage() {
             categories={categories}
             initialName={page.name}
             initialUrl={page.url}
+            initialCategoryId={page.categoryId}
             onDone={() => finish('saved')}
             onCancel={() => finish('cancelled')}
           />

@@ -48,6 +48,24 @@ describe('Quick add', () => {
     expect(screen.getByText('Bookmark added.')).toBeInTheDocument()
   })
 
+  it('starts on the bookmarklet’s category', async () => {
+    const dashboard = page()
+    stubApi(() => dashboard)
+    const comics = dashboard.categories[0].id
+    openAt(`?category=${comics}&url=https%3A%2F%2Fqwantz.com%2F&name=Dinosaur+Comics`)
+    renderApp()
+
+    expect(await screen.findByRole('combobox', { name: 'Category' })).toHaveValue('Web Comics')
+  })
+
+  it('falls back to Uncategorized when the category is gone', async () => {
+    stubApi(page)
+    openAt('?category=9999&url=https%3A%2F%2Fqwantz.com%2F&name=Dinosaur+Comics')
+    renderApp()
+
+    expect(await screen.findByRole('combobox', { name: 'Category' })).toHaveValue('Uncategorized')
+  })
+
   it('says when the page is already saved', async () => {
     stubApi(page)
     openAt('?url=https%3A%2F%2Fxkcd.com%2F&name=xkcd')

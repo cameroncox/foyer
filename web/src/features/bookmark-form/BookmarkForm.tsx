@@ -18,6 +18,8 @@ interface Props {
   initialName?: string
   /** Pre-fills URL when adding from the bookmarklet. */
   initialUrl?: string
+  /** Starts Category here when adding, if it still exists; otherwise Uncategorized. */
+  initialCategoryId?: number
   /** After a save or delete; also Cancel, unless {@link onCancel} is given. */
   onDone: () => void
   onCancel?: () => void
@@ -29,6 +31,7 @@ export function BookmarkForm({
   bookmark,
   initialName,
   initialUrl,
+  initialCategoryId,
   onDone,
   onCancel = onDone,
 }: Props) {
@@ -40,7 +43,11 @@ export function BookmarkForm({
   const form = useForm({
     initialValues: {
       name: bookmark?.name ?? initialName ?? '',
-      category: String(bookmark?.categoryId ?? uncategorizedId(categories)),
+      category: String(
+        bookmark?.categoryId ??
+          categories.find((c) => c.id === initialCategoryId)?.id ??
+          uncategorizedId(categories),
+      ),
       newCategory: '',
       url: bookmark?.url ?? initialUrl ?? '',
       tags: bookmark?.tags ?? [],
