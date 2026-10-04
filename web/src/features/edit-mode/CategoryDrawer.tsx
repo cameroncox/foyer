@@ -94,20 +94,22 @@ export function CategoryDrawer({ dashboard, onReorder, onImport, onBack }: Props
         onDragEnd={onDragEnd}
       >
         <SortableContext items={movable.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          <ol className={classes.list} aria-label="Categories">
-            {movable.map((category) => (
-              <CategoryRow key={`${category.id}:${category.name}`} category={category} />
-            ))}
-            {pinned && (
-              <li className={classes.pinned}>
-                <span style={{ flex: 1 }}>{pinned.name}</span>
-                <Text size="xs" c="dimmed">
-                  always last
-                </Text>
-                <span className={classes.count}>{pinned.bookmarks.length}</span>
-              </li>
-            )}
-          </ol>
+          <div className={classes.scroll}>
+            <ol className={classes.list} aria-label="Categories">
+              {movable.map((category) => (
+                <CategoryRow key={`${category.id}:${category.name}`} category={category} />
+              ))}
+              {pinned && (
+                <li className={classes.pinned}>
+                  <span style={{ flex: 1 }}>{pinned.name}</span>
+                  <Text size="xs" c="dimmed">
+                    always last
+                  </Text>
+                  <span className={classes.count}>{pinned.bookmarks.length}</span>
+                </li>
+              )}
+            </ol>
+          </div>
         </SortableContext>
       </DndContext>
 

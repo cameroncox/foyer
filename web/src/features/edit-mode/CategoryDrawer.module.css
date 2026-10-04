@@ -1,5 +1,6 @@
 .drawer {
   height: 100%;
+  min-height: 0;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -27,6 +28,20 @@
 
 .back + .title {
   flex: 1;
+}
+
+/*
+ * The list scrolls on its own, so header, New category and the footer stay put and a long list
+ * scrolls by touch on a phone, where the drawer's own overflow wouldn't. The padding keeps focus
+ * rings and the dragged row's shadow from being clipped.
+ */
+.scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: -4px;
+  padding: 4px;
 }
 
 .list {

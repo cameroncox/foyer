@@ -29,15 +29,12 @@ describe('BookmarkletLink', () => {
     expect(picked.getAttribute('href')).toContain(`category=${dashboard.categories[0].id}&`)
   })
 
-  it('copies the bookmarklet on a phone, where there is no bookmarks bar to drag to', async () => {
+  it('is hidden on a phone, where there is no bookmarks bar to drag to', async () => {
     const desktop = window.matchMedia
     vi.stubGlobal('matchMedia', (query: string) => ({
       ...desktop(query),
       matches: query === PHONE_QUERY,
     }))
-    const writeText = vi.fn(async () => {})
-    vi.stubGlobal('isSecureContext', true)
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     stubApi(() => dashboard)
     renderApp()
 
@@ -45,11 +42,8 @@ describe('BookmarkletLink', () => {
     await userEvent.click(await screen.findByText('Edit page'))
     await userEvent.click(await screen.findByRole('button', { name: 'Categories' }))
 
+    expect(await screen.findByRole('list', { name: 'Categories' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Bookmarklet category' })).toBeNull()
     expect(screen.queryByRole('link', { name: /^Add to Foyer/ })).toBeNull()
-    await userEvent.click(await screen.findByRole('button', { name: 'Copy bookmarklet' }))
-
-    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^javascript:/))
-    expect(await screen.findByText('Bookmarklet copied.')).toBeInTheDocument()
-    Reflect.deleteProperty(navigator, 'clipboard')
   })
 })

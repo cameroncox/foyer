@@ -1,13 +1,12 @@
 import { Button, Select, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconBookmarkPlus, IconCopy } from '@tabler/icons-react'
+import { IconBookmarkPlus } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 
 import type { DashboardCategory } from '../../api/client.ts'
 import { usePhone } from '../../hooks/usePhone.ts'
 import { useTitle } from '../../hooks/useTitle.ts'
 import { bookmarkletHref } from './bookmarklet.ts'
-import { copyText } from './copyText.ts'
 
 interface Props {
   categories: readonly DashboardCategory[]
@@ -15,8 +14,9 @@ interface Props {
 
 /**
  * A link to drag to the bookmarks bar; clicked there, it adds the current page to Foyer. The
- * category picked above it is built into the link, so each category can have its own. Phones
- * can't drag to a bookmarks bar, so there it's a button that copies the bookmarklet instead.
+ * category picked above it is built into the link, so each category can have its own. Hidden on
+ * phones: there's no bookmarks bar to drag to, and a bookmarklet run from a phone's bookmarks
+ * list doesn't see the page it was opened from.
  */
 export function BookmarkletLink({ categories }: Props) {
   const title = useTitle() || 'Foyer'
@@ -34,12 +34,9 @@ export function BookmarkletLink({ categories }: Props) {
     link.current?.setAttribute('href', href)
   }, [href, phone])
 
-  const copy = () =>
-    copyText(href).then(
-      () => notifications.show({ message: 'Bookmarklet copied.' }),
-      (error: Error) =>
-        notifications.show({ color: 'red', title: 'Couldn’t copy', message: error.message }),
-    )
+  if (phone) {
+    return null
+  }
 
   return (
     <div>
@@ -52,38 +49,22 @@ export function BookmarkletLink({ categories }: Props) {
         onChange={setPicked}
         allowDeselect={false}
       />
-      {phone ? (
-        <>
-          <Button fullWidth variant="default" leftSection={<IconCopy size={16} />} onClick={copy}>
-            Copy bookmarklet
-          </Button>
-          <Text size="xs" c="dimmed" mt={6}>
-            Bookmark any page, edit the bookmark, name it “{label}” and paste this as its URL. Then
-            type that name in the address bar on any page and pick the bookmark.
-          </Text>
-        </>
-      ) : (
-        <>
-          <Button
-            component="a"
-            ref={link}
-            fullWidth
-            variant="default"
-            leftSection={<IconBookmarkPlus size={16} />}
-            onClick={(e) => {
-              e.preventDefault()
-              notifications.show({
-                message: 'Drag this to your bookmarks bar, then click it there.',
-              })
-            }}
-          >
-            {label}
-          </Button>
-          <Text size="xs" c="dimmed" mt={6}>
-            Drag to your bookmarks bar, then click it on any page to bookmark it.
-          </Text>
-        </>
-      )}
+      <Button
+        component="a"
+        ref={link}
+        fullWidth
+        variant="default"
+        leftSection={<IconBookmarkPlus size={16} />}
+        onClick={(e) => {
+          e.preventDefault()
+          notifications.show({ message: 'Drag this to your bookmarks bar, then click it there.' })
+        }}
+      >
+        {label}
+      </Button>
+      <Text size="xs" c="dimmed" mt={6}>
+        Drag to your bookmarks bar, then click it on any page to bookmark it.
+      </Text>
     </div>
   )
 }
