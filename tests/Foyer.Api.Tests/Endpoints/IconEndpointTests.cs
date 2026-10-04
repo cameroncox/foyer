@@ -28,6 +28,20 @@ public sealed class IconEndpointTests
         Directory.EnumerateFiles(Path.Combine(app.DataDir, "icons")).ShouldHaveSingleItem();
     }
 
+    [Fact]
+    public async Task BookmarkIcon_ThatIsntAnImage_Is204_CachedForTheRetryWindow()
+    {
+        await using var app = new FoyerApiFactory();
+        using var client = app.CreateClient();
+        var created = await (await client.PostJsonAsync("/api/bookmarks",
+            new CreateBookmarkRequest("Router", "https://router.lan", "data:text/plain,hello", null, null, null))).ReadAsync<BookmarkResponse>();
+
+        var response = await client.GetAsync(created.IconUrl);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        response.Headers.CacheControl!.MaxAge.ShouldBe(TimeSpan.FromHours(1));
+    }
+
     [Theory]
     [InlineData("/api/icons/0123456789abcdef0123456789abcdef")]
     [InlineData("/api/icons/..%2F..%2Ffoyer.db")]
@@ -53,11 +67,11 @@ public sealed class IconEndpointTests
     }
 
     [Fact]
-    public async Task Preview_Unresolvable_Is404()
+    public async Task Preview_Unresolvable_Is204()
     {
         await using var app = new FoyerApiFactory();
         using var client = app.CreateClient();
 
-        (await client.GetAsync("/api/icons/preview?icon=x.bmp")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await client.GetAsync("/api/icons/preview?icon=x.bmp")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 }
