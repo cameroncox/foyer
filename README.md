@@ -104,6 +104,9 @@ doesn't filter Docker's published ports).
 
 Environment variables only. See the spec for the full list; the essentials:
 
+Docker hosts are optional: with no `FOYER_DOCKERHOSTS_{KEY}_URI` set, Foyer runs as a plain
+bookmark manager with manually added bookmarks only.
+
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `FOYER_DOCKERHOSTS_{KEY}_URI` | — | Docker endpoint per host (`unix://`, `tcp://`, `http://`) |
