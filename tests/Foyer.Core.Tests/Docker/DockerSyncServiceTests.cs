@@ -59,11 +59,15 @@ public sealed class DockerSyncServiceTests : IAsyncLifetime
         return await db.Bookmarks.CountAsync(b => b.IsPresent);
     }
 
-    /// <summary>Waits until no list call has happened for a while.</summary>
+    /// <summary>
+    /// Waits until every pass that listed the host has also saved, and none has started for a
+    /// while. A pass lists before it saves, so waiting on list calls alone can return between the
+    /// two on a slow machine.
+    /// </summary>
     private async Task<int> SettledListCallsAsync()
     {
         var last = -1;
-        while (_source.ListCalls != last)
+        while (_source.ListCalls != last || _sync.PassesCompleted < _source.ListCalls)
         {
             last = _source.ListCalls;
             await Task.Delay(400);
@@ -86,7 +90,9 @@ public sealed class DockerSyncServiceTests : IAsyncLifetime
     public async Task BurstOfEvents_IsOneSync_AndOneNotification()
     {
         _source.SetContainers(Containers.Labeled("sonarr"));
-        await StartAsync();
+
+        // The burst's gaps (~20ms) stay well inside the quiet window even on a slow runner.
+        await StartAsync(Fast with { Debounce = TimeSpan.FromMilliseconds(400), MaxDebounce = TimeSpan.FromSeconds(5) });
         await Eventually.HoldsAsync(() => _source.Connections == 1);
         var listsBefore = await SettledListCallsAsync();
         var notificationsBefore = _db.Notifier.Count;

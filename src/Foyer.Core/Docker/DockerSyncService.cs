@@ -27,11 +27,15 @@ public sealed partial class DockerSyncService(
 
     private volatile bool _eventsUp;
     private bool? _reachable;
+    private int _passesCompleted;
 
     public DockerHostOptions Host => host;
 
     /// <summary>True while the host's event stream is connected.</summary>
     public bool EventsUp => _eventsUp;
+
+    /// <summary>Sync passes finished, saved or not. Lets tests wait for a pass to land.</summary>
+    internal int PassesCompleted => Volatile.Read(ref _passesCompleted);
 
     /// <summary>Asks for a sync pass soon. Requests that arrive together collapse into one pass.</summary>
     public void RequestSync() => _requests.Writer.TryWrite(true);
@@ -70,6 +74,18 @@ public sealed partial class DockerSyncService(
 
     /// <summary>One pass: list the host, reconcile against what's stored, apply.</summary>
     internal async Task SyncOnceAsync(CancellationToken ct)
+    {
+        try
+        {
+            await SyncPassAsync(ct);
+        }
+        finally
+        {
+            Interlocked.Increment(ref _passesCompleted);
+        }
+    }
+
+    private async Task SyncPassAsync(CancellationToken ct)
     {
         IReadOnlyList<ContainerInfo> containers;
         try
