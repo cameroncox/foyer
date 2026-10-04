@@ -14,13 +14,24 @@ interface Props {
   categories: readonly DashboardCategory[]
   /** Editing this manual bookmark; absent when adding. */
   bookmark?: Bookmark
-  /** Pre-fills Name when adding from "Nothing matches". */
+  /** Pre-fills Name when adding from "Nothing matches" or the bookmarklet. */
   initialName?: string
+  /** Pre-fills URL when adding from the bookmarklet. */
+  initialUrl?: string
+  /** After a save or delete; also Cancel, unless {@link onCancel} is given. */
   onDone: () => void
+  onCancel?: () => void
 }
 
 /** Add, or edit a manual bookmark: Name, Category, URL, Tags, Icon. Edit adds Delete. */
-export function BookmarkForm({ categories, bookmark, initialName, onDone }: Props) {
+export function BookmarkForm({
+  categories,
+  bookmark,
+  initialName,
+  initialUrl,
+  onDone,
+  onCancel = onDone,
+}: Props) {
   const create = useCreateBookmark()
   const update = useUpdateBookmark()
   const remove = useDeleteBookmark()
@@ -31,7 +42,7 @@ export function BookmarkForm({ categories, bookmark, initialName, onDone }: Prop
       name: bookmark?.name ?? initialName ?? '',
       category: String(bookmark?.categoryId ?? uncategorizedId(categories)),
       newCategory: '',
-      url: bookmark?.url ?? '',
+      url: bookmark?.url ?? initialUrl ?? '',
       tags: bookmark?.tags ?? [],
       icon: bookmark?.icon ?? '',
     },
@@ -129,7 +140,7 @@ export function BookmarkForm({ categories, bookmark, initialName, onDone }: Prop
                 Delete
               </Button>
             )}
-            <Button variant="default" onClick={onDone} disabled={saving}>
+            <Button variant="default" onClick={onCancel} disabled={saving}>
               Cancel
             </Button>
             <Button type="submit" loading={create.isPending || update.isPending}>

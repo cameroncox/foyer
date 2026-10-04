@@ -100,6 +100,13 @@ reading docker-1 through a private, unpublished socket proxy. `deploy/socket-pro
 is the read-only proxy for docker-2/3/4; firewall its port to docker-1 (see the file: ufw
 doesn't filter Docker's published ports).
 
+## Bookmarklet
+
+In edit mode, the Categories drawer has an **Add to Foyer** link. Drag it to the browser's
+bookmarks bar; clicking it on any page opens a small popup with the Add form filled in from
+that page's URL and title, and closes it once saved. The link points at the address Foyer was
+opened on, so drag it from the address you'll use day to day.
+
 ## Configuration
 
 Environment variables only. See the spec for the full list; the essentials:

@@ -19,6 +19,7 @@ import { useState } from 'react'
 
 import type { Dashboard } from '../../api/client.ts'
 import { useCreateCategory } from '../../api/mutations.ts'
+import { BookmarkletLink } from '../quick-add/BookmarkletLink.tsx'
 import classes from './CategoryDrawer.module.css'
 import { CategoryRow } from './CategoryRow.tsx'
 import { moveCategory } from './reorder.ts'
@@ -130,6 +131,7 @@ export function CategoryDrawer({ dashboard, onReorder, onImport, onBack }: Props
       </form>
 
       <div className={classes.footer}>
+        <BookmarkletLink />
         <Button
           fullWidth
           variant="default"

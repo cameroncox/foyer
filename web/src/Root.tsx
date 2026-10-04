@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode, useMemo, useState } from 'react'
 
 import App from './App.tsx'
+import { QUICK_ADD_PATH } from './features/quick-add/bookmarklet.ts'
+import { QuickAddPage } from './features/quick-add/QuickAddPage.tsx'
 import { AccentContext } from './theme/AccentContext.ts'
 import { loadAccent, saveAccent } from './theme/accentStore.ts'
 import { createFoyerTheme } from './theme/theme.ts'
@@ -43,7 +45,7 @@ export function Root({
         <MantineProvider theme={theme} defaultColorScheme="auto" env={mantineEnv}>
           <Notifications position="top-right" />
           <QueryClientProvider client={queryClient}>
-            <App />
+            {window.location.pathname === QUICK_ADD_PATH ? <QuickAddPage /> : <App />}
           </QueryClientProvider>
         </MantineProvider>
       </AccentContext>
