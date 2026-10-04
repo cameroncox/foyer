@@ -23,7 +23,8 @@ import {
   scopeLabel,
   spotlightHits,
 } from './scope.ts'
-import { isBang, webSearchUrl } from './webSearch.ts'
+import { useSearchUrl } from './useSearchUrl.ts'
+import { engineName, isBang, supportsBangs, webSearchUrl } from './webSearch.ts'
 
 /** Highlights the action at `index` (-1 for none), the way the arrow keys do. */
 function select(store: SpotlightStore, index: number) {
@@ -50,13 +51,15 @@ interface Props {
 
 /**
  * Space (or ⌘K) opens a jump-to box. Empty, it offers Docker hosts, tags and categories to narrow
- * by; typing searches bookmarks (and those filters), with a DuckDuckGo search last. Enter opens
- * the highlighted row. A query starting with a bang ("!g …") is only a web search.
+ * by; typing searches bookmarks (and those filters), with a web search (FOYER_SEARCH_URL) last.
+ * Enter opens the highlighted row. On DuckDuckGo, a query starting with a bang ("!g …") is only
+ * a web search.
  */
 export function FoyerSpotlight({ categories, enabled }: Props) {
   const [store] = useState(createSpotlightStore)
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState<Scope | null>(null)
+  const searchUrl = useSearchUrl()
 
   const all = useMemo(() => facets(categories), [categories])
   const hits = useMemo(
@@ -66,7 +69,7 @@ export function FoyerSpotlight({ categories, enabled }: Props) {
   const browsing = !scope && query.trim() === ''
   // A filter is a search of the bookmarks, so the web stays out of it.
   const web = !scope && !browsing
-  const bang = web && isBang(query)
+  const bang = web && supportsBangs(searchUrl) && isBang(query)
   const filters = scope || browsing || bang ? [] : matchingFacets(all, query)
   const shownHits = bang ? [] : hits
 
@@ -163,9 +166,9 @@ export function FoyerSpotlight({ categories, enabled }: Props) {
             {web && (
               <Spotlight.ActionsGroup label="Web">
                 <Spotlight.Action
-                  label={`Search DuckDuckGo for “${query.trim()}”`}
+                  label={`Search ${engineName(searchUrl)} for “${query.trim()}”`}
                   leftSection={<IconWorldSearch size={18} stroke={1.75} />}
-                  onClick={() => navigation.open(webSearchUrl(query))}
+                  onClick={() => navigation.open(webSearchUrl(searchUrl, query))}
                 />
               </Spotlight.ActionsGroup>
             )}

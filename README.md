@@ -113,3 +113,4 @@ Environment variables only. See the spec for the full list; the essentials:
 | `FOYER_POLL_INTERVAL` | `30` | Poll interval when a host's event stream is down |
 | `FOYER_DATA_DIR` | `/data` | SQLite file and icon cache |
 | `FOYER_TITLE` | `Foyer` | Name in the top bar and the browser tab (up to 60 characters) |
+| `FOYER_SEARCH_URL` | `https://duckduckgo.com/?q=` | The spotlight's web search; the query replaces `%s`, or is appended. Bangs (`!g …`) go straight to DuckDuckGo |

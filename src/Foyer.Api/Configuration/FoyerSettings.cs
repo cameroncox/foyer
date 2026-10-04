@@ -6,13 +6,24 @@ namespace Foyer.Api.Configuration;
 
 /// <summary>Everything Foyer reads from FOYER_* environment variables.</summary>
 /// <param name="Title">The name in the top bar and the browser tab: FOYER_TITLE, else "Foyer".</param>
-internal sealed record FoyerSettings(string DataDir, IReadOnlyList<DockerHostOptions> Hosts, SyncOptions Sync, string Title)
+/// <param name="SearchUrl">
+/// The spotlight's web search: FOYER_SEARCH_URL, else DuckDuckGo. The query replaces <c>%s</c>,
+/// or is appended when there's none.
+/// </param>
+internal sealed record FoyerSettings(
+    string DataDir,
+    IReadOnlyList<DockerHostOptions> Hosts,
+    SyncOptions Sync,
+    string Title,
+    string SearchUrl)
 {
     public const string DataDirKey = "FOYER_DATA_DIR";
     public const string DefaultDataDir = "/data";
     public const string TitleKey = "FOYER_TITLE";
     public const string DefaultTitle = "Foyer";
     public const int MaxTitleLength = 60;
+    public const string SearchUrlKey = "FOYER_SEARCH_URL";
+    public const string DefaultSearchUrl = "https://duckduckgo.com/?q=";
 
     /// <summary>
     /// Reads the settings, reporting every problem at once. Relative data dirs resolve against
@@ -33,6 +44,13 @@ internal sealed record FoyerSettings(string DataDir, IReadOnlyList<DockerHostOpt
             problems.Add($"{TitleKey} is {title.Length} characters; keep it to {MaxTitleLength}.");
         }
 
+        var searchUrl = config[SearchUrlKey]?.Trim() is { Length: > 0 } u ? u : DefaultSearchUrl;
+        if (!Uri.TryCreate(searchUrl.Replace("%s", "", StringComparison.Ordinal), UriKind.Absolute, out var parsed)
+            || parsed.Scheme is not ("http" or "https"))
+        {
+            problems.Add($"{SearchUrlKey} must be an http:// or https:// URL, like https://www.google.com/search?q=%s.");
+        }
+
         if (problems.Count > 0)
         {
             throw new FoyerConfigurationException(problems);
@@ -40,7 +58,7 @@ internal sealed record FoyerSettings(string DataDir, IReadOnlyList<DockerHostOpt
 
         var dir = config[DataDirKey];
         var dataDir = string.IsNullOrWhiteSpace(dir) ? DefaultDataDir : Path.GetFullPath(dir, env.ContentRootPath);
-        return new FoyerSettings(dataDir, hosts, sync, title);
+        return new FoyerSettings(dataDir, hosts, sync, title, searchUrl);
     }
 
     private static T? Collect<T>(Func<T> parse, List<string> problems)

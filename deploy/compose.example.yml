@@ -26,6 +26,7 @@ services:
       FOYER_DOCKERHOSTS_DOCKER4_NAME: docker-4
       FOYER_DOCKERHOSTS_DOCKER4_URI: http://172.16.78.37:2375
       # FOYER_TITLE: "Foyer"            # name in the top bar and the browser tab
+      # FOYER_SEARCH_URL: "https://www.google.com/search?q=%s"   # spotlight web search (default DuckDuckGo)
       # FOYER_HOMEPAGE_LABELS: "true"   # read homepage.* labels as a fallback (default true)
       # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
       # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down

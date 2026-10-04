@@ -22,4 +22,22 @@ public sealed class SettingsEndpointTests
 
         (await (await client.GetAsync("/api/settings")).ReadAsync<SettingsResponse>()).Title.ShouldBe("Casa de Cox");
     }
+
+    [Fact]
+    public async Task SearchUrl_DefaultsToDuckDuckGo_OrComesFromFoyerSearchUrl()
+    {
+        await using (var app = new FoyerApiFactory())
+        {
+            using var client = app.CreateClient();
+            (await (await client.GetAsync("/api/settings")).ReadAsync<SettingsResponse>()).SearchUrl
+                .ShouldBe("https://duckduckgo.com/?q=");
+        }
+
+        await using (var app = new FoyerApiFactory(settings: new Dictionary<string, string> { ["FOYER_SEARCH_URL"] = "https://www.google.com/search?q=%s" }))
+        {
+            using var client = app.CreateClient();
+            (await (await client.GetAsync("/api/settings")).ReadAsync<SettingsResponse>()).SearchUrl
+                .ShouldBe("https://www.google.com/search?q=%s");
+        }
+    }
 }

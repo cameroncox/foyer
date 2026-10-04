@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { Dashboard } from './api/client.ts'
 import { navigation } from './navigation.ts'
+import { stubApi } from './test/fakeApi.ts'
 import { bookmark, category, dockerBookmark, FakeEventSource, stubDashboard } from './test/fakes.ts'
 import { renderApp } from './test/render.tsx'
 
@@ -200,6 +201,25 @@ describe('spotlight', () => {
     await userEvent.clear(again)
     await userEvent.type(again, 'zzz{Enter}')
     expect(open).toHaveBeenLastCalledWith('https://duckduckgo.com/?q=zzz')
+  })
+
+  it('uses FOYER_SEARCH_URL, where a bang is just text', async () => {
+    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
+    stubApi(page, {
+      'GET /api/settings': () => ({
+        title: 'Foyer',
+        searchUrl: 'https://www.google.com/search?q=%s',
+      }),
+    })
+    renderApp()
+    await screen.findByText('OPNsense')
+    await userEvent.keyboard(' ')
+    const box = await screen.findByRole('textbox', { name: 'Jump to a bookmark' })
+
+    await userEvent.type(box, '!g zzz')
+    await userEvent.click(screen.getByRole('button', { name: /Search Google for “!g zzz”/ }))
+
+    expect(open).toHaveBeenCalledWith('https://www.google.com/search?q=!g%20zzz')
   })
 
   it('stays shut while editing', async () => {
