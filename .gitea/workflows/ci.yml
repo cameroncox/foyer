@@ -7,6 +7,7 @@ on:
 jobs:
   dotnet:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +31,7 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: web
@@ -53,6 +55,7 @@ jobs:
   # committed copy is stale (run `npm run gen:api` with the API up, and commit the result).
   api-contract:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -68,13 +71,16 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
+      # The API must be fully detached (no shared stdout/stderr): the runner waits for every
+      # process holding a step's output, so a plain `&` keeps this step running until timeout.
       - name: Start API
         run: |
           dotnet build src/Foyer.Api -c Release
           FOYER_DATA_DIR="$RUNNER_TEMP/foyer" ASPNETCORE_URLS=http://localhost:5080 \
-            dotnet run --project src/Foyer.Api -c Release --no-build --no-launch-profile &
+            nohup dotnet src/Foyer.Api/bin/Release/net10.0/Foyer.Api.dll \
+            > "$RUNNER_TEMP/api.log" 2>&1 < /dev/null &
           for i in $(seq 1 60); do curl -sf http://localhost:5080/healthz && exit 0; sleep 1; done
-          echo "API didn't start" && exit 1
+          echo "API didn't start:"; cat "$RUNNER_TEMP/api.log"; exit 1
 
       - name: Regenerate API types
         working-directory: web
