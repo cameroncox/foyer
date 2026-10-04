@@ -1,4 +1,4 @@
-# Local Docker for `dotnet watch`: a socket proxy set up like docker-2/3/4, plus labeled
+# Local Docker for `dotnet watch`: a socket proxy set up like deploy/socket-proxy.example.yml, plus labeled
 # containers covering coxdev.*, homepage.* fallback, opt-out and health states.
 #   docker compose -f dev/compose.dev.yml up -d
 # The dev launch profile points FOYER_DOCKERHOSTS_DEV_URI at http://localhost:2375.

@@ -1,15 +1,15 @@
-# Docker socket proxy for the hosts Foyer reads remotely (docker-2, docker-3, docker-4).
+# Docker socket proxy for each other host Foyer reads remotely.
 # Foyer only reads: containers and events. POST stays off, so nothing can change through it.
 #
 #   docker compose -f socket-proxy.example.yml up -d
 #
 # Careful: CONTAINERS=1 also allows container inspect, which includes every container's
 # environment variables (passwords, tokens). Anyone who can reach port 2375 can read them, so
-# publish it on the LAN address only and allow just docker-1.
+# publish it on the LAN address only and allow just the host Foyer runs on.
 #
 # ufw can't do this: Docker's own iptables rules for published ports bypass it. Filter in the
 # DOCKER-USER chain instead (and persist it, e.g. with iptables-persistent):
-#   iptables -I DOCKER-USER -p tcp -m conntrack --ctorigdstport 2375 ! -s [DOCKER-1 IP] -j DROP
+#   iptables -I DOCKER-USER -p tcp -m conntrack --ctorigdstport 2375 ! -s [FOYER HOST IP] -j DROP
 
 services:
   socket-proxy:

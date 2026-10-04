@@ -84,7 +84,7 @@ it; `./data` must be writable by that user). Its healthcheck runs
 ## Releases
 
 The `release` job in `.gitea/workflows/ci.yml` runs after every check job passes and pushes
-images to `gitea.lan.casadecox.org/foyer/foyer`:
+images to the Gitea container registry named by the workflow's `IMAGE`:
 
 | Trigger | Tags |
 | --- | --- |
@@ -92,14 +92,14 @@ images to `gitea.lan.casadecox.org/foyer/foyer`:
 | Push to `develop` | `:dev`, `:<7-char sha>` |
 
 It needs repo secrets `REGISTRY_USERNAME` and `REGISTRY_TOKEN` (a Gitea access token that can
-write packages for the `foyer` owner). The image logs its version at startup.
+write packages for the image's owner). The image logs its version at startup.
 
 ## Deploy
 
-`deploy/compose.example.yml` runs Foyer on docker-1 behind Traefik at `foyer.lan.casadecox.org`,
-reading docker-1 through a private, unpublished socket proxy. `deploy/socket-proxy.example.yml`
-is the read-only proxy for docker-2/3/4; firewall its port to docker-1 (see the file: ufw
-doesn't filter Docker's published ports).
+`deploy/compose.example.yml` runs Foyer behind Traefik, reading its own host through a private,
+unpublished socket proxy. `deploy/socket-proxy.example.yml` is the read-only proxy for each other
+host Foyer reads; firewall its port to Foyer's host (see the file: ufw doesn't filter Docker's
+published ports). Fill in the `[BRACKETED]` values in both first.
 
 ## Bookmarklet
 

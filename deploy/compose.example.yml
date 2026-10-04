@@ -1,13 +1,15 @@
-# Foyer on docker-1, routed by Traefik at foyer.lan.casadecox.org.
+# Foyer behind Traefik, reading this host's containers and, optionally, other hosts'.
 #
 # Foyer reads this host's containers through its own socket proxy on a private network (the
-# proxy is never published), and the other hosts through their proxies (socket-proxy.example.yml).
+# proxy is never published), and other hosts through their proxies (socket-proxy.example.yml).
+# Replace the [BRACKETED] values before starting it.
 #
 #   docker compose -f compose.example.yml up -d
 
 services:
   foyer:
-    image: gitea.lan.casadecox.org/foyer/foyer:latest   # or :dev / :<sha> for develop builds
+    # An image you built (docker build -t foyer .) or pushed to your own registry.
+    image: foyer:latest
     container_name: foyer
     restart: unless-stopped
     # Run as the host user that owns ./data. Set UID/GID in .env; both default to 1000.
@@ -17,14 +19,12 @@ services:
     depends_on:
       - socket-proxy
     environment:
-      FOYER_DOCKERHOSTS_DOCKER1_NAME: docker-1
-      FOYER_DOCKERHOSTS_DOCKER1_URI: http://socket-proxy:2375
-      FOYER_DOCKERHOSTS_DOCKER2_NAME: docker-2
-      FOYER_DOCKERHOSTS_DOCKER2_URI: http://172.16.78.22:2375
-      FOYER_DOCKERHOSTS_DOCKER3_NAME: docker-3
-      FOYER_DOCKERHOSTS_DOCKER3_URI: http://172.16.78.23:2375
-      FOYER_DOCKERHOSTS_DOCKER4_NAME: docker-4
-      FOYER_DOCKERHOSTS_DOCKER4_URI: http://172.16.78.37:2375
+      # One NAME/URI pair per Docker host; KEY is any run of letters and digits. Leave them all
+      # out to run Foyer as a plain bookmark manager.
+      FOYER_DOCKERHOSTS_LOCAL_NAME: local
+      FOYER_DOCKERHOSTS_LOCAL_URI: http://socket-proxy:2375
+      # FOYER_DOCKERHOSTS_SERVER2_NAME: server-2
+      # FOYER_DOCKERHOSTS_SERVER2_URI: http://[SERVER-2 LAN IP]:2375
       # FOYER_TITLE: "Foyer"            # name in the top bar and the browser tab
       # FOYER_SEARCH_URL: "https://www.google.com/search?q=%s"   # spotlight web search (default DuckDuckGo)
       # FOYER_HOMEPAGE_LABELS: "true"   # read homepage.* labels as a fallback (default true)
@@ -40,16 +40,16 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.foyer.entrypoints=http"
-      - "traefik.http.routers.foyer.rule=Host(`foyer.lan.casadecox.org`)"
+      - "traefik.http.routers.foyer.rule=Host(`[FOYER HOSTNAME]`)"
       - "traefik.http.middlewares.foyer-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.foyer.middlewares=foyer-https-redirect"
       - "traefik.http.routers.foyer-secure.entrypoints=https"
-      - "traefik.http.routers.foyer-secure.rule=Host(`foyer.lan.casadecox.org`)"
+      - "traefik.http.routers.foyer-secure.rule=Host(`[FOYER HOSTNAME]`)"
       - "traefik.http.routers.foyer-secure.tls=true"
       - "traefik.http.routers.foyer-secure.service=foyer"
-      # Foyer has no login of its own; Tinyauth's forwardAuth guards it. A bare name resolves in
-      # the docker provider; if tinyauth is defined in Traefik's file provider, use tinyauth@file.
-      - "traefik.http.routers.foyer-secure.middlewares=tinyauth"
+      # Foyer has no login of its own. Put an auth middleware in front of it, such as a
+      # forwardAuth one defined in Traefik.
+      # - "traefik.http.routers.foyer-secure.middlewares=[AUTH MIDDLEWARE]"
       - "traefik.http.services.foyer.loadbalancer.server.port=8080"
 
   # Read-only Docker API for Foyer only: containers and events, no writes. Not published.
@@ -67,6 +67,7 @@ services:
       - foyer-docker
 
 networks:
+  # Traefik's network; use whatever yours is called.
   proxy:
     external: true
   foyer-docker:
