@@ -1,4 +1,4 @@
-namespace Foyer.Core.Domain;
+namespace Foyer.Core.Entities;
 
 public sealed class Bookmark
 {
@@ -30,8 +30,7 @@ public sealed class Bookmark
     /// <summary>running, exited, paused, restarting, …</summary>
     public string? ContainerState { get; set; }
 
-    /// <summary>healthy, unhealthy, starting, or none.</summary>
-    public string? Health { get; set; }
+    public ContainerHealth Health { get; set; }
 
     /// <summary>False once the container is removed or unlabeled; the record is kept so it can come back in place.</summary>
     public bool IsPresent { get; set; } = true;

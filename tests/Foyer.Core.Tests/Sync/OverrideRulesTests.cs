@@ -1,4 +1,4 @@
-using Foyer.Core.Models;
+using Foyer.Core.Entities;
 using Foyer.Core.Sync;
 using Foyer.Core.Tests.Support;
 
@@ -23,7 +23,7 @@ public sealed class OverrideRulesTests
             LabelCategory: labelCategory,
             LabelTags: ["arr"],
             ContainerState: state,
-            Health: null,
+            Health: ContainerHealth.None,
             IsPresent: present,
             CategoryOverridden: categoryOverridden,
             TagsOverridden: tagsOverridden);

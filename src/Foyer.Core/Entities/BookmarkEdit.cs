@@ -1,4 +1,4 @@
-namespace Foyer.Core.Models;
+namespace Foyer.Core.Entities;
 
 /// <summary>
 /// An edit from either form. Docker bookmarks take only <see cref="Category"/> and

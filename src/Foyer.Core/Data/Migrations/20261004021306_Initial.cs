@@ -41,7 +41,7 @@ namespace Foyer.Core.Data.Migrations
                     DockerHost = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     ContainerName = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
                     ContainerState = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
-                    Health = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    Health = table.Column<string>(type: "TEXT", maxLength: 16, nullable: false),
                     IsPresent = table.Column<bool>(type: "INTEGER", nullable: false),
                     LabelCategory = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     LabelTags = table.Column<string>(type: "TEXT", nullable: false),

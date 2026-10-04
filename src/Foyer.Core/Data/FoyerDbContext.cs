@@ -1,4 +1,4 @@
-using Foyer.Core.Domain;
+using Foyer.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Foyer.Core.Data;

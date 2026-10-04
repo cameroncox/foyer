@@ -1,8 +1,7 @@
 using Foyer.Core.Data;
-using Foyer.Core.Domain;
+using Foyer.Core.Entities;
 using Foyer.Core.Events;
 using Foyer.Core.Exceptions;
-using Foyer.Core.Models;
 using Foyer.Core.Sync;
 using Microsoft.EntityFrameworkCore;
 

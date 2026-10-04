@@ -22,7 +22,11 @@ One container: a .NET 10 minimal API that also serves the React app.
 Requires the .NET 10 SDK and Node 22.
 
 ```bash
-dotnet watch --project src/Foyer.Api     # API on :5080
+docker compose -f dev/compose.dev.yml up -d   # socket proxy on :2375 + labeled test containers
+```
+
+```bash
+dotnet watch --project src/Foyer.Api     # API on :5080, syncing the "dev" host
 ```
 
 ```bash
@@ -38,6 +42,22 @@ dotnet format Foyer.slnx --verify-no-changes && dotnet build Foyer.slnx && dotne
 ```bash
 cd web && npm run lint && npm run format:check && npm run typecheck && npm test && npm run build
 ```
+
+Integration tests (`Category=Integration`) start socket proxies and containers with
+Testcontainers, so they need a local Docker socket. They run in CI as-is. To skip them:
+
+```bash
+dotnet test -- --filter-not-trait "Category=Integration"
+```
+
+With rootless podman instead of Docker, point Testcontainers and compose at the podman socket:
+
+```bash
+export DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock DOCKER_SOCKET=/run/user/$UID/podman/podman.sock TESTCONTAINERS_RYUK_DISABLED=true
+```
+
+Podman's Docker-compatible API leaves health out of container listings, so health dots only
+show against real Docker.
 
 Regenerate API types (API must be running): `cd web && npm run gen:api`.
 

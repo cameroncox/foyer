@@ -1,4 +1,4 @@
-namespace Foyer.Core.Models;
+namespace Foyer.Core.Entities;
 
 /// <summary>What a container's labels say its bookmark should be.</summary>
 /// <param name="Category">Category name, or null for Uncategorized.</param>

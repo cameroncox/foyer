@@ -1,4 +1,4 @@
-namespace Foyer.Core.Models;
+namespace Foyer.Core.Entities;
 
 /// <summary>The changes needed to bring one host's Docker bookmarks in line with its containers.</summary>
 /// <param name="Hides">Bookmarks whose container is gone or no longer labeled; they're kept but leave the page.</param>

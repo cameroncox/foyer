@@ -1,4 +1,4 @@
-namespace Foyer.Core.Models;
+namespace Foyer.Core.Entities;
 
 /// <summary>New values for a known Docker bookmark.</summary>
 /// <param name="MoveToCategory">Category to move it to (by name, created if missing), or null to stay put.</param>
@@ -12,7 +12,7 @@ public sealed record DockerBookmarkUpdate(
     string? LabelCategory,
     IReadOnlyList<string> LabelTags,
     string? ContainerState,
-    string? Health,
+    ContainerHealth Health,
     string? MoveToCategory,
     bool ClearOverrides = false,
     bool IsPresent = true);

@@ -1,4 +1,4 @@
-namespace Foyer.Core.Domain;
+namespace Foyer.Core.Entities;
 
 public enum BookmarkSource
 {

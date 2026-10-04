@@ -1,4 +1,4 @@
-using Foyer.Core.Models;
+using Foyer.Core.Entities;
 using Foyer.Core.Sync;
 using Foyer.Core.Tests.Support;
 
@@ -8,7 +8,7 @@ public sealed class BookmarkReconcilerTests
 {
     private static KnownDockerBookmark Known(int id, string container, bool present = true) =>
         new(id, container, container, $"https://{container}.lan", null, "Uncategorized", null, [],
-            "running", null, present, false, false);
+            "running", ContainerHealth.None, present, false, false);
 
     private static ReconcilePlan Reconcile(IEnumerable<ContainerInfo> containers, params KnownDockerBookmark[] known) =>
         BookmarkReconciler.ReconcileHost("docker-1", containers, known, homepageFallback: true);
@@ -16,12 +16,12 @@ public sealed class BookmarkReconcilerTests
     [Fact]
     public void NewLabeledContainer_IsCreated()
     {
-        var plan = Reconcile([Containers.Labeled("sonarr", "Media", state: "running", health: "healthy")]);
+        var plan = Reconcile([Containers.Labeled("sonarr", "Media", state: "running", health: ContainerHealth.Healthy)]);
 
         var create = plan.Creates.ShouldHaveSingleItem();
         create.ContainerName.ShouldBe("sonarr");
         create.Labels.Category.ShouldBe("Media");
-        create.Health.ShouldBe("healthy");
+        create.Health.ShouldBe(ContainerHealth.Healthy);
         plan.Host.ShouldBe("docker-1");
     }
 

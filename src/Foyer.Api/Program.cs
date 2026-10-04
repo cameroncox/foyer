@@ -4,6 +4,7 @@ using Foyer.Api.Events;
 using Foyer.Core;
 using Foyer.Core.Data;
 using Foyer.Core.Events;
+using Foyer.Core.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 if (args is ["--healthcheck", ..])
@@ -13,10 +14,21 @@ if (args is ["--healthcheck", ..])
 
 var builder = WebApplication.CreateBuilder(args);
 
-var dataDir = FoyerSettings.DataDir(builder.Configuration, builder.Environment);
-Directory.CreateDirectory(dataDir);
+FoyerSettings settings;
+try
+{
+    settings = FoyerSettings.Load(builder.Configuration, builder.Environment);
+}
+catch (FoyerConfigurationException ex)
+{
+    await Console.Error.WriteLineAsync(ex.Message);
+    return 1;
+}
 
-builder.Services.AddFoyerCore(dataDir);
+Directory.CreateDirectory(settings.DataDir);
+
+builder.Services.AddFoyerCore(settings.DataDir);
+builder.Services.AddFoyerDockerSync(settings.Hosts, settings.Sync);
 builder.Services.AddSingleton<IChangeNotifier, NullChangeNotifier>();
 builder.Services.AddOpenApi();
 

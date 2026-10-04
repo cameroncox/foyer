@@ -1,4 +1,4 @@
-namespace Foyer.Core.Domain;
+namespace Foyer.Core.Entities;
 
 /// <summary>A tag added in the UI. Label tags live on <see cref="Bookmark.LabelTags"/>.</summary>
 public sealed class BookmarkTag

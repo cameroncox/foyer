@@ -1,6 +1,5 @@
-using Foyer.Core.Domain;
+using Foyer.Core.Entities;
 using Foyer.Core.Exceptions;
-using Foyer.Core.Models;
 using Foyer.Core.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 

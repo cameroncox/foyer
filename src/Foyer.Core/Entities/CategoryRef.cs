@@ -1,4 +1,4 @@
-namespace Foyer.Core.Models;
+namespace Foyer.Core.Entities;
 
 /// <summary>
 /// Where a bookmark goes: an existing category, or a new one created on save

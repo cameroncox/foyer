@@ -1,6 +1,4 @@
-using Foyer.Core.Domain;
-
-namespace Foyer.Core.Models;
+namespace Foyer.Core.Entities;
 
 /// <summary>The stored state of a Docker bookmark that the sync rules compare against.</summary>
 public sealed record KnownDockerBookmark(
@@ -13,7 +11,7 @@ public sealed record KnownDockerBookmark(
     string? LabelCategory,
     IReadOnlyList<string> LabelTags,
     string? ContainerState,
-    string? Health,
+    ContainerHealth Health,
     bool IsPresent,
     bool CategoryOverridden,
     bool TagsOverridden)

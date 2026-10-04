@@ -1,0 +1,56 @@
+# Local Docker for `dotnet watch`: a socket proxy set up like docker-2/3/4, plus labeled
+# containers covering coxdev.*, homepage.* fallback, opt-out and health states.
+#   docker compose -f dev/compose.dev.yml up -d
+# The dev launch profile points FOYER_DOCKERHOSTS_DEV_URI at http://localhost:2375.
+
+name: foyer-dev
+
+services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      POST: 0
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    ports:
+      - 127.0.0.1:2375:2375
+
+  # Foyer's own labels.
+  whoami-media:
+    image: traefik/whoami:v1.11.0
+    labels:
+      coxdev.bookmark.enabled: "true"
+      coxdev.bookmark.name: Media Server
+      coxdev.bookmark.category: Media
+      coxdev.bookmark.url: http://localhost:8081
+      coxdev.bookmark.icon: jellyfin.svg
+      coxdev.bookmark.tags: media, streaming
+
+  # homepage.* only, picked up by the fallback.
+  whoami-homepage:
+    image: traefik/whoami:v1.11.0
+    labels:
+      homepage.name: Downloads
+      homepage.group: Downloads
+      homepage.href: http://localhost:8082
+      homepage.icon: mdi-download
+
+  # Opted out despite homepage labels.
+  whoami-hidden:
+    image: traefik/whoami:v1.11.0
+    labels:
+      coxdev.bookmark.enabled: "false"
+      homepage.href: http://localhost:8083
+
+  # Healthcheck that never passes, for the yellow dot.
+  whoami-unhealthy:
+    image: traefik/whoami:v1.11.0
+    labels:
+      coxdev.bookmark.enabled: "true"
+      coxdev.bookmark.url: http://localhost:8084
+    healthcheck:
+      test: ["CMD", "/whoami", "--nonexistent-flag"]
+      interval: 10s
+      retries: 1

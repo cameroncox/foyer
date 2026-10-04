@@ -1,4 +1,4 @@
-using Foyer.Core.Domain;
+using Foyer.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -18,7 +18,7 @@ internal sealed class BookmarkConfiguration : IEntityTypeConfiguration<Bookmark>
         builder.Property(b => b.DockerHost).HasMaxLength(100);
         builder.Property(b => b.ContainerName).HasMaxLength(255);
         builder.Property(b => b.ContainerState).HasMaxLength(32);
-        builder.Property(b => b.Health).HasMaxLength(32);
+        builder.Property(b => b.Health).HasConversion<string>().HasMaxLength(16);
         builder.Property(b => b.LabelCategory).HasMaxLength(100);
 
         // Docker bookmarks are keyed by host + container name, never container ID.

@@ -1,4 +1,4 @@
-namespace Foyer.Core.Models;
+namespace Foyer.Core.Entities;
 
 /// <summary>Fields of a manual bookmark, from the Add form or the manual Edit form.</summary>
 public sealed record ManualBookmarkInput(

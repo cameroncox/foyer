@@ -17,7 +17,7 @@ namespace Foyer.Core.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
-            modelBuilder.Entity("Foyer.Core.Domain.Bookmark", b =>
+            modelBuilder.Entity("Foyer.Core.Entities.Bookmark", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -45,7 +45,8 @@ namespace Foyer.Core.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Health")
-                        .HasMaxLength(32)
+                        .IsRequired()
+                        .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Icon")
@@ -94,7 +95,7 @@ namespace Foyer.Core.Data.Migrations
                     b.ToTable("Bookmarks");
                 });
 
-            modelBuilder.Entity("Foyer.Core.Domain.BookmarkTag", b =>
+            modelBuilder.Entity("Foyer.Core.Entities.BookmarkTag", b =>
                 {
                     b.Property<int>("BookmarkId")
                         .HasColumnType("INTEGER");
@@ -109,7 +110,7 @@ namespace Foyer.Core.Data.Migrations
                     b.ToTable("BookmarkTags");
                 });
 
-            modelBuilder.Entity("Foyer.Core.Domain.Category", b =>
+            modelBuilder.Entity("Foyer.Core.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -144,9 +145,9 @@ namespace Foyer.Core.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Foyer.Core.Domain.Bookmark", b =>
+            modelBuilder.Entity("Foyer.Core.Entities.Bookmark", b =>
                 {
-                    b.HasOne("Foyer.Core.Domain.Category", "Category")
+                    b.HasOne("Foyer.Core.Entities.Category", "Category")
                         .WithMany("Bookmarks")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -155,21 +156,21 @@ namespace Foyer.Core.Data.Migrations
                     b.Navigation("Category");
                 });
 
-            modelBuilder.Entity("Foyer.Core.Domain.BookmarkTag", b =>
+            modelBuilder.Entity("Foyer.Core.Entities.BookmarkTag", b =>
                 {
-                    b.HasOne("Foyer.Core.Domain.Bookmark", null)
+                    b.HasOne("Foyer.Core.Entities.Bookmark", null)
                         .WithMany("UserTags")
                         .HasForeignKey("BookmarkId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Foyer.Core.Domain.Bookmark", b =>
+            modelBuilder.Entity("Foyer.Core.Entities.Bookmark", b =>
                 {
                     b.Navigation("UserTags");
                 });
 
-            modelBuilder.Entity("Foyer.Core.Domain.Category", b =>
+            modelBuilder.Entity("Foyer.Core.Entities.Category", b =>
                 {
                     b.Navigation("Bookmarks");
                 });

@@ -1,28 +1,33 @@
 using Foyer.Core.Data;
-using Foyer.Core.Domain;
+using Foyer.Core.Entities;
 using Foyer.Core.Events;
-using Foyer.Core.Models;
 using Foyer.Core.Services;
 using Foyer.Core.Sync;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Foyer.Core.Tests.Support;
 
 /// <summary>
 /// A migrated in-memory SQLite database, so collation, indexes and the seed behave as in
-/// production. <see cref="Db"/> is the context services use; <see cref="Fresh"/> reads back
+/// production. Shared-cache, so each context gets its own connection and background services
+/// can use it while a test reads. <see cref="Db"/> is the context services use; <see cref="Fresh"/> reads back
 /// what was saved without the change tracker's copies.
 /// </summary>
 public sealed class TestDb : IAsyncDisposable
 {
     public static readonly DateTimeOffset Now = new(2026, 10, 3, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly SqliteConnection _connection;
+    private readonly string _connectionString =
+        $"Data Source=foyer-test-{Guid.NewGuid():n};Mode=Memory;Cache=Shared";
 
-    private TestDb(SqliteConnection connection)
+    // Keeps the in-memory database alive for the life of the test.
+    private readonly SqliteConnection _keepAlive;
+
+    private TestDb()
     {
-        _connection = connection;
+        _keepAlive = new SqliteConnection(_connectionString);
         Db = NewContext();
     }
 
@@ -57,14 +62,25 @@ public sealed class TestDb : IAsyncDisposable
 
     public static async Task<TestDb> CreateAsync()
     {
-        var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        var testDb = new TestDb(connection);
+        var testDb = new TestDb();
+        await testDb._keepAlive.OpenAsync();
         await testDb.Db.Database.MigrateAsync();
         return testDb;
     }
 
     public FoyerDbContext Fresh() => NewContext();
+
+    /// <summary>A container with the Core services over this database, for hosted services that open scopes.</summary>
+    public ServiceProvider BuildServices()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddDbContext<FoyerDbContext>(o => o.UseSqlite(_connectionString));
+        services.AddSingleton<IChangeNotifier>(Notifier);
+        services.AddSingleton<TimeProvider>(new FixedTimeProvider(Now));
+        services.AddScoped<DockerBookmarkStore>();
+        return services.BuildServiceProvider();
+    }
 
     public async Task<Category> AddCategoryAsync(string name) => await Categories.AddAsync(name);
 
@@ -113,9 +129,9 @@ public sealed class TestDb : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await Db.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _keepAlive.DisposeAsync();
     }
 
     private FoyerDbContext NewContext() =>
-        new(new DbContextOptionsBuilder<FoyerDbContext>().UseSqlite(_connection).Options);
+        new(new DbContextOptionsBuilder<FoyerDbContext>().UseSqlite(_connectionString).Options);
 }

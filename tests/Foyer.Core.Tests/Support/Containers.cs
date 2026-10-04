@@ -1,4 +1,4 @@
-using Foyer.Core.Models;
+using Foyer.Core.Entities;
 
 namespace Foyer.Core.Tests.Support;
 
@@ -9,7 +9,7 @@ public static class Containers
         string name,
         IReadOnlyDictionary<string, string> labels,
         string state = "running",
-        string? health = null) =>
+        ContainerHealth health = ContainerHealth.None) =>
         new(name, state, health, labels);
 
     /// <summary>A container opted in with coxdev.bookmark.* labels.</summary>
@@ -18,7 +18,7 @@ public static class Containers
         string? category = null,
         string? tags = null,
         string state = "running",
-        string? health = null,
+        ContainerHealth health = ContainerHealth.None,
         string? displayName = null)
     {
         var labels = new Dictionary<string, string>

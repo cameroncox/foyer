@@ -1,5 +1,5 @@
 using Foyer.Core.Data;
-using Foyer.Core.Domain;
+using Foyer.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Foyer.Core.Services;

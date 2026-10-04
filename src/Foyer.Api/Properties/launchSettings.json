@@ -8,7 +8,9 @@
       "applicationUrl": "http://localhost:5080",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "FOYER_DATA_DIR": "../../data"
+        "FOYER_DATA_DIR": "../../data",
+        "FOYER_DOCKERHOSTS_DEV_URI": "http://localhost:2375",
+        "FOYER_DOCKERHOSTS_DEV_NAME": "dev"
       }
     }
   }

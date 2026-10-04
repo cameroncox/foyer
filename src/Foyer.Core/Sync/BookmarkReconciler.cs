@@ -1,4 +1,4 @@
-using Foyer.Core.Models;
+using Foyer.Core.Entities;
 
 namespace Foyer.Core.Sync;
 
