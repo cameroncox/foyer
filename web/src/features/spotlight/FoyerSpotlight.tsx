@@ -1,6 +1,12 @@
 import { CloseButton, Kbd } from '@mantine/core'
 import { createSpotlightStore, Spotlight, type SpotlightStore } from '@mantine/spotlight'
-import { IconBrandDocker, IconFolder, IconHash, IconSearch } from '@tabler/icons-react'
+import {
+  IconBrandDocker,
+  IconFolder,
+  IconHash,
+  IconSearch,
+  IconWorldSearch,
+} from '@tabler/icons-react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 
 import type { DashboardCategory } from '../../api/client.ts'
@@ -17,6 +23,7 @@ import {
   scopeLabel,
   spotlightHits,
 } from './scope.ts'
+import { isBang, webSearchUrl } from './webSearch.ts'
 
 /** Highlights the action at `index` (-1 for none), the way the arrow keys do. */
 function select(store: SpotlightStore, index: number) {
@@ -43,7 +50,8 @@ interface Props {
 
 /**
  * Space (or ⌘K) opens a jump-to box. Empty, it offers Docker hosts, tags and categories to narrow
- * by; typing searches bookmarks (and those filters). Enter opens the highlighted bookmark.
+ * by; typing searches bookmarks (and those filters), with a DuckDuckGo search last. Enter opens
+ * the highlighted row. A query starting with a bang ("!g …") is only a web search.
  */
 export function FoyerSpotlight({ categories, enabled }: Props) {
   const [store] = useState(createSpotlightStore)
@@ -56,7 +64,11 @@ export function FoyerSpotlight({ categories, enabled }: Props) {
     [categories, scope, query],
   )
   const browsing = !scope && query.trim() === ''
-  const filters = scope || browsing ? [] : matchingFacets(all, query)
+  // A filter is a search of the bookmarks, so the web stays out of it.
+  const web = !scope && !browsing
+  const bang = web && isBang(query)
+  const filters = scope || browsing || bang ? [] : matchingFacets(all, query)
+  const shownHits = bang ? [] : hits
 
   // Typing already highlights the first row (Mantine does that on each query change); picking or
   // clearing a filter swaps the list without one, so do the same there.
@@ -126,9 +138,9 @@ export function FoyerSpotlight({ categories, enabled }: Props) {
           </>
         ) : (
           <>
-            {hits.length > 0 && (
+            {shownHits.length > 0 && (
               <Spotlight.ActionsGroup label="Bookmarks">
-                {hits.map(({ bookmark }) => (
+                {shownHits.map(({ bookmark }) => (
                   <Spotlight.Action
                     key={bookmark.id}
                     label={bookmark.name}
@@ -148,9 +160,18 @@ export function FoyerSpotlight({ categories, enabled }: Props) {
               </Spotlight.ActionsGroup>
             )}
             {facetGroup('Filters', filters)}
+            {web && (
+              <Spotlight.ActionsGroup label="Web">
+                <Spotlight.Action
+                  label={`Search DuckDuckGo for “${query.trim()}”`}
+                  leftSection={<IconWorldSearch size={18} stroke={1.75} />}
+                  onClick={() => navigation.open(webSearchUrl(query))}
+                />
+              </Spotlight.ActionsGroup>
+            )}
           </>
         )}
-        {!browsing && hits.length === 0 && filters.length === 0 && (
+        {!browsing && !web && hits.length === 0 && filters.length === 0 && (
           <Spotlight.Empty>Nothing matches “{query.trim()}”</Spotlight.Empty>
         )}
         {browsing && all.categories.length === 0 && (
@@ -159,7 +180,8 @@ export function FoyerSpotlight({ categories, enabled }: Props) {
       </Spotlight.ActionsList>
       <Spotlight.Footer className={classes.footer}>
         <Kbd size="xs">↑</Kbd>
-        <Kbd size="xs">↓</Kbd> move · <Kbd size="xs">Enter</Kbd> {browsing ? 'filter' : 'open'}
+        <Kbd size="xs">↓</Kbd> move · <Kbd size="xs">Enter</Kbd>{' '}
+        {browsing ? 'filter' : bang ? 'search' : 'open'}
         {scope && (
           <>
             {' '}

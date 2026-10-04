@@ -175,6 +175,33 @@ describe('spotlight', () => {
     expect(screen.getByRole('button', { name: /#router/ })).toBeInTheDocument()
   })
 
+  it('sends a bang straight to DuckDuckGo on Enter', async () => {
+    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
+    const box = await openSpotlight()
+
+    await userEvent.type(box, '!g current c# standard')
+    expect(screen.queryByText('Bookmarks')).toBeNull()
+    await userEvent.type(box, '{Enter}')
+
+    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=!g%20current%20c%23%20standard')
+  })
+
+  it('offers a web search after the bookmarks, and alone when nothing matches', async () => {
+    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
+    const box = await openSpotlight()
+
+    await userEvent.type(box, 'rad')
+    expect(screen.getByRole('button', { name: /Search DuckDuckGo for “rad”/ })).toBeInTheDocument()
+    await userEvent.type(box, '{Enter}')
+    expect(open).toHaveBeenLastCalledWith('https://radarr.lan')
+
+    await userEvent.keyboard(' ')
+    const again = await screen.findByRole('textbox', { name: 'Jump to a bookmark' })
+    await userEvent.clear(again)
+    await userEvent.type(again, 'zzz{Enter}')
+    expect(open).toHaveBeenLastCalledWith('https://duckduckgo.com/?q=zzz')
+  })
+
   it('stays shut while editing', async () => {
     stubDashboard(page)
     renderApp()
