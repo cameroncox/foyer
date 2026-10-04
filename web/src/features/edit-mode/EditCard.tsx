@@ -54,18 +54,23 @@ export function EditCard({ bookmark, editing, onEdit }: Props) {
         aria-label={`Drag ${bookmark.name}`}
         style={{ border: 0, background: 'transparent', padding: 0 }}
       >
-        <IconGripVertical size={18} />
+        <IconGripVertical size={16} />
       </button>
-      <BookmarkIcon bookmark={bookmark} />
+      <BookmarkIcon bookmark={bookmark} compact />
       <div className={classes.text}>
         <span className={classes.name}>{bookmark.name}</span>
-        <span className={classes.url}>{hostOf(bookmark.url)}</span>
+        {bookmark.hostTag ? (
+          <span>
+            <TagChip tag={bookmark.hostTag} host />
+          </span>
+        ) : (
+          <span className={classes.url}>{hostOf(bookmark.url)}</span>
+        )}
       </div>
-      {bookmark.hostTag && <TagChip tag={bookmark.hostTag} host />}
       <ActionIcon
         variant="subtle"
         color="gray"
-        size={36}
+        size={30}
         aria-label={
           bookmark.docker ? `Edit category and tags of ${bookmark.name}` : `Edit ${bookmark.name}`
         }
@@ -85,7 +90,7 @@ export function EditCard({ bookmark, editing, onEdit }: Props) {
             <ActionIcon
               variant="subtle"
               color="red"
-              size={36}
+              size={30}
               aria-label={`Delete ${bookmark.name}`}
               onClick={() => setConfirming((c) => !c)}
             >

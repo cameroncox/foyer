@@ -19,7 +19,7 @@ async function enterEditMode() {
 }
 
 describe('edit mode', () => {
-  it('shows the banner, handles, per-card actions, and Done', async () => {
+  it('swaps search for the editing hint, and shows handles, per-card actions and Done', async () => {
     stubApi(page)
     renderApp()
     await enterEditMode()
@@ -28,7 +28,7 @@ describe('edit mode', () => {
       true,
     )
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument()
-    expect(screen.getByRole('searchbox')).toBeDisabled()
+    expect(screen.queryByRole('searchbox')).toBeNull()
     expect(screen.getByRole('button', { name: 'Drag Plex' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete Plex' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Drag Sonarr' })).toBeInTheDocument()

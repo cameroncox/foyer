@@ -1,0 +1,13 @@
+/* Sits where the search box is while editing, so entering edit mode moves nothing below it. */
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 6px 14px;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-primary-color-light);
+  color: var(--mantine-primary-color-light-color);
+  font-size: 13px;
+  line-height: 1.35;
+}

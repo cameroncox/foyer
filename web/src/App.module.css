@@ -1,6 +1,16 @@
+/*
+ * Centered in the full page width, so opening the edit drawer never moves the left edge. The
+ * app shell already pads the right side by the drawer's width (--app-shell-aside-offset), so
+ * 100% here stops at the drawer; adding it back gives the page width to center in.
+ */
 .main {
-  max-width: var(--foyer-container);
-  margin: 0 auto;
+  --foyer-left: max(
+    0px,
+    calc((100% + var(--app-shell-aside-offset, 0px) - var(--foyer-container)) / 2)
+  );
+
+  margin-left: var(--foyer-left);
+  max-width: min(var(--foyer-container), calc(100% - var(--foyer-left)));
   padding: 32px var(--foyer-gutter);
 }
 

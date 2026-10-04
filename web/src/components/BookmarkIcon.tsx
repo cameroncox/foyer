@@ -8,15 +8,17 @@ const MONOCHROME = /^(mdi|si)-(?!.*-#[0-9a-f]{3,6}$)/i
 interface Props {
   bookmark: Bookmark
   statusLabel?: string | null
+  /** Smaller tile, for edit-mode cards. */
+  compact?: boolean
 }
 
 /** The resolved icon, or a letter tile when there's none or it fails to load, with the status dot. */
-export function BookmarkIcon({ bookmark, statusLabel }: Props) {
+export function BookmarkIcon({ bookmark, statusLabel, compact }: Props) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const showImage = bookmark.iconUrl && bookmark.iconUrl !== failedUrl
 
   return (
-    <div className={classes.tile}>
+    <div className={classes.tile} data-compact={compact || undefined}>
       {showImage ? (
         <img
           src={bookmark.iconUrl!}

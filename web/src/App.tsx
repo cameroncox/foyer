@@ -9,7 +9,6 @@ import classes from './App.module.css'
 import { Board } from './features/board/Board.tsx'
 import { FormPanel, type Panel } from './features/bookmark-form/FormPanel.tsx'
 import { CategoryDrawer } from './features/edit-mode/CategoryDrawer.tsx'
-import { EditBanner } from './features/edit-mode/EditBanner.tsx'
 import { EditBoard } from './features/edit-mode/EditBoard.tsx'
 import { EmptyState } from './features/empty-state/EmptyState.tsx'
 import { ImportModal } from './features/import/ImportModal.tsx'
@@ -19,7 +18,7 @@ import { TopBar } from './features/top-bar/TopBar.tsx'
 import { useLiveUpdates } from './hooks/useLiveUpdates.ts'
 import { navigation } from './navigation.ts'
 
-const DRAWER_WIDTH = 360
+const DRAWER_WIDTH = 300
 
 export default function App() {
   useLiveUpdates()
@@ -64,6 +63,9 @@ export default function App() {
 
   return (
     <AppShell
+      // No slide-in: the content's left edge is worked out from the drawer's width, and an
+      // animated padding would make it wobble while the drawer opens.
+      transitionDuration={0}
       header={{ height: 80 }}
       aside={{
         width: DRAWER_WIDTH,
@@ -97,7 +99,6 @@ export default function App() {
       )}
 
       <AppShell.Main>
-        {editing && <EditBanner />}
         <div className={classes.main}>
           {dashboard.isPending ? (
             <Center py="xl">

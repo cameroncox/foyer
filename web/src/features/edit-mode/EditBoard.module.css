@@ -30,7 +30,8 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* Same column width as the board, so entering edit mode doesn't re-flow the cards. */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
   min-height: 62px;
   border-radius: 12px;

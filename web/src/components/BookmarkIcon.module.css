@@ -11,10 +11,21 @@
   color: var(--foyer-muted);
 }
 
+.tile[data-compact] {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
 .image {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+.tile[data-compact] .image {
+  width: 22px;
+  height: 22px;
 }
 
 /* mdi-/si- icons without a color are black; lighten them on dark tiles. */
