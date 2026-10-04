@@ -1,5 +1,9 @@
 /* Surfaces from the wireframes. Status dots never follow the accent and are the same in both schemes. */
 :root {
+  /* Page column shared by the top bar and the content. */
+  --foyer-container: 1336px;
+  --foyer-gutter: 32px;
+
   --foyer-page: #f3f3f0;
   --foyer-card: #ffffff;
   --foyer-border: #d4d4ce;
@@ -28,4 +32,10 @@
 body {
   background: var(--foyer-page);
   color: var(--foyer-text);
+}
+
+@media (max-width: 48em) {
+  :root {
+    --foyer-gutter: 16px;
+  }
 }

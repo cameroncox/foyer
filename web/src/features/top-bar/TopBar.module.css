@@ -1,46 +1,54 @@
 .bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 32px;
   height: 100%;
   background: var(--foyer-card);
   border-bottom: 1px solid var(--foyer-border);
 }
 
+/* One row in the page column. Brand and actions share the leftover width equally, so the
+   search box stays centered on the page whatever the actions hold. */
+.inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  max-width: var(--foyer-container);
+  margin: 0 auto;
+  padding: 0 var(--foyer-gutter);
+}
+
 .brand {
+  flex: 1 1 0;
+  min-width: max-content;
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  min-width: 120px;
 }
 
 .search {
-  flex: 1 1 320px;
+  flex: 0 1 640px;
   min-width: 0;
-  max-width: 640px;
-  margin: 0 auto;
 }
 
 .actions {
+  flex: 1 1 0;
+  min-width: max-content;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 120px;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 @media (max-width: 48em) {
-  .bar {
-    padding: 0 16px;
+  .inner {
+    gap: 10px;
   }
 
-  .bar {
-    gap: 10px;
+  .search {
+    flex: 1 1 auto;
   }
 
   .brand,
   .actions {
-    min-width: 0;
+    flex: none;
   }
 }

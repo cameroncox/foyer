@@ -1,11 +1,12 @@
 .main {
-  max-width: 1200px;
+  max-width: var(--foyer-container);
   margin: 0 auto;
-  padding: 32px;
+  padding: 32px var(--foyer-gutter);
 }
 
 @media (max-width: 48em) {
   .main {
-    padding: 20px 16px;
+    padding-top: 20px;
+    padding-bottom: 20px;
   }
 }
