@@ -11,6 +11,7 @@ export default defineConfig({
       '/api': api,
       '/openapi': api,
       '/healthz': api,
+      '/manifest.webmanifest': api,
     },
   },
   test: {

@@ -69,6 +69,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapSettings();
+app.MapManifest();
 app.MapDashboard();
 app.MapBookmarks();
 app.MapCategories();

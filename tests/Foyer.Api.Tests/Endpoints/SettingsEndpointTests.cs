@@ -40,4 +40,19 @@ public sealed class SettingsEndpointTests
                 .ShouldBe("https://www.google.com/search?q=%s");
         }
     }
+
+    [Fact]
+    public async Task Manifest_IsNamedAfterFoyerTitle()
+    {
+        await using var app = new FoyerApiFactory(settings: new Dictionary<string, string> { ["FOYER_TITLE"] = "Casa de Cox" });
+        using var client = app.CreateClient();
+
+        var response = await client.GetAsync("/manifest.webmanifest");
+
+        response.Content.Headers.ContentType!.MediaType.ShouldBe("application/manifest+json");
+        var manifest = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        manifest.GetProperty("name").GetString().ShouldBe("Casa de Cox");
+        manifest.GetProperty("display").GetString().ShouldBe("standalone");
+        manifest.GetProperty("icons").GetArrayLength().ShouldBe(3);
+    }
 }
