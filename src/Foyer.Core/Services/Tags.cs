@@ -10,7 +10,15 @@ internal static class Tags
     /// Trims, drops a leading '#', removes empties and case-insensitive duplicates
     /// (first spelling wins), keeping the given order.
     /// </summary>
-    public static List<string> Normalize(IEnumerable<string>? tags)
+    public static List<string> Normalize(IEnumerable<string>? tags) => Normalize(tags, truncate: false);
+
+    /// <summary>
+    /// As <see cref="Normalize(IEnumerable{string}?)"/>, but cuts overlong tags instead of rejecting
+    /// them. For labels, where one bad value mustn't stop a sync.
+    /// </summary>
+    public static List<string> NormalizeLenient(IEnumerable<string>? tags) => Normalize(tags, truncate: true);
+
+    private static List<string> Normalize(IEnumerable<string>? tags, bool truncate)
     {
         var result = new List<string>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -23,7 +31,11 @@ internal static class Tags
                 continue;
             }
 
-            if (tag.Length > MaxLength)
+            if (tag.Length > MaxLength && truncate)
+            {
+                tag = tag[..MaxLength].TrimEnd();
+            }
+            else if (tag.Length > MaxLength)
             {
                 throw new InvalidInputException($"Tag '{tag}' is longer than {MaxLength} characters.");
             }

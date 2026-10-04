@@ -19,6 +19,7 @@ internal sealed class BookmarkConfiguration : IEntityTypeConfiguration<Bookmark>
         builder.Property(b => b.ContainerName).HasMaxLength(255);
         builder.Property(b => b.ContainerState).HasMaxLength(32);
         builder.Property(b => b.Health).HasMaxLength(32);
+        builder.Property(b => b.LabelCategory).HasMaxLength(100);
 
         // Docker bookmarks are keyed by host + container name, never container ID.
         builder.HasIndex(b => new { b.DockerHost, b.ContainerName })

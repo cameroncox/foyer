@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CategoryService>();
         services.AddScoped<BookmarkService>();
         services.AddScoped<OrderingService>();
+        services.AddScoped<DockerBookmarkStore>();
         return services;
     }
 }

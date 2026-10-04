@@ -54,6 +54,10 @@ namespace Foyer.Core.Data.Migrations
                     b.Property<bool>("IsPresent")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("LabelCategory")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.PrimitiveCollection<string>("LabelTags")
                         .IsRequired()
                         .HasColumnType("TEXT");

@@ -36,6 +36,9 @@ public sealed class Bookmark
     /// <summary>False once the container is removed or unlabeled; the record is kept so it can come back in place.</summary>
     public bool IsPresent { get; set; } = true;
 
+    /// <summary>Category named by labels (null = Uncategorized), kept so Reset to labels works offline.</summary>
+    public string? LabelCategory { get; set; }
+
     /// <summary>From coxdev.bookmark.tags.</summary>
     public List<string> LabelTags { get; set; } = [];
 

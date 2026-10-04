@@ -3,6 +3,7 @@ using Foyer.Core.Domain;
 using Foyer.Core.Events;
 using Foyer.Core.Models;
 using Foyer.Core.Services;
+using Foyer.Core.Sync;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,25 @@ public sealed class TestDb : IAsyncDisposable
     public BookmarkService Bookmarks => new(Db, Notifier, new FixedTimeProvider(Now));
 
     public OrderingService Ordering => new(Db, Notifier);
+
+    public DockerBookmarkStore Docker => new(Db, Notifier, new FixedTimeProvider(Now));
+
+    /// <summary>One sync pass for a host, as the Docker sync service runs it.</summary>
+    public async Task<bool> SyncAsync(string host, params ContainerInfo[] containers)
+    {
+        var known = await Docker.LoadKnownAsync(host);
+        var plan = BookmarkReconciler.ReconcileHost(host, containers, known, homepageFallback: true);
+        return await Docker.ApplyAsync(plan);
+    }
+
+    public async Task<Bookmark> DockerBookmarkAsync(string container, string host = "docker-1")
+    {
+        await using var db = Fresh();
+        return await db.Bookmarks
+            .Include(b => b.Category)
+            .Include(b => b.UserTags)
+            .SingleAsync(b => b.DockerHost == host && b.ContainerName == container);
+    }
 
     public static async Task<TestDb> CreateAsync()
     {

@@ -43,6 +43,7 @@ namespace Foyer.Core.Data.Migrations
                     ContainerState = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
                     Health = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
                     IsPresent = table.Column<bool>(type: "INTEGER", nullable: false),
+                    LabelCategory = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     LabelTags = table.Column<string>(type: "TEXT", nullable: false),
                     CategoryOverridden = table.Column<bool>(type: "INTEGER", nullable: false),
                     TagsOverridden = table.Column<bool>(type: "INTEGER", nullable: false),

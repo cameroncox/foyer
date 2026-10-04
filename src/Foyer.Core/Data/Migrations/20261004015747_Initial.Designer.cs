@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Foyer.Core.Data.Migrations
 {
     [DbContext(typeof(FoyerDbContext))]
-    [Migration("20261004014814_Initial")]
+    [Migration("20261004015747_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -56,6 +56,10 @@ namespace Foyer.Core.Data.Migrations
 
                     b.Property<bool>("IsPresent")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("LabelCategory")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.PrimitiveCollection<string>("LabelTags")
                         .IsRequired()
