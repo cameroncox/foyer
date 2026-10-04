@@ -147,7 +147,7 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
     private static void SetUserTags(Bookmark bookmark, List<string> tags)
     {
         bookmark.UserTags.Clear();
-        bookmark.UserTags.AddRange(tags.Select(t => new BookmarkTag { Tag = t }));
+        bookmark.UserTags.AddRange(tags.Select((t, i) => new BookmarkTag { Tag = t, Position = i }));
     }
 
     private static string ValidateName(string? name)

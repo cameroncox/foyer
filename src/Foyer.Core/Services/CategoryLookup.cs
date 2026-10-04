@@ -12,6 +12,7 @@ internal sealed class CategoryLookup(FoyerDbContext db)
 {
     private readonly Dictionary<string, Category> _byName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<Category, int> _nextSortOrder = [];
+    private int? _nextCategorySortOrder;
 
     /// <summary>The category named <paramref name="name"/>, or Uncategorized for null.</summary>
     public async Task<Category> GetOrCreateAsync(string? name, CancellationToken ct)
@@ -23,8 +24,12 @@ internal sealed class CategoryLookup(FoyerDbContext db)
         }
 
         // Name uses NOCASE collation, so == here is case-insensitive in SQLite.
-        var category = await db.Categories.SingleOrDefaultAsync(c => c.Name == name, ct)
-            ?? await CategoryService.StageNewAsync(db, name, ct);
+        var category = await db.Categories.SingleOrDefaultAsync(c => c.Name == name, ct);
+        if (category is null)
+        {
+            _nextCategorySortOrder ??= await CategoryService.NextCategorySortOrderAsync(db, ct);
+            category = await CategoryService.StageNewAsync(db, name, ct, _nextCategorySortOrder++);
+        }
 
         _byName[name] = category;
         return category;

@@ -99,6 +99,18 @@ public sealed class BookmarkServiceTests
     }
 
     [Fact]
+    public async Task Tags_KeepTheOrderEntered_NotAlphabetical()
+    {
+        await using var t = await TestDb.CreateAsync();
+        var bookmark = await t.Bookmarks.CreateManualAsync(Input(tags: ["zeta", "alpha", "mid"]));
+
+        await t.Bookmarks.UpdateAsync(bookmark.Id, new BookmarkEdit(
+            new CategoryRef(), ["mid", "zeta", "beta"], "Router", "https://router.lan"));
+
+        (await t.Bookmarks.GetAsync(bookmark.Id)).Tags.ShouldBe(["mid", "zeta", "beta"]);
+    }
+
+    [Fact]
     public async Task CreateManual_BlankIconIsStoredAsNull()
     {
         await using var t = await TestDb.CreateAsync();

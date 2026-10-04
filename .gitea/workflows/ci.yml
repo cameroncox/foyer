@@ -48,3 +48,37 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  # The web app's API types are generated from the running API's OpenAPI document; fail if the
+  # committed copy is stale (run `npm run gen:api` with the API up, and commit the result).
+  api-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Start API
+        run: |
+          dotnet build src/Foyer.Api -c Release
+          FOYER_DATA_DIR="$RUNNER_TEMP/foyer" ASPNETCORE_URLS=http://localhost:5080 \
+            dotnet run --project src/Foyer.Api -c Release --no-build --no-launch-profile &
+          for i in $(seq 1 60); do curl -sf http://localhost:5080/healthz && exit 0; sleep 1; done
+          echo "API didn't start" && exit 1
+
+      - name: Regenerate API types
+        working-directory: web
+        run: npm ci && npm run gen:api
+
+      - name: Check schema.d.ts is current
+        run: git diff --exit-code web/src/api/schema.d.ts

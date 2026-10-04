@@ -81,8 +81,15 @@ public sealed class CategoryService(FoyerDbContext db, IChangeNotifier notifier)
         notifier.BookmarksChanged();
     }
 
-    /// <summary>Adds a category at the end of the drawer without saving.</summary>
-    internal static async Task<Category> StageNewAsync(FoyerDbContext db, string name, CancellationToken ct)
+    /// <summary>
+    /// Adds a category at the end of the drawer without saving. Callers staging several in one
+    /// batch pass <paramref name="sortOrder"/>, since unsaved categories don't count toward the end.
+    /// </summary>
+    internal static async Task<Category> StageNewAsync(
+        FoyerDbContext db,
+        string name,
+        CancellationToken ct,
+        int? sortOrder = null)
     {
         name = ValidateName(name);
         if (await NameTakenAsync(db, name, exceptId: null, ct))
@@ -90,13 +97,18 @@ public sealed class CategoryService(FoyerDbContext db, IChangeNotifier notifier)
             throw new RuleViolationException($"A category named '{name}' already exists.");
         }
 
+        var category = new Category { Name = name, SortOrder = sortOrder ?? await NextCategorySortOrderAsync(db, ct) };
+        db.Categories.Add(category);
+        return category;
+    }
+
+    internal static async Task<int> NextCategorySortOrderAsync(FoyerDbContext db, CancellationToken ct)
+    {
         var last = await db.Categories
             .Where(c => !c.IsSystem)
             .MaxAsync(c => (int?)c.SortOrder, ct);
 
-        var category = new Category { Name = name, SortOrder = (last ?? -1) + 1 };
-        db.Categories.Add(category);
-        return category;
+        return (last ?? -1) + 1;
     }
 
     internal static async Task<int> NextBookmarkSortOrderAsync(FoyerDbContext db, int categoryId, CancellationToken ct)

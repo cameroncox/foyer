@@ -105,6 +105,9 @@ namespace Foyer.Core.Data.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("BookmarkId", "Tag");
 
                     b.ToTable("BookmarkTags");

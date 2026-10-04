@@ -30,6 +30,20 @@ public sealed class DockerBookmarkStoreTests
     }
 
     [Fact]
+    public async Task Sync_NewCategories_GoToTheEndOfTheDrawer_InOrder()
+    {
+        await using var t = await TestDb.CreateAsync();
+        await t.AddCategoryAsync("Existing");
+
+        await t.SyncAsync("docker-1",
+            Containers.Labeled("a", "Media"), Containers.Labeled("b", "Network"), Containers.Labeled("c", "Tools"));
+
+        (await t.Categories.ListAsync()).Select(c => c.Name)
+            .ShouldBe(["Existing", "Media", "Network", "Tools", Category.UncategorizedName]);
+        (await t.Categories.ListAsync()).Select(c => c.SortOrder).Take(4).ShouldBe([0, 1, 2, 3]);
+    }
+
+    [Fact]
     public async Task Sync_LabelCategory_MatchesExistingCategoryIgnoringCase()
     {
         await using var t = await TestDb.CreateAsync();

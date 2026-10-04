@@ -36,5 +36,6 @@ internal sealed class BookmarkConfiguration : IEntityTypeConfiguration<Bookmark>
         builder.Ignore(b => b.Tags);
         builder.Ignore(b => b.HostTag);
         builder.Ignore(b => b.IsDocker);
+        builder.Ignore(b => b.Status);
     }
 }

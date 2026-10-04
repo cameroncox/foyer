@@ -1,5 +1,7 @@
 using Foyer.Core.Data;
 using Foyer.Core.Docker;
+using Foyer.Core.Icons;
+using Foyer.Core.Import;
 using Foyer.Core.Services;
 using Foyer.Core.Sync;
 using Microsoft.EntityFrameworkCore;
@@ -20,10 +22,19 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<FoyerDbContext>(o => o.UseSqlite($"Data Source={dbPath}"));
 
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(IconOptions.For(dataDir));
+        services.AddSingleton<IconService>();
+        services.AddHttpClient(IconService.HttpClientName, c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(10);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("Foyer/1.0");
+        });
         services.AddScoped<CategoryService>();
         services.AddScoped<BookmarkService>();
         services.AddScoped<OrderingService>();
         services.AddScoped<DockerBookmarkStore>();
+        services.AddScoped<DashboardService>();
+        services.AddScoped<ImportService>();
         return services;
     }
 

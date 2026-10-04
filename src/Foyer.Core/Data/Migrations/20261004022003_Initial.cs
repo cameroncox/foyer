@@ -65,7 +65,8 @@ namespace Foyer.Core.Data.Migrations
                 columns: table => new
                 {
                     BookmarkId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Tag = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false, collation: "NOCASE")
+                    Tag = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false, collation: "NOCASE"),
+                    Position = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {

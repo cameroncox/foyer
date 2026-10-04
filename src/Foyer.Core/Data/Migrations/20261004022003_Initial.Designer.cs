@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Foyer.Core.Data.Migrations
 {
     [DbContext(typeof(FoyerDbContext))]
-    [Migration("20261004021306_Initial")]
+    [Migration("20261004022003_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -107,6 +107,9 @@ namespace Foyer.Core.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("BookmarkId", "Tag");
 

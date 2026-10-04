@@ -59,7 +59,18 @@ public sealed class Bookmark
     public IReadOnlyList<string> Tags =>
         IsDocker && !TagsOverridden
             ? LabelTags
-            : UserTags.Select(t => t.Tag).ToList();
+            : UserTags.OrderBy(t => t.Position).Select(t => t.Tag).ToList();
+
+    /// <summary>The card's status dot, or null for a manual bookmark.</summary>
+    public DockerStatus? Status => !IsDocker
+        ? null
+        : ContainerState switch
+        {
+            "running" when Health is ContainerHealth.Starting or ContainerHealth.Unhealthy => DockerStatus.Warning,
+            "running" => DockerStatus.Running,
+            "paused" or "restarting" => DockerStatus.Warning,
+            _ => DockerStatus.Stopped,
+        };
 
     /// <summary>The automatic host tag (shown as #docker-4); computed, never stored as a tag.</summary>
     public string? HostTag => IsDocker ? DockerHost : null;
