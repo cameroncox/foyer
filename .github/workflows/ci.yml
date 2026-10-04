@@ -7,8 +7,10 @@ on:
     tags: ['v*']
   pull_request:
 
-# No dependency caching: the runner's cache server isn't reachable from job networks, so each
-# cache restore/save waited ~4.5 minutes to time out, while cold restores take seconds.
+# Runs on Gitea Actions (which reads .github/workflows when there's no .gitea/workflows) and on
+# GitHub Actions. No dependency caching: the Gitea runner's cache server isn't reachable from job
+# networks, so each cache restore/save waited ~4.5 minutes to time out, while cold restores take
+# seconds.
 jobs:
   dotnet:
     runs-on: ubuntu-latest
@@ -91,8 +93,8 @@ jobs:
   #   tag vX.Y.Z      -> :X.Y.Z and :latest (latest tracks the last version tag, never develop)
   #   push to develop -> :dev and :<7-char sha> (any earlier develop build can be rolled back to)
   # Pushes to <vars.REGISTRY>/<owner>/<repo>: set the REGISTRY repo variable to the Gitea
-  # registry's host. Logs in with repo secrets REGISTRY_USERNAME / REGISTRY_TOKEN (a Gitea token
-  # that can write packages for the repo's owner).
+  # registry's host (a Gitea instance, or ghcr.io). Logs in with repo secrets REGISTRY_USERNAME /
+  # REGISTRY_TOKEN (a token that can write packages for the repo's owner).
   release:
     needs: [dotnet, web, api-contract]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
@@ -107,7 +109,7 @@ jobs:
         id: tags
         run: |
           if [[ -z "$REGISTRY" ]]; then
-            echo "::error::Set the REGISTRY repo variable (Settings > Actions > Variables) to the registry's host."
+            echo "::error::Set the REGISTRY Actions repo variable to the registry's host."
             exit 1
           fi
           IMAGE="$REGISTRY/${GITHUB_REPOSITORY,,}"

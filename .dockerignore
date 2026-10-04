@@ -3,7 +3,7 @@
 **/node_modules/
 web/dist/
 .git/
-.gitea/
+.github/
 .idea/
 .vs/
 .vscode/

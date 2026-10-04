@@ -16,7 +16,7 @@ One container: a .NET 10 minimal API that also serves the React app.
 | `tests/` | xUnit v3 + Shouldly |
 | `web/` | React + Vite + TypeScript + Mantine |
 | `docs/` | Spec, project layout plan and wireframes |
-| `.gitea/workflows` | CI |
+| `.github/workflows` | CI (Gitea Actions and GitHub Actions) |
 
 ## Local dev
 
@@ -83,17 +83,18 @@ it; `./data` must be writable by that user). Its healthcheck runs
 
 ## Releases
 
-The `release` job in `.gitea/workflows/ci.yml` runs after every check job passes and pushes
-images to `<REGISTRY>/<owner>/<repo>`, where `REGISTRY` is a repo variable (Settings › Actions ›
-Variables) holding the Gitea registry's host:
+The `release` job in `.github/workflows/ci.yml` runs after every check job passes and pushes
+images to `<REGISTRY>/<owner>/<repo>`, where `REGISTRY` is an Actions repo variable holding the
+registry's host, such as your Gitea instance or `ghcr.io`:
 
 | Trigger | Tags |
 | --- | --- |
 | Tag `vX.Y.Z` | `:X.Y.Z`, `:latest` |
 | Push to `develop` | `:dev`, `:<7-char sha>` |
 
-It needs repo secrets `REGISTRY_USERNAME` and `REGISTRY_TOKEN` (a Gitea access token that can
-write packages for the image's owner). The image logs its version at startup.
+It needs repo secrets `REGISTRY_USERNAME` and `REGISTRY_TOKEN`: an access token that can write
+packages for the image's owner (on GitHub, a personal access token with `write:packages`). The
+image logs its version at startup.
 
 ## Deploy
 
