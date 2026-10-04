@@ -1,0 +1,46 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 32px;
+  height: 100%;
+  background: var(--foyer-card);
+  border-bottom: 1px solid var(--foyer-border);
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  min-width: 120px;
+}
+
+.search {
+  flex: 1 1 320px;
+  min-width: 0;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 48em) {
+  .bar {
+    padding: 0 16px;
+  }
+
+  .bar {
+    gap: 10px;
+  }
+
+  .brand,
+  .actions {
+    min-width: 0;
+  }
+}

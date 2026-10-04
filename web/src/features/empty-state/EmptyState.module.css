@@ -1,0 +1,36 @@
+.box {
+  max-width: 520px;
+  margin: 32px auto 0;
+  padding: 48px 32px;
+  background: var(--foyer-card);
+  border: 1px dashed var(--foyer-border-strong);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--foyer-tile);
+  color: var(--foyer-muted);
+  display: grid;
+  place-items: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--foyer-muted);
+}

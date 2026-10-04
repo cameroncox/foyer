@@ -1,0 +1,31 @@
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.line {
+  font-size: 14px;
+  color: var(--foyer-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--foyer-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.none {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--foyer-muted);
+  font-size: 15px;
+}

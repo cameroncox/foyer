@@ -1,0 +1,23 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--foyer-muted);
+  border: 1px solid var(--foyer-border);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.chip[data-host] {
+  background: var(--foyer-chip);
+  border-color: var(--foyer-chip);
+}
+
+.chip[data-highlighted] {
+  color: var(--mantine-primary-color-light-color);
+  background: var(--mantine-primary-color-light);
+  border-color: var(--mantine-primary-color-light-hover);
+}

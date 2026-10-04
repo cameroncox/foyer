@@ -1,0 +1,31 @@
+/* Surfaces from the wireframes. Status dots never follow the accent and are the same in both schemes. */
+:root {
+  --foyer-page: #f3f3f0;
+  --foyer-card: #ffffff;
+  --foyer-border: #d4d4ce;
+  --foyer-border-strong: #c4c4be;
+  --foyer-text: #1c1c1a;
+  --foyer-muted: #5c5c57;
+  --foyer-tile: #e7e7e2;
+  --foyer-chip: #edede9;
+
+  --foyer-status-running: #1e9e52;
+  --foyer-status-warning: #e0a100;
+  --foyer-status-stopped: #d23b2e;
+}
+
+[data-mantine-color-scheme='dark'] {
+  --foyer-page: var(--mantine-color-dark-8);
+  --foyer-card: var(--mantine-color-dark-7);
+  --foyer-border: var(--mantine-color-dark-4);
+  --foyer-border-strong: var(--mantine-color-dark-3);
+  --foyer-text: var(--mantine-color-dark-0);
+  --foyer-muted: var(--mantine-color-dark-1);
+  --foyer-tile: var(--mantine-color-dark-5);
+  --foyer-chip: var(--mantine-color-dark-6);
+}
+
+body {
+  background: var(--foyer-page);
+  color: var(--foyer-text);
+}

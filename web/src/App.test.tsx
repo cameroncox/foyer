@@ -1,10 +1,176 @@
-import { screen } from '@testing-library/react'
-import { expect, it } from 'vitest'
+import { act, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 
-import App from './App.tsx'
-import { render } from './test/render.tsx'
+import type { Dashboard } from './api/client.ts'
+import { navigation } from './navigation.ts'
+import { bookmark, category, dockerBookmark, FakeEventSource, stubDashboard } from './test/fakes.ts'
+import { renderApp } from './test/render.tsx'
 
-it('renders the Foyer title', () => {
-  render(<App />)
-  expect(screen.getByRole('heading', { name: 'Foyer' })).toBeInTheDocument()
+const uncategorized = (...bookmarks: ReturnType<typeof bookmark>[]) =>
+  category('Uncategorized', bookmarks, true)
+
+function page(): Dashboard {
+  return {
+    categories: [
+      category('Media', [
+        dockerBookmark('Jellyfin', 'running'),
+        dockerBookmark('Sonarr', 'warning', { tags: ['arr'] }),
+        dockerBookmark('Prowlarr', 'stopped'),
+      ]),
+      category('Empty', []),
+      category('Infrastructure', [
+        bookmark('OPNsense', { tags: ['router'], url: 'https://opnsense.lan' }),
+      ]),
+      uncategorized(bookmark('Radarr', { tags: ['arr'], url: 'https://radarr.lan' })),
+    ],
+  }
+}
+
+describe('App', () => {
+  it('shows the empty state when there are no bookmarks', async () => {
+    stubDashboard(() => ({ categories: [uncategorized()] }))
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'No bookmarks yet' })).toBeInTheDocument()
+    expect(screen.getByText('coxdev.bookmark.enabled=true')).toBeInTheDocument()
+  })
+
+  it('shows categories in order, hiding empty ones', async () => {
+    stubDashboard(page)
+    renderApp()
+
+    await screen.findByRole('heading', { name: /Media/ })
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    expect(headings).toEqual(['Media3', 'Infrastructure1', 'Uncategorized1'])
+  })
+
+  it('marks Docker cards with a status dot and host tag, and dims stopped ones', async () => {
+    stubDashboard(page)
+    renderApp()
+
+    const sonarr = (await screen.findByText('Sonarr')).closest('a')!
+    expect(within(sonarr).getByRole('img', { name: 'Unhealthy' })).toBeInTheDocument()
+    expect(within(sonarr).getByText('#docker-4')).toBeInTheDocument()
+    expect(within(sonarr).getByText('#arr')).toBeInTheDocument()
+    expect(screen.getByText('Prowlarr').closest('a')).toHaveAttribute('data-stopped')
+    expect(screen.getByText('OPNsense').closest('a')).not.toHaveAttribute('data-stopped')
+    expect(within(screen.getByText('OPNsense').closest('a')!).queryByRole('img')).toBeNull()
+  })
+
+  it('links each card to its URL', async () => {
+    stubDashboard(page)
+    renderApp()
+
+    expect((await screen.findByText('OPNsense')).closest('a')).toHaveAttribute(
+      'href',
+      'https://opnsense.lan',
+    )
+  })
+
+  it('shows an error with a retry when the dashboard fails', async () => {
+    let fail = true
+    stubDashboard(() =>
+      fail ? new Response(JSON.stringify({ detail: 'boom' }), { status: 500 }) : page(),
+    )
+    renderApp()
+
+    expect(await screen.findByText("Couldn't load bookmarks")).toBeInTheDocument()
+    fail = false
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText('OPNsense')).toBeInTheDocument()
+  })
+})
+
+describe('search', () => {
+  it('replaces categories with one flat grid and a count line', async () => {
+    stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search bookmarks' }), 'arr')
+
+    expect(screen.getByRole('status')).toHaveTextContent('3 bookmarks match “arr”')
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    const cards = screen.getAllByRole('link').map((a) => a.textContent)
+    expect(cards[0]).toContain('Sonarr')
+    expect(screen.getAllByRole('link')[0]).toHaveAttribute('data-first')
+  })
+
+  it('says when nothing matches', async () => {
+    stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+
+    await userEvent.type(screen.getByRole('searchbox'), 'xyz')
+
+    expect(screen.getByText('Nothing matches “xyz”')).toBeInTheDocument()
+  })
+
+  it('opens the first result on Enter and clears on Esc', async () => {
+    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
+    stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+    const box = screen.getByRole('searchbox')
+
+    await userEvent.type(box, 'router{Enter}')
+    expect(open).toHaveBeenCalledWith('https://opnsense.lan')
+
+    await userEvent.type(box, '{Escape}')
+    expect(box).toHaveValue('')
+    expect(screen.getByRole('heading', { name: /Media/ })).toBeInTheDocument()
+  })
+
+  it('focuses the search box on /', async () => {
+    stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+
+    await userEvent.keyboard('/')
+
+    expect(screen.getByRole('searchbox')).toHaveFocus()
+  })
+})
+
+describe('live updates', () => {
+  it('refetches when bookmarks change', async () => {
+    let current = page()
+    stubDashboard(() => current)
+    renderApp()
+    await screen.findByText('OPNsense')
+
+    current = { categories: [uncategorized(bookmark('Brand new'))] }
+    act(() => FakeEventSource.latest.emit('bookmarks-changed'))
+
+    expect(await screen.findByText('Brand new')).toBeInTheDocument()
+    expect(FakeEventSource.latest.url).toBe('/api/events')
+  })
+
+  it('refetches after a reconnect, but not on the first connect', async () => {
+    const fetch = stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+    const before = fetch.mock.calls.length
+
+    act(() => FakeEventSource.latest.emit('connected'))
+    expect(fetch.mock.calls.length).toBe(before)
+
+    act(() => FakeEventSource.latest.emit('connected'))
+    await waitFor(() => expect(fetch.mock.calls.length).toBe(before + 1))
+  })
+})
+
+describe('theme', () => {
+  it('saves the chosen accent on this device', async () => {
+    stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Theme and accent color' }))
+    await userEvent.click(await screen.findByRole('radio', { name: 'Violet' }))
+
+    expect(localStorage.getItem('foyer-accent')).toBe('violet')
+    expect(screen.getByRole('radio', { name: 'Violet' })).toHaveAttribute('aria-checked', 'true')
+  })
 })
