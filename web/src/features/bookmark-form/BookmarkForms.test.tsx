@@ -196,6 +196,19 @@ describe('Edit bookmark', () => {
     })
   })
 
+  it('opens a Docker bookmark on its heading, leaving the category list shut', async () => {
+    stubApi(page)
+    renderApp()
+    await editMode()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit category and tags of Sonarr' }))
+    const form = within(dialog())
+
+    await waitFor(() => expect(form.getByRole('heading', { name: 'Edit bookmark' })).toHaveFocus())
+    expect(form.getByRole('combobox', { name: 'Category' })).not.toHaveFocus()
+    expect(screen.queryByRole('listbox')).toBeNull()
+  })
+
   it('resets an overridden Docker bookmark to its labels', async () => {
     const overridden = page()
     overridden.categories[0].bookmarks[0].docker!.tagsOverridden = true

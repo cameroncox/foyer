@@ -50,7 +50,8 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
     <form onSubmit={save} noValidate>
       <Stack gap="md">
         <Stack gap={4}>
-          <Title order={2} size="h4" id="bookmark-form-title">
+          {/* Opening focuses the heading; landing on Category would pop its list open. */}
+          <Title order={2} size="h4" id="bookmark-form-title" tabIndex={-1} data-autofocus>
             Edit bookmark
           </Title>
           <Text size="sm" c="dimmed" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
