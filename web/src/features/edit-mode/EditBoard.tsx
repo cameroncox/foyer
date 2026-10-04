@@ -1,11 +1,16 @@
 import {
-  closestCorners,
+  closestCenter,
+  type CollisionDetection,
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
+  getFirstCollision,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
+  rectIntersection,
+  type UniqueIdentifier,
   useDroppable,
   useSensor,
   useSensors,
@@ -16,7 +21,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Bookmark, Dashboard } from '../../api/client.ts'
 import { type Containers, findContainer, moveAcross, toContainers } from './containers.ts'
@@ -54,6 +59,47 @@ export function EditBoard({ dashboard, editingId, onEdit, onMove }: Props) {
     [dashboard],
   )
   const containers = dragging ?? toContainers(dashboard)
+  const containersRef = useRef(containers)
+  const lastOverId = useRef<UniqueIdentifier | null>(null)
+  const recentlyMoved = useRef(false)
+
+  useEffect(() => {
+    containersRef.current = containers
+    // A card that just changed category settles in its new place before targets are re-judged.
+    requestAnimationFrame(() => {
+      recentlyMoved.current = false
+    })
+  }, [containers])
+
+  /**
+   * The category under the pointer wins, then the nearest card inside it decides the slot.
+   * Corner-based detection let a nearby card beat an empty category (a new one, typically),
+   * so cards landed in the category above or snapped back. Between categories, and right after
+   * a move, the last target holds, so layout shifts can't bounce the card around.
+   */
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    const pointerHits = pointerWithin(args)
+    const hits = pointerHits.length > 0 ? pointerHits : rectIntersection(args)
+    let overId = getFirstCollision(hits, 'id')
+
+    if (overId != null) {
+      const category = parseCategoryKey(overId)
+      const ids = category === undefined ? [] : (containersRef.current[category] ?? [])
+      if (ids.length > 0) {
+        const inCategory = args.droppableContainers.filter((c) => ids.includes(Number(c.id)))
+        overId = closestCenter({ ...args, droppableContainers: inCategory })[0]?.id ?? overId
+      }
+
+      lastOverId.current = overId
+      return [{ id: overId }]
+    }
+
+    if (recentlyMoved.current) {
+      lastOverId.current = args.active.id
+    }
+
+    return lastOverId.current == null ? [] : [{ id: lastOverId.current }]
+  }, [])
 
   const onDragStart = ({ active }: DragStartEvent) => {
     const start = toContainers(dashboard)
@@ -76,7 +122,11 @@ export function EditBoard({ dashboard, editingId, onEdit, onMove }: Props) {
       parseCategoryKey(over.id) === undefined
         ? dragging[overCategory].indexOf(Number(over.id))
         : undefined
-    setDragging(moveAcross(dragging, Number(active.id), overCategory, overIndex))
+    const moved = moveAcross(dragging, Number(active.id), overCategory, overIndex)
+    if (moved !== dragging) {
+      recentlyMoved.current = true
+      setDragging(moved)
+    }
   }
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
@@ -84,6 +134,7 @@ export function EditBoard({ dashboard, editingId, onEdit, onMove }: Props) {
     const start = from.current
     setDragging(null)
     from.current = null
+    lastOverId.current = null
     if (!over || !working || !start) {
       return
     }
@@ -104,11 +155,14 @@ export function EditBoard({ dashboard, editingId, onEdit, onMove }: Props) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setDragging(null)}
+      onDragCancel={() => {
+        setDragging(null)
+        lastOverId.current = null
+      }}
     >
       <div className={classes.board}>
         {dashboard.categories.map((category) => (
