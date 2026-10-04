@@ -1,7 +1,10 @@
 name: ci
 
+# Branch pushes other than develop are checked through their PRs; v* tags re-check before release.
 on:
   push:
+    branches: [develop]
+    tags: ['v*']
   pull_request:
 
 # No dependency caching: the runner's cache server isn't reachable from job networks, so each
