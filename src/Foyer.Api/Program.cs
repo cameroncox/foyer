@@ -31,6 +31,7 @@ catch (FoyerConfigurationException ex)
 
 Directory.CreateDirectory(settings.DataDir);
 
+builder.Services.AddSingleton(settings);
 builder.Services.AddFoyerCore(settings.DataDir);
 builder.Services.AddFoyerDockerSync(settings.Hosts, settings.Sync);
 builder.Services.AddSingleton<ChangeBroadcaster>();
@@ -67,6 +68,7 @@ app.MapOpenApi();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.MapSettings();
 app.MapDashboard();
 app.MapBookmarks();
 app.MapCategories();

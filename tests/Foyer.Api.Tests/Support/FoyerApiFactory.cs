@@ -7,8 +7,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Foyer.Api.Tests.Support;
 
-/// <summary>Runs the API against a throwaway data directory, with no Docker hosts.</summary>
-public sealed class FoyerApiFactory(Action<IServiceCollection>? configure = null) : WebApplicationFactory<Program>
+/// <summary>
+/// Runs the API against a throwaway data directory, with no Docker hosts, plus any FOYER_*
+/// <paramref name="settings"/>.
+/// </summary>
+public sealed class FoyerApiFactory(
+    Action<IServiceCollection>? configure = null,
+    IReadOnlyDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
 {
     private readonly string _dataDir = Path.Combine(Path.GetTempPath(), "foyer-tests", Guid.NewGuid().ToString("n"));
 
@@ -17,6 +22,11 @@ public sealed class FoyerApiFactory(Action<IServiceCollection>? configure = null
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("FOYER_DATA_DIR", _dataDir);
+        foreach (var (key, value) in settings ?? new Dictionary<string, string>())
+        {
+            builder.UseSetting(key, value);
+        }
+
         if (configure is not null)
         {
             builder.ConfigureTestServices(configure);

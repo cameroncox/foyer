@@ -21,12 +21,14 @@ import { FoyerSpotlight } from './features/spotlight/FoyerSpotlight.tsx'
 import { TopBar } from './features/top-bar/TopBar.tsx'
 import { useLiveUpdates } from './hooks/useLiveUpdates.ts'
 import { usePhone } from './hooks/usePhone.ts'
+import { useDocumentTitle } from './hooks/useTitle.ts'
 import { navigation } from './navigation.ts'
 
 const DRAWER_WIDTH = 300
 
 export default function App() {
   useLiveUpdates()
+  useDocumentTitle()
   const dashboard = useDashboard()
   const reorderBookmarks = useReorderBookmarks()
   const reorderCategories = useReorderCategories()

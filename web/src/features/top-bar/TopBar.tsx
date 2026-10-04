@@ -4,6 +4,7 @@ import { IconCheck, IconList, IconMenu2, IconPencil, IconSearch } from '@tabler/
 import { useRef, useState } from 'react'
 
 import { usePhone } from '../../hooks/usePhone.ts'
+import { useTitle } from '../../hooks/useTitle.ts'
 import { EditHint } from '../edit-mode/EditHint.tsx'
 import { PhoneMenu } from './PhoneMenu.tsx'
 import { ThemeMenu } from './ThemeMenu.tsx'
@@ -31,13 +32,14 @@ export function TopBar(props: Props) {
 }
 
 function DesktopTopBar({ query, onQueryChange, onSubmit, editing, onEditingChange }: Props) {
+  const title = useTitle()
   const input = useRef<HTMLInputElement>(null)
   useHotkeys([['/', () => !editing && input.current?.focus()]])
 
   return (
     <div className={classes.bar}>
       <div className={classes.inner}>
-        <div className={classes.brand}>Foyer</div>
+        <div className={classes.brand}>{title}</div>
         {editing ? (
           <EditHint className={classes.search} />
         ) : (
@@ -106,6 +108,7 @@ function PhoneTopBar({
   onOpenCategories,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const title = useTitle()
 
   if (editing) {
     return (
@@ -124,7 +127,7 @@ function PhoneTopBar({
   return (
     <div className={classes.bar}>
       <div className={classes.inner}>
-        <div className={classes.brand}>Foyer</div>
+        <div className={classes.brand}>{title}</div>
         {/* A search made in the menu stays visible here, so it's clear the page is filtered. */}
         {query && (
           <TextInput
@@ -152,6 +155,7 @@ function PhoneTopBar({
         </ActionIcon>
       </div>
       <PhoneMenu
+        title={title}
         opened={menuOpen}
         onClose={() => setMenuOpen(false)}
         query={query}

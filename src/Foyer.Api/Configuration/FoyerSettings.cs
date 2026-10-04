@@ -5,10 +5,14 @@ using Foyer.Core.Sync;
 namespace Foyer.Api.Configuration;
 
 /// <summary>Everything Foyer reads from FOYER_* environment variables.</summary>
-internal sealed record FoyerSettings(string DataDir, IReadOnlyList<DockerHostOptions> Hosts, SyncOptions Sync)
+/// <param name="Title">The name in the top bar and the browser tab: FOYER_TITLE, else "Foyer".</param>
+internal sealed record FoyerSettings(string DataDir, IReadOnlyList<DockerHostOptions> Hosts, SyncOptions Sync, string Title)
 {
     public const string DataDirKey = "FOYER_DATA_DIR";
     public const string DefaultDataDir = "/data";
+    public const string TitleKey = "FOYER_TITLE";
+    public const string DefaultTitle = "Foyer";
+    public const int MaxTitleLength = 60;
 
     /// <summary>
     /// Reads the settings, reporting every problem at once. Relative data dirs resolve against
@@ -23,6 +27,12 @@ internal sealed record FoyerSettings(string DataDir, IReadOnlyList<DockerHostOpt
         var problems = new List<string>();
         var hosts = Collect(() => DockerHostsParser.Parse(settings), problems) ?? [];
         var sync = Collect(() => SyncOptions.Parse(settings), problems) ?? SyncOptions.Default;
+        var title = config[TitleKey]?.Trim() is { Length: > 0 } t ? t : DefaultTitle;
+        if (title.Length > MaxTitleLength)
+        {
+            problems.Add($"{TitleKey} is {title.Length} characters; keep it to {MaxTitleLength}.");
+        }
+
         if (problems.Count > 0)
         {
             throw new FoyerConfigurationException(problems);
@@ -30,7 +40,7 @@ internal sealed record FoyerSettings(string DataDir, IReadOnlyList<DockerHostOpt
 
         var dir = config[DataDirKey];
         var dataDir = string.IsNullOrWhiteSpace(dir) ? DefaultDataDir : Path.GetFullPath(dir, env.ContentRootPath);
-        return new FoyerSettings(dataDir, hosts, sync);
+        return new FoyerSettings(dataDir, hosts, sync, title);
     }
 
     private static T? Collect<T>(Func<T> parse, List<string> problems)

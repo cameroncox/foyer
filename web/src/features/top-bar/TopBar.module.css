@@ -18,7 +18,11 @@
 
 .brand {
   flex: 1 1 0;
-  min-width: max-content;
+  /* A long FOYER_TITLE gives way before the search box does. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -59,7 +63,7 @@
   }
 
   .brand:has(+ .search) {
-    flex: none;
+    flex: 0 1 auto;
   }
 }
 

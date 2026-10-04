@@ -5,6 +5,7 @@ import { ThemePicker } from './ThemePicker.tsx'
 import classes from './TopBar.module.css'
 
 interface Props {
+  title: string
   opened: boolean
   onClose: () => void
   query: string
@@ -14,7 +15,7 @@ interface Props {
 }
 
 /** The phone menu, dropping from the top: search, Add bookmark and Edit page, then the theme. */
-export function PhoneMenu({ opened, onClose, query, onQueryChange, onAdd, onEdit }: Props) {
+export function PhoneMenu({ title, opened, onClose, query, onQueryChange, onAdd, onEdit }: Props) {
   const then = (action: () => void) => () => {
     onClose()
     action()
@@ -34,7 +35,7 @@ export function PhoneMenu({ opened, onClose, query, onQueryChange, onAdd, onEdit
       classNames={{ content: classes.menu }}
     >
       <div className={classes.menuHeader}>
-        <div className={classes.brand}>Foyer</div>
+        <div className={classes.brand}>{title}</div>
         <ActionIcon
           variant="light"
           color="gray"

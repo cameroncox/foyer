@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Instance settings from FOYER_* variables that the page shows, such as the title */
+        get: operations["GetSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dashboard": {
         parameters: {
             query?: never;
@@ -365,6 +382,9 @@ export interface components {
         ReorderCategoriesRequest: {
             categoryIds: number[];
         };
+        SettingsResponse: {
+            title: string;
+        };
         SseItemOfstring: {
             data?: null | string;
             eventType?: null | string;
@@ -389,6 +409,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    GetSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+        };
+    };
     GetDashboard: {
         parameters: {
             query?: never;

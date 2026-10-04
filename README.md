@@ -112,3 +112,4 @@ Environment variables only. See the spec for the full list; the essentials:
 | `FOYER_RESYNC_INTERVAL` | `300` | Seconds between full resyncs |
 | `FOYER_POLL_INTERVAL` | `30` | Poll interval when a host's event stream is down |
 | `FOYER_DATA_DIR` | `/data` | SQLite file and icon cache |
+| `FOYER_TITLE` | `Foyer` | Name in the top bar and the browser tab (up to 60 characters) |
