@@ -80,7 +80,8 @@ The runtime image is chiseled and non-root; its healthcheck runs
 
 ## Releases
 
-`.gitea/workflows/release.yml` pushes images to `gitea.lan.casadecox.org/foyer/foyer`:
+The `release` job in `.gitea/workflows/ci.yml` runs after every check job passes and pushes
+images to `gitea.lan.casadecox.org/foyer/foyer`:
 
 | Trigger | Tags |
 | --- | --- |
