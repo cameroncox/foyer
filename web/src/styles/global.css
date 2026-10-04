@@ -34,6 +34,20 @@ body {
   color: var(--foyer-text);
 }
 
+/* No double-tap zoom, so quick taps (picking cards while selecting) stay taps. Pinch still zooms. */
+html {
+  touch-action: manipulation;
+}
+
+/* iOS zooms the page into any field under 16px when it's focused, and a home-screen app has no
+   address bar to zoom back out from. Touch screens get 16px fields; desktops keep the 14px. */
+@media (pointer: coarse) {
+  .mantine-Input-input,
+  .mantine-PillsInputField-field {
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 48em) {
   :root {
     --foyer-gutter: 16px;
