@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/node_modules/
+web/dist/
+.git/
+.gitea/
+.idea/
+.vs/
+.vscode/
+tests/
+docs/
+deploy/
+dev/
+*.md
+Dockerfile
+.dockerignore
