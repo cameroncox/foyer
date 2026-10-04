@@ -15,3 +15,12 @@ export function TagChip({ tag, host }: Props) {
     </span>
   )
 }
+
+/** Stands in for the tags a card leaves off; the full list is in the card's tooltip. */
+export function TagOverflowChip({ count }: { count: number }) {
+  return (
+    <span className={classes.chip} data-overflow>
+      +{count}
+    </span>
+  )
+}

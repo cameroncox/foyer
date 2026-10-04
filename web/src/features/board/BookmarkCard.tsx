@@ -2,7 +2,7 @@ import { Tooltip } from '@mantine/core'
 
 import type { Bookmark } from '../../api/client.ts'
 import { BookmarkIcon } from '../../components/BookmarkIcon.tsx'
-import { TagChip } from '../../components/TagChip.tsx'
+import { TagChip, TagOverflowChip } from '../../components/TagChip.tsx'
 import classes from './BookmarkCard.module.css'
 import { statusLabel } from './status.ts'
 
@@ -12,13 +12,27 @@ interface Props {
   tile?: boolean
 }
 
-/** Icon, then name with tags under it. The URL and status show on hover; clicking opens the URL in a new tab. */
+/** Chips shown before the rest collapse into a "+N" chip; the host tag counts as one. */
+const VISIBLE_TAGS = 2
+
+/**
+ * Icon, then name with up to two tags under it. The URL, status and any tags left off show on
+ * hover; clicking opens the URL in a new tab.
+ */
 export function BookmarkCard({ bookmark, tile }: Props) {
   const status = statusLabel(bookmark)
+  const chips = [
+    ...(bookmark.hostTag ? [{ tag: bookmark.hostTag, host: true }] : []),
+    ...bookmark.tags.map((tag) => ({ tag, host: false })),
+  ]
+  const shown = chips.slice(0, VISIBLE_TAGS)
+  const hidden = chips.length - shown.length
 
   return (
     <Tooltip
-      label={status ? `${bookmark.url} · ${status}` : bookmark.url}
+      label={[bookmark.url, status, hidden ? chips.map((c) => `#${c.tag}`).join(' ') : null]
+        .filter(Boolean)
+        .join(' · ')}
       openDelay={500}
       position="bottom-start"
       withinPortal
@@ -34,12 +48,12 @@ export function BookmarkCard({ bookmark, tile }: Props) {
         <BookmarkIcon bookmark={bookmark} statusLabel={status} />
         <div className={classes.body}>
           <span className={classes.name}>{bookmark.name}</span>
-          {(bookmark.hostTag || bookmark.tags.length > 0) && (
+          {chips.length > 0 && (
             <div className={classes.tags}>
-              {bookmark.hostTag && <TagChip tag={bookmark.hostTag} host />}
-              {bookmark.tags.map((tag) => (
-                <TagChip key={tag} tag={tag} />
+              {shown.map((c) => (
+                <TagChip key={`${c.host}:${c.tag}`} tag={c.tag} host={c.host} />
               ))}
+              {hidden > 0 && <TagOverflowChip count={hidden} />}
             </div>
           )}
         </div>
