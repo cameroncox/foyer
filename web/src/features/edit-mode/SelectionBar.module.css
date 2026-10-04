@@ -1,0 +1,22 @@
+.bar {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 0px) + 8px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.bar[data-selecting] {
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--foyer-border-strong);
+  border-radius: 12px;
+  background: var(--foyer-card);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.count {
+  margin-right: auto;
+}

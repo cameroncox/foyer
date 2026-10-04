@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bookmarks/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete several manual bookmarks at once; any Docker bookmark among them answers 409 and nothing is deleted */
+        post: operations["DeleteBookmarks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bookmarks/{id}/reset": {
         parameters: {
             query?: never;
@@ -278,6 +295,13 @@ export interface components {
         };
         DashboardResponse: {
             categories: components["schemas"]["DashboardCategoryResponse"][];
+        };
+        DeleteBookmarksRequest: {
+            bookmarkIds: number[];
+        };
+        DeleteBookmarksResponse: {
+            /** Format: int32 */
+            deleted: number;
         };
         DockerInfoResponse: {
             host: string;
@@ -520,6 +544,48 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteBookmarks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteBookmarksRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteBookmarksResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

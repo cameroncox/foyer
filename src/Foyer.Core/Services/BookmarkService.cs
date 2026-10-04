@@ -77,6 +77,36 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
         notifier.BookmarksChanged();
     }
 
+    /// <summary>
+    /// Deletes several manual bookmarks at once, all or nothing: a Docker bookmark among them
+    /// refuses the lot. Ids that no longer exist (deleted in another tab, say) are skipped.
+    /// Returns how many were deleted.
+    /// </summary>
+    public async Task<int> DeleteManyAsync(IReadOnlyCollection<int> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            throw new InvalidInputException("Pick at least one bookmark to delete.");
+        }
+
+        var bookmarks = await db.Bookmarks.Where(b => ids.Contains(b.Id)).ToListAsync(ct);
+        if (bookmarks.Any(b => b.IsDocker))
+        {
+            throw new RuleViolationException(
+                "Docker bookmarks can't be deleted; remove the container or its labels instead.");
+        }
+
+        if (bookmarks.Count == 0)
+        {
+            return 0;
+        }
+
+        db.Bookmarks.RemoveRange(bookmarks);
+        await db.SaveChangesAsync(ct);
+        notifier.BookmarksChanged();
+        return bookmarks.Count;
+    }
+
     private async Task ApplyManualEditAsync(Bookmark bookmark, BookmarkEdit edit, CancellationToken ct)
     {
         bookmark.Name = ValidateName(edit.Name);

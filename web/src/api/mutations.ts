@@ -42,6 +42,15 @@ export function useDeleteBookmark() {
   })
 }
 
+export function useDeleteBookmarks() {
+  const onSettled = useInvalidateDashboard()
+  return useMutation({
+    mutationFn: async (bookmarkIds: number[]) =>
+      unwrap(await api.POST('/api/bookmarks/delete', { body: { bookmarkIds } })),
+    onSettled,
+  })
+}
+
 export function useResetBookmark() {
   const onSettled = useInvalidateDashboard()
   return useMutation({

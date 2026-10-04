@@ -103,6 +103,32 @@ public sealed class BookmarkEndpointTests
     }
 
     [Fact]
+    public async Task DeleteMany_ReturnsTheCount()
+    {
+        await using var app = new FoyerApiFactory();
+        using var client = app.CreateClient();
+        var router = await (await client.PostJsonAsync("/api/bookmarks", Router())).ReadAsync<BookmarkResponse>();
+
+        var response = await client.PostJsonAsync("/api/bookmarks/delete", new DeleteBookmarksRequest([router.Id, 999]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.ReadAsync<DeleteBookmarksResponse>()).Deleted.ShouldBe(1);
+        (await client.DeleteAsync($"/api/bookmarks/{router.Id}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteMany_WithDocker_Is409()
+    {
+        await using var app = new FoyerApiFactory();
+        var id = (await app.SeedDockerAsync("docker-1", TestApi.Labeled("sonarr")))[0];
+        using var client = app.CreateClient();
+
+        var response = await client.PostJsonAsync("/api/bookmarks/delete", new DeleteBookmarksRequest([id]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
     public async Task Reset_RestoresLabelCategoryAndTags()
     {
         await using var app = new FoyerApiFactory();

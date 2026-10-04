@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ActionIcon, Button, Group, Popover, Text } from '@mantine/core'
+import { ActionIcon, Button, Checkbox, Group, Popover, Text } from '@mantine/core'
 import { IconGripVertical, IconPencil, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 
@@ -10,19 +10,23 @@ import { BookmarkIcon } from '../../components/BookmarkIcon.tsx'
 import { TagChip } from '../../components/TagChip.tsx'
 import { usePhone } from '../../hooks/usePhone.ts'
 import classes from './EditCard.module.css'
+import { isSelectable } from './selection.ts'
 
 interface Props {
   bookmark: Bookmark
   editing: boolean
   onEdit: () => void
+  /** Set while picking bookmarks to delete: the card is a checkbox instead. */
+  selection?: { selected: boolean; onToggle: () => void }
 }
 
 /**
  * A card in edit mode: drag handle (the only place a drag starts), then pencil and delete for
  * manual cards, or the host tag and pencil for Docker cards. On a phone the whole card opens
  * the form (Delete lives there) and the handle moves to the right, where a thumb finds it.
+ * While selecting, the whole card toggles its checkbox; Docker cards can't be picked.
  */
-export function EditCard({ bookmark, editing, onEdit }: Props) {
+export function EditCard({ bookmark, editing, onEdit, selection }: Props) {
   const {
     attributes,
     listeners,
@@ -78,8 +82,23 @@ export function EditCard({ bookmark, editing, onEdit }: Props) {
       data-editing={editing || undefined}
       data-dragging={isDragging || undefined}
       data-stopped={bookmark.status === 'stopped' || undefined}
+      data-selected={selection?.selected || undefined}
     >
-      {phone ? (
+      {selection ? (
+        <label
+          className={classes.pick}
+          data-disabled={!isSelectable(bookmark) || undefined}
+          title={isSelectable(bookmark) ? undefined : 'Docker bookmarks follow their container'}
+        >
+          <Checkbox
+            aria-label={`Select ${bookmark.name}`}
+            checked={selection.selected}
+            disabled={!isSelectable(bookmark)}
+            onChange={selection.onToggle}
+          />
+          {body}
+        </label>
+      ) : phone ? (
         <>
           <button type="button" className={classes.body} aria-label={editLabel} onClick={onEdit}>
             {body}

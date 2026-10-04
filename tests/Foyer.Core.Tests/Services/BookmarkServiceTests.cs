@@ -258,4 +258,43 @@ public sealed class BookmarkServiceTests
 
         await Should.ThrowAsync<NotFoundException>(() => t.Bookmarks.DeleteAsync(5));
     }
+
+    [Fact]
+    public async Task DeleteMany_RemovesThem_SkipsMissingIds_NotifiesOnce()
+    {
+        await using var t = await TestDb.CreateAsync();
+        var router = await t.AddManualAsync("Router", tags: "network");
+        var nas = await t.AddManualAsync("NAS");
+        await t.AddManualAsync("Printer");
+        var notified = t.Notifier.Count;
+
+        var deleted = await t.Bookmarks.DeleteManyAsync([router.Id, nas.Id, 999]);
+
+        deleted.ShouldBe(2);
+        (await t.NamesInAsync(Category.UncategorizedId)).ShouldBe(["Printer"]);
+        t.Notifier.Count.ShouldBe(notified + 1);
+    }
+
+    [Fact]
+    public async Task DeleteMany_WithADockerBookmark_DeletesNothing()
+    {
+        await using var t = await TestDb.CreateAsync();
+        var router = await t.AddManualAsync("Router");
+        var sonarr = await t.AddDockerAsync("sonarr");
+        var notified = t.Notifier.Count;
+
+        await Should.ThrowAsync<RuleViolationException>(() => t.Bookmarks.DeleteManyAsync([router.Id, sonarr.Id]));
+
+        await using var db = t.Fresh();
+        (await db.Bookmarks.CountAsync(TestContext.Current.CancellationToken)).ShouldBe(2);
+        t.Notifier.Count.ShouldBe(notified);
+    }
+
+    [Fact]
+    public async Task DeleteMany_Empty_ThrowsInvalidInput()
+    {
+        await using var t = await TestDb.CreateAsync();
+
+        await Should.ThrowAsync<InvalidInputException>(() => t.Bookmarks.DeleteManyAsync([]));
+    }
 }

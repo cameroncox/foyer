@@ -21,6 +21,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
+import { Checkbox } from '@mantine/core'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Bookmark, Dashboard } from '../../api/client.ts'
@@ -28,6 +29,7 @@ import { type Containers, findContainer, moveAcross, toContainers } from './cont
 import classes from './EditBoard.module.css'
 import { EditCard } from './EditCard.tsx'
 import { moveBookmark, type Slot } from './reorder.ts'
+import { allState, toggleAll, toggleOne } from './selection.ts'
 
 const categoryKey = (id: number) => `category-${id}`
 const parseCategoryKey = (key: string | number) =>
@@ -41,13 +43,20 @@ interface Props {
   onEdit: (bookmark: Bookmark) => void
   /** Saves a drop: the dashboard as it should look, and the request for the target category. */
   onMove: (result: NonNullable<ReturnType<typeof moveBookmark>>) => void
+  /** Set while picking bookmarks to delete: cards become checkboxes and nothing drags. */
+  selection?: Selection
+}
+
+export interface Selection {
+  selected: ReadonlySet<number>
+  onChange: (selected: Set<number>) => void
 }
 
 /**
  * Every category (empty ones too, as drop targets) as a grid of draggable cards. A card moves
  * between categories as it's dragged over them; the drop sends one reorder request.
  */
-export function EditBoard({ dashboard, editingId, onEdit, onMove }: Props) {
+export function EditBoard({ dashboard, editingId, onEdit, onMove, selection }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -173,6 +182,7 @@ export function EditBoard({ dashboard, editingId, onEdit, onMove }: Props) {
             bookmarks={(containers[category.id] ?? []).map((id) => byId.get(id)!).filter(Boolean)}
             editingId={editingId}
             onEdit={onEdit}
+            selection={selection}
           />
         ))}
       </div>
@@ -186,14 +196,25 @@ interface CategoryGridProps {
   bookmarks: Bookmark[]
   editingId?: number
   onEdit: (bookmark: Bookmark) => void
+  selection?: Selection
 }
 
-function CategoryGrid({ id, name, bookmarks, editingId, onEdit }: CategoryGridProps) {
+function CategoryGrid({ id, name, bookmarks, editingId, onEdit, selection }: CategoryGridProps) {
   const { setNodeRef, isOver } = useDroppable({ id: categoryKey(id) })
+  const all = selection && allState(selection.selected, bookmarks)
 
   return (
     <section className={classes.section} aria-labelledby={`edit-category-${id}`}>
       <h2 id={`edit-category-${id}`} className={classes.heading}>
+        {selection && all?.selectable && (
+          <Checkbox
+            size="xs"
+            aria-label={`Select all in ${name}`}
+            checked={all.checked}
+            indeterminate={all.indeterminate}
+            onChange={() => selection.onChange(toggleAll(selection.selected, bookmarks))}
+          />
+        )}
         {name}
         <span className={classes.count}>{bookmarks.length}</span>
       </h2>
@@ -210,6 +231,12 @@ function CategoryGrid({ id, name, bookmarks, editingId, onEdit }: CategoryGridPr
               bookmark={bookmark}
               editing={bookmark.id === editingId}
               onEdit={() => onEdit(bookmark)}
+              selection={
+                selection && {
+                  selected: selection.selected.has(bookmark.id),
+                  onToggle: () => selection.onChange(toggleOne(selection.selected, bookmark.id)),
+                }
+              }
             />
           ))}
         </div>

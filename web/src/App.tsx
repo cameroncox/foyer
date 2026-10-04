@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications'
 import { type ComponentProps, useMemo, useState } from 'react'
 
 import type { Bookmark } from './api/client.ts'
-import { useReorderBookmarks, useReorderCategories } from './api/mutations.ts'
+import { useDeleteBookmarks, useReorderBookmarks, useReorderCategories } from './api/mutations.ts'
 import { useDashboard } from './api/queries.ts'
 import classes from './App.module.css'
 import { Board } from './features/board/Board.tsx'
@@ -11,6 +11,8 @@ import { FormPanel, type Panel } from './features/bookmark-form/FormPanel.tsx'
 import { CategoryDrawer } from './features/edit-mode/CategoryDrawer.tsx'
 import { EditBoard } from './features/edit-mode/EditBoard.tsx'
 import { PhoneEditHint } from './features/edit-mode/EditHint.tsx'
+import { SelectionBar } from './features/edit-mode/SelectionBar.tsx'
+import { stillPresent } from './features/edit-mode/selection.ts'
 import { EmptyState } from './features/empty-state/EmptyState.tsx'
 import { ImportModal } from './features/import/ImportModal.tsx'
 import { searchBookmarks } from './features/search/search.ts'
@@ -28,17 +30,29 @@ export default function App() {
   const dashboard = useDashboard()
   const reorderBookmarks = useReorderBookmarks()
   const reorderCategories = useReorderCategories()
+  const deleteBookmarks = useDeleteBookmarks()
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState(false)
   const [panel, setPanel] = useState<Panel>(null)
   const [importing, setImporting] = useState(false)
   const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const [selecting, setSelecting] = useState(false)
+  const [picked, setPicked] = useState<ReadonlySet<number>>(new Set())
   const phone = usePhone()
 
   const categories = useMemo(() => dashboard.data?.categories ?? [], [dashboard.data])
   const hits = useMemo(() => searchBookmarks(categories, query), [categories, query])
   const searching = !editing && query.trim() !== ''
   const empty = categories.every((c) => c.bookmarks.length === 0)
+  // Bookmarks deleted elsewhere (another tab, a container gone) drop out of the selection.
+  const selected = useMemo(
+    () =>
+      stillPresent(
+        picked,
+        categories.flatMap((c) => c.bookmarks.map((b) => b.id)),
+      ),
+    [picked, categories],
+  )
 
   // Edit forms follow live data: a bookmark that disappears closes its form.
   const editingBookmark = useMemo(() => {
@@ -67,10 +81,32 @@ export default function App() {
       { onError: failed('Couldn’t reorder categories') },
     )
 
+  const setSelectingMode = (on: boolean) => {
+    setSelecting(on)
+    setPicked(new Set())
+    if (on) {
+      setPanel(null)
+    }
+  }
+
+  const deleteSelected = () => {
+    const count = selected.size
+    deleteBookmarks.mutate([...selected], {
+      onSuccess: ({ deleted }) => {
+        setSelectingMode(false)
+        notifications.show({
+          message: `Deleted ${deleted} ${deleted === 1 ? 'bookmark' : 'bookmarks'}`,
+        })
+      },
+      onError: failed(`Couldn’t delete ${count === 1 ? 'the bookmark' : 'the bookmarks'}`),
+    })
+  }
+
   const setEditMode = (on: boolean) => {
     setEditing(on)
     setPanel(null)
     setCategoriesOpen(false)
+    setSelectingMode(false)
     if (on) {
       setQuery('')
     }
@@ -155,7 +191,14 @@ export default function App() {
             </Alert>
           ) : editing ? (
             <>
-              {phone && <PhoneEditHint />}
+              {phone && <PhoneEditHint selecting={selecting} />}
+              <SelectionBar
+                selecting={selecting}
+                onSelectingChange={setSelectingMode}
+                count={selected.size}
+                deleting={deleteBookmarks.isPending}
+                onDelete={deleteSelected}
+              />
               <EditBoard
                 dashboard={dashboard.data}
                 editingId={editingBookmark?.id}
@@ -166,6 +209,7 @@ export default function App() {
                     { onError: failed('Couldn’t move the bookmark') },
                   )
                 }
+                selection={selecting ? { selected, onChange: setPicked } : undefined}
               />
             </>
           ) : searching ? (

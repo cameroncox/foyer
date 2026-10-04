@@ -16,10 +16,12 @@ export function EditHint({ className }: { className?: string }) {
 }
 
 /** The phone's shorter version, a banner above the cards: the top bar has no room for it. */
-export function PhoneEditHint() {
+export function PhoneEditHint({ selecting }: { selecting?: boolean }) {
   return (
     <div className={`${classes.hint} ${classes.phone}`} role="status">
-      Tap a card to edit it. Drag the handle to reorder.
+      {selecting
+        ? 'Tap cards to pick them. Docker cards can’t be deleted here.'
+        : 'Tap a card to edit it. Drag the handle to reorder.'}
     </div>
   )
 }

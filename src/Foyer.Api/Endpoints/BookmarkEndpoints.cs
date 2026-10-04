@@ -56,6 +56,13 @@ internal static class BookmarkEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        group.MapPost("/delete", async (DeleteBookmarksRequest request, BookmarkService bookmarks, CancellationToken ct) =>
+                TypedResults.Ok(new DeleteBookmarksResponse(await bookmarks.DeleteManyAsync(request.BookmarkIds, ct))))
+            .WithName("DeleteBookmarks")
+            .WithSummary("Delete several manual bookmarks at once; any Docker bookmark among them answers 409 and nothing is deleted")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         group.MapPost("/{id:int}/reset", async (int id, DockerBookmarkStore docker, BookmarkService bookmarks, CancellationToken ct) =>
             {
                 await docker.ResetToLabelsAsync(id, ct);
