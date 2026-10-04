@@ -74,6 +74,25 @@ describe('Add bookmark', () => {
     expect(api.called('POST /api/bookmarks')).toHaveLength(0)
   })
 
+  it('filters categories by search and clears back to Uncategorized', async () => {
+    stubApi(page)
+    renderApp()
+    const form = await openAdd()
+    const select = form.getByRole('combobox', { name: 'Category' })
+    expect(form.queryByLabelText('Clear category')).toBeNull()
+
+    await userEvent.clear(select)
+    await userEvent.type(select, 'med')
+    expect(await form.findByRole('option', { name: 'Media' })).toBeInTheDocument()
+    expect(form.queryByRole('option', { name: 'Uncategorized' })).toBeNull()
+    await userEvent.click(form.getByRole('option', { name: 'Media' }))
+    expect(select).toHaveValue('Media')
+
+    await userEvent.click(form.getByLabelText('Clear category'))
+    expect(select).toHaveValue('Uncategorized')
+    expect(form.queryByLabelText('Clear category')).toBeNull()
+  })
+
   it('shows what the server refused', async () => {
     stubApi(page, {
       'POST /api/bookmarks': () => problem(409, "A category named 'Media' already exists."),

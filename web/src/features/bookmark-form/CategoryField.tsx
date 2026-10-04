@@ -1,7 +1,7 @@
 import { Select, Stack, Text, TextInput } from '@mantine/core'
 
 import type { DashboardCategory } from '../../api/client.ts'
-import { categoryOptions, NEW_CATEGORY } from './categoryChoice.ts'
+import { categoryOptions, NEW_CATEGORY, uncategorizedId } from './categoryChoice.ts'
 
 interface Props {
   categories: readonly DashboardCategory[]
@@ -12,7 +12,10 @@ interface Props {
   newNameError?: string
 }
 
-/** Category select; "New category…" reveals a name field, and the category is created on save. */
+/**
+ * Searchable category select; "New category…" reveals a name field, and the category is created
+ * on save. Clearing falls back to Uncategorized, so the clear button only shows for other values.
+ */
 export function CategoryField({
   categories,
   value,
@@ -21,14 +24,19 @@ export function CategoryField({
   onNewNameChange,
   newNameError,
 }: Props) {
+  const uncategorized = uncategorizedId(categories)
   return (
     <Stack gap={8}>
       <Select
         label="Category"
         data={categoryOptions(categories)}
         value={value}
-        onChange={(v) => v && onChange(v)}
+        onChange={(v) => onChange(v ?? uncategorized)}
         allowDeselect={false}
+        searchable
+        nothingFoundMessage="No matching category"
+        clearable={value !== uncategorized}
+        clearButtonProps={{ 'aria-label': 'Clear category' }}
         comboboxProps={{ withinPortal: false }}
       />
       {value === NEW_CATEGORY && (
