@@ -10,6 +10,8 @@ services:
     image: gitea.lan.casadecox.org/foyer/foyer:latest   # or :dev / :<sha> for develop builds
     container_name: foyer
     restart: unless-stopped
+    # Run as the host user that owns ./data. Set UID/GID in .env; both default to 1000.
+    user: "${UID:-1000}:${GID:-1000}"
     security_opt:
       - no-new-privileges:true
     depends_on:
@@ -27,9 +29,8 @@ services:
       # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
       # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down
     volumes:
-      # A named volume picks up the image's /data ownership. A bind mount must be writable by
-      # uid 1654 (the image's non-root user): chown 1654:1654 <dir>.
-      - foyer-data:/data
+      # Create it before the first up (mkdir data); a missing dir is created root-owned.
+      - ./data:/data
     networks:
       - proxy
       - foyer-docker
@@ -62,9 +63,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - foyer-docker
-
-volumes:
-  foyer-data:
 
 networks:
   proxy:
