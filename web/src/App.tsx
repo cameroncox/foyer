@@ -16,14 +16,11 @@ import { SelectionBar } from './features/edit-mode/SelectionBar.tsx'
 import { stillPresent } from './features/edit-mode/selection.ts'
 import { EmptyState } from './features/empty-state/EmptyState.tsx'
 import { ImportModal } from './features/import/ImportModal.tsx'
-import { searchBookmarks } from './features/search/search.ts'
-import { SearchResults } from './features/search/SearchResults.tsx'
 import { FoyerSpotlight } from './features/spotlight/FoyerSpotlight.tsx'
 import { TopBar } from './features/top-bar/TopBar.tsx'
 import { useLiveUpdates } from './hooks/useLiveUpdates.ts'
 import { usePhone } from './hooks/usePhone.ts'
 import { useDocumentTitle } from './hooks/useTitle.ts'
-import { navigation } from './navigation.ts'
 
 const DRAWER_WIDTH = 300
 
@@ -34,7 +31,6 @@ export default function App() {
   const reorderBookmarks = useReorderBookmarks()
   const reorderCategories = useReorderCategories()
   const deleteBookmarks = useDeleteBookmarks()
-  const [query, setQuery] = useState('')
   const [editing, setEditing] = useState(false)
   const [panel, setPanel] = useState<Panel>(null)
   const [importing, setImporting] = useState(false)
@@ -45,9 +41,6 @@ export default function App() {
   const [spotlight] = useState(createSpotlight)
 
   const categories = useMemo(() => dashboard.data?.categories ?? [], [dashboard.data])
-  const hits = useMemo(() => searchBookmarks(categories, query), [categories, query])
-  // Phones search through the spotlight instead.
-  const searching = !editing && !phone && query.trim() !== ''
   const empty = categories.every((c) => c.bookmarks.length === 0)
   // Bookmarks deleted elsewhere (another tab, a container gone) drop out of the selection.
   const selected = useMemo(
@@ -112,9 +105,6 @@ export default function App() {
     setPanel(null)
     setCategoriesOpen(false)
     setSelectingMode(false)
-    if (on) {
-      setQuery('')
-    }
   }
 
   return (
@@ -132,9 +122,6 @@ export default function App() {
     >
       <AppShell.Header withBorder={false}>
         <TopBar
-          query={query}
-          onQueryChange={setQuery}
-          onSubmit={() => hits[0] && navigation.open(hits[0].bookmark.url)}
           editing={editing}
           onEditingChange={setEditMode}
           onAdd={() => setPanel({ kind: 'add' })}
@@ -218,12 +205,6 @@ export default function App() {
                 selection={selecting ? { selected, onChange: setPicked } : undefined}
               />
             </>
-          ) : searching ? (
-            <SearchResults
-              query={query}
-              hits={hits}
-              onAdd={(name) => setPanel({ kind: 'add', name })}
-            />
           ) : empty ? (
             <EmptyState onAdd={() => setPanel({ kind: 'add' })} />
           ) : (
@@ -236,6 +217,7 @@ export default function App() {
         spotlight={spotlight}
         categories={categories}
         enabled={!editing && !panel && !importing}
+        onAdd={(name) => setPanel({ kind: 'add', name })}
       />
       <FormPanel panel={livePanel} onPanelChange={setPanel} categories={categories} />
       <ImportModal opened={importing} onClose={() => setImporting(false)} />

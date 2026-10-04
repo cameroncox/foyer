@@ -1,7 +1,6 @@
-import { ActionIcon, Button, CloseButton, Kbd, TextInput } from '@mantine/core'
-import { useHotkeys } from '@mantine/hooks'
+import { ActionIcon, Button, Kbd, Tooltip, UnstyledButton } from '@mantine/core'
 import { IconCheck, IconList, IconMenu2, IconPencil, IconSearch } from '@tabler/icons-react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 
 import { usePhone } from '../../hooks/usePhone.ts'
 import { useTitle } from '../../hooks/useTitle.ts'
@@ -11,33 +10,27 @@ import { ThemeMenu } from './ThemeMenu.tsx'
 import classes from './TopBar.module.css'
 
 interface Props {
-  query: string
-  onQueryChange: (query: string) => void
-  /** Enter in the search box: open the first result. */
-  onSubmit: () => void
   editing: boolean
   onEditingChange: (editing: boolean) => void
   /** Phone menu's Add bookmark. */
   onAdd: () => void
-  /** Phone search button: opens the spotlight. */
+  /** The search button: opens the spotlight. */
   onSearch: () => void
   /** Phone edit mode's Categories button; the drawer is a full screen there. */
   onOpenCategories: () => void
 }
 
 /**
- * The Foyer name, a centered search box (/ focuses it), the theme picker and Edit / Done. On a
- * phone: the name, a search button that opens the spotlight, and a menu holding the rest, or
- * Categories and Done while editing.
+ * The Foyer name, a centered button dressed as a search box that opens the spotlight, the theme
+ * picker and an Edit icon (Done while editing). On a phone: the name, a search icon, and a menu
+ * holding the rest, or Categories and Done while editing.
  */
 export function TopBar(props: Props) {
   return usePhone() ? <PhoneTopBar {...props} /> : <DesktopTopBar {...props} />
 }
 
-function DesktopTopBar({ query, onQueryChange, onSubmit, editing, onEditingChange }: Props) {
+function DesktopTopBar({ editing, onEditingChange, onSearch }: Props) {
   const title = useTitle()
-  const input = useRef<HTMLInputElement>(null)
-  useHotkeys([['/', () => !editing && input.current?.focus()]])
 
   return (
     <div className={classes.bar}>
@@ -46,35 +39,17 @@ function DesktopTopBar({ query, onQueryChange, onSubmit, editing, onEditingChang
         {editing ? (
           <EditHint className={classes.search} />
         ) : (
-          <TextInput
-            ref={input}
-            className={classes.search}
-            type="search"
-            size="md"
-            placeholder="Search bookmarks"
+          <UnstyledButton
+            className={`${classes.search} ${classes.searchButton}`}
             aria-label="Search bookmarks"
-            value={query}
-            onChange={(e) => onQueryChange(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.preventDefault()
-                onQueryChange('')
-              } else if (e.key === 'Enter') {
-                e.preventDefault()
-                onSubmit()
-              }
-            }}
-            leftSection={<IconSearch size={18} stroke={2} aria-hidden="true" />}
-            rightSection={
-              query ? (
-                <CloseButton aria-label="Clear search" onClick={() => onQueryChange('')} />
-              ) : (
-                <Kbd size="xs" aria-hidden="true">
-                  /
-                </Kbd>
-              )
-            }
-          />
+            onClick={onSearch}
+          >
+            <IconSearch size={18} stroke={2} aria-hidden="true" />
+            <span className={classes.searchLabel}>Search bookmarks</span>
+            <Kbd size="xs" aria-hidden="true">
+              Space
+            </Kbd>
+          </UnstyledButton>
         )}
         <div className={classes.actions}>
           <ThemeMenu />
@@ -87,14 +62,17 @@ function DesktopTopBar({ query, onQueryChange, onSubmit, editing, onEditingChang
               Done
             </Button>
           ) : (
-            <Button
-              size="md"
-              variant="default"
-              leftSection={<IconPencil size={16} />}
-              onClick={() => onEditingChange(true)}
-            >
-              Edit
-            </Button>
+            <Tooltip label="Edit page" withinPortal>
+              <ActionIcon
+                variant="default"
+                size={44}
+                radius="md"
+                aria-label="Edit page"
+                onClick={() => onEditingChange(true)}
+              >
+                <IconPencil size={20} stroke={1.8} />
+              </ActionIcon>
+            </Tooltip>
           )}
         </div>
       </div>

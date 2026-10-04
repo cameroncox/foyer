@@ -48,7 +48,7 @@ it('previews a file, imports the picked folders, and reports the result', async 
   })
   renderApp()
   await screen.findByText('Router')
-  await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Edit page' }))
   await userEvent.click(screen.getByRole('button', { name: 'Import browser bookmarks' }))
 
   const modal = within(screen.getByRole('dialog', { name: 'Import bookmarks' }))

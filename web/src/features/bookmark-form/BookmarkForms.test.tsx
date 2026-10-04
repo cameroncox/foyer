@@ -112,10 +112,12 @@ describe('Add bookmark', () => {
     renderApp()
     await screen.findByText('Router')
 
-    await userEvent.type(screen.getByRole('searchbox'), 'grafana')
-    await userEvent.click(
-      within(screen.getByRole('main')).getByRole('button', { name: 'Add bookmark' }),
+    await userEvent.click(screen.getByRole('button', { name: 'Search bookmarks' }))
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Jump to a bookmark' }),
+      'grafana',
     )
+    await userEvent.click(screen.getByRole('button', { name: /Add “grafana” as a bookmark/ }))
 
     expect(within(dialog()).getByLabelText('Name')).toHaveValue('grafana')
   })
@@ -134,7 +136,7 @@ describe('Add bookmark', () => {
 describe('Edit bookmark', () => {
   async function editMode() {
     await screen.findByText('Router')
-    await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Edit page' }))
   }
 
   it('edits every field of a manual bookmark', async () => {

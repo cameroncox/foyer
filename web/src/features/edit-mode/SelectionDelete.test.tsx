@@ -22,7 +22,7 @@ function page(): Dashboard {
 
 async function startSelecting() {
   await screen.findByText('Router')
-  await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Edit page' }))
   await userEvent.click(screen.getByRole('button', { name: 'Select' }))
 }
 

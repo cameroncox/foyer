@@ -85,53 +85,40 @@ describe('App', () => {
 })
 
 describe('search', () => {
-  it('replaces categories with one flat grid and a count line', async () => {
+  const spotlightBox = () => screen.findByRole('textbox', { name: 'Jump to a bookmark' })
+
+  it('opens the spotlight from the search button in the top bar', async () => {
     stubDashboard(page)
     renderApp()
     await screen.findByText('OPNsense')
 
-    await userEvent.type(screen.getByRole('searchbox', { name: 'Search bookmarks' }), 'arr')
+    await userEvent.click(screen.getByRole('button', { name: 'Search bookmarks' }))
 
-    expect(screen.getByRole('status')).toHaveTextContent('3 bookmarks match “arr”')
-    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
-    const cards = screen.getAllByRole('link').map((a) => a.textContent)
-    expect(cards[0]).toContain('Sonarr')
-    expect(screen.getAllByRole('link')[0]).toHaveAttribute('data-first')
+    expect(await spotlightBox()).toHaveFocus()
   })
 
-  it('says when nothing matches', async () => {
-    stubDashboard(page)
-    renderApp()
-    await screen.findByText('OPNsense')
-
-    await userEvent.type(screen.getByRole('searchbox'), 'xyz')
-
-    expect(screen.getByText('Nothing matches “xyz”')).toBeInTheDocument()
-  })
-
-  it('opens the first result on Enter and clears on Esc', async () => {
-    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
-    stubDashboard(page)
-    renderApp()
-    await screen.findByText('OPNsense')
-    const box = screen.getByRole('searchbox')
-
-    await userEvent.type(box, 'router{Enter}')
-    expect(open).toHaveBeenCalledWith('https://opnsense.lan')
-
-    await userEvent.type(box, '{Escape}')
-    expect(box).toHaveValue('')
-    expect(screen.getByRole('heading', { name: /Media/ })).toBeInTheDocument()
-  })
-
-  it('focuses the search box on /', async () => {
+  it('opens the spotlight on / and ⌘K too', async () => {
     stubDashboard(page)
     renderApp()
     await screen.findByText('OPNsense')
 
     await userEvent.keyboard('/')
+    expect(await spotlightBox()).toHaveValue('')
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('textbox', { name: 'Jump to a bookmark' })).toBeNull(),
+    )
 
-    expect(screen.getByRole('searchbox')).toHaveFocus()
+    await userEvent.keyboard('{Meta>}k{/Meta}')
+    expect(await spotlightBox()).toBeInTheDocument()
+  })
+
+  it('keeps the board in place, with no filtering box', async () => {
+    stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+
+    expect(screen.queryByRole('searchbox')).toBeNull()
   })
 })
 
@@ -226,7 +213,7 @@ describe('spotlight', () => {
   it('stays shut while editing', async () => {
     stubDashboard(page)
     renderApp()
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit page' }))
     ;(document.activeElement as HTMLElement).blur()
 
     await userEvent.keyboard(' ')

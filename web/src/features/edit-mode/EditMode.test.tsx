@@ -15,7 +15,7 @@ const page = (): Dashboard => ({
 
 async function enterEditMode() {
   await screen.findByText('Router')
-  await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Edit page' }))
 }
 
 describe('edit mode', () => {

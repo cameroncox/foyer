@@ -16,8 +16,7 @@
   border-color: var(--mantine-primary-color-filled);
 }
 
-.card:focus-visible,
-.card[data-first] {
+.card:focus-visible {
   outline: none;
   border-color: var(--mantine-primary-color-filled);
   box-shadow: 0 0 0 3px var(--mantine-primary-color-light);

@@ -8,16 +8,12 @@ import { statusLabel } from './status.ts'
 
 interface Props {
   bookmark: Bookmark
-  /** A tag to highlight because search matched it. */
-  matchedTag?: string
-  /** The first search result: Enter opens it, so it carries a focus ring. */
-  first?: boolean
   /** On a phone, shrink to a tile in the board's 3-across grid: icon over name, no tags. */
   tile?: boolean
 }
 
 /** Icon, then name with tags under it. The URL and status show on hover; clicking opens the URL in a new tab. */
-export function BookmarkCard({ bookmark, matchedTag, first, tile }: Props) {
+export function BookmarkCard({ bookmark, tile }: Props) {
   const status = statusLabel(bookmark)
 
   return (
@@ -33,7 +29,6 @@ export function BookmarkCard({ bookmark, matchedTag, first, tile }: Props) {
         rel="noopener noreferrer"
         className={classes.card}
         data-stopped={bookmark.status === 'stopped' || undefined}
-        data-first={first || undefined}
         data-tile={tile || undefined}
       >
         <BookmarkIcon bookmark={bookmark} statusLabel={status} />
@@ -41,15 +36,9 @@ export function BookmarkCard({ bookmark, matchedTag, first, tile }: Props) {
           <span className={classes.name}>{bookmark.name}</span>
           {(bookmark.hostTag || bookmark.tags.length > 0) && (
             <div className={classes.tags}>
-              {bookmark.hostTag && (
-                <TagChip
-                  tag={bookmark.hostTag}
-                  host
-                  highlighted={matchedTag === bookmark.hostTag}
-                />
-              )}
+              {bookmark.hostTag && <TagChip tag={bookmark.hostTag} host />}
               {bookmark.tags.map((tag) => (
-                <TagChip key={tag} tag={tag} highlighted={matchedTag === tag} />
+                <TagChip key={tag} tag={tag} />
               ))}
             </div>
           )}

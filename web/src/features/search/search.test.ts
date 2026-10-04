@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Bookmark, DashboardCategory } from '../../api/client.ts'
-import { matchCountLine, searchBookmarks } from './search.ts'
+import { searchBookmarks } from './search.ts'
 
 let nextId = 1
 function bookmark(name: string, extra: Partial<Bookmark> = {}): Bookmark {
@@ -64,12 +64,5 @@ describe('searchBookmarks', () => {
   it('matches the category name and the URL', () => {
     expect(names(searchBookmarks(page, 'network'))).toEqual(['OPNsense', 'Radarr'])
     expect(names(searchBookmarks(page, 'router.lan'))).toEqual(['OPNsense'])
-  })
-})
-
-describe('matchCountLine', () => {
-  it('reads naturally for one and many', () => {
-    expect(matchCountLine(1, 'arr')).toBe('1 bookmark matches “arr”')
-    expect(matchCountLine(4, ' arr ')).toBe('4 bookmarks match “arr”')
   })
 })

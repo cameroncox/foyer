@@ -33,6 +33,30 @@
   min-width: 0;
 }
 
+/* Looks like the search field it stands in for; Space, ⌘K and / open the same spotlight. */
+.searchButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--foyer-border);
+  border-radius: var(--mantine-radius-default);
+  background: var(--mantine-color-body);
+  color: var(--foyer-muted);
+  font-size: 16px;
+  transition: border-color 120ms ease;
+}
+
+.searchButton:hover {
+  border-color: var(--mantine-primary-color-filled);
+}
+
+.searchLabel {
+  flex: 1;
+  text-align: left;
+}
+
 .actions {
   flex: 1 1 0;
   min-width: max-content;

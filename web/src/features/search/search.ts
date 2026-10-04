@@ -37,7 +37,3 @@ export function searchBookmarks(
 
   return [...byName, ...byOther]
 }
-
-export function matchCountLine(count: number, query: string): string {
-  return `${count} ${count === 1 ? 'bookmark matches' : 'bookmarks match'} “${query.trim()}”`
-}

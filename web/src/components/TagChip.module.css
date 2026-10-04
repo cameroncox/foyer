@@ -15,9 +15,3 @@
   background: var(--foyer-chip);
   border-color: var(--foyer-chip);
 }
-
-.chip[data-highlighted] {
-  color: var(--mantine-primary-color-light-color);
-  background: var(--mantine-primary-color-light);
-  border-color: var(--mantine-primary-color-light-hover);
-}

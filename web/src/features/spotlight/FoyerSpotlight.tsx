@@ -4,6 +4,7 @@ import {
   IconBrandDocker,
   IconFolder,
   IconHash,
+  IconPlus,
   IconSearch,
   IconWorldSearch,
   IconX,
@@ -51,15 +52,17 @@ interface Props {
   categories: readonly DashboardCategory[]
   /** Off while editing or while a form or modal is up, so Space stays theirs. */
   enabled: boolean
+  /** "Add as a bookmark" when nothing matches: open Add with the query as the name. */
+  onAdd: (name: string) => void
 }
 
 /**
- * Space (or ⌘K) opens a jump-to box. Empty, it offers Docker hosts, tags and categories to narrow
+ * Space, ⌘K or / (or the top bar's search button) opens a jump-to box. Empty, it offers Docker hosts, tags and categories to narrow
  * by; typing searches bookmarks (and those filters), with a web search (FOYER_SEARCH_URL) last.
  * Enter opens the highlighted row. On DuckDuckGo, a query starting with a bang ("!g …") is only
  * a web search. On a phone it fills the screen, with an X to close it, and stands in for search.
  */
-export function FoyerSpotlight({ spotlight: [store, actions], categories, enabled }: Props) {
+export function FoyerSpotlight({ spotlight: [store, actions], categories, enabled, onAdd }: Props) {
   const phone = usePhone()
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState<Scope | null>(null)
@@ -107,7 +110,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
       store={store}
       query={query}
       onQueryChange={setQuery}
-      shortcut={enabled ? ['space', 'mod + K'] : null}
+      shortcut={enabled ? ['space', 'mod + K', '/'] : null}
       // Space presses a focused button; leave it be.
       tagsToIgnore={['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON']}
       onSpotlightClose={() => setScope(null)}
@@ -185,6 +188,16 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
                   label={`Search ${engineName(searchUrl)} for “${query.trim()}”`}
                   leftSection={<IconWorldSearch size={18} stroke={1.75} />}
                   onClick={() => navigation.open(webSearchUrl(searchUrl, query))}
+                />
+              </Spotlight.ActionsGroup>
+            )}
+            {/* After the web search, so Enter on a miss still searches the web. */}
+            {!bang && shownHits.length === 0 && (
+              <Spotlight.ActionsGroup label="Add">
+                <Spotlight.Action
+                  label={`Add “${query.trim()}” as a bookmark`}
+                  leftSection={<IconPlus size={18} stroke={1.75} />}
+                  onClick={() => onAdd(query.trim())}
                 />
               </Spotlight.ActionsGroup>
             )}
