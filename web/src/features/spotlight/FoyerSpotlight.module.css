@@ -1,0 +1,54 @@
+.scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--foyer-muted);
+  border-bottom: 1px solid var(--foyer-border);
+}
+
+.scopeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--mantine-primary-color-light-color);
+  background: var(--mantine-primary-color-light);
+  border-radius: 5px;
+  padding: 3px 7px;
+}
+
+.scopeChip svg {
+  width: 13px;
+  height: 13px;
+}
+
+.count {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--foyer-muted);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--foyer-muted);
+}
+
+/* A quiet tint for the highlighted row instead of Mantine's solid primary fill. */
+.action[data-selected] {
+  background: var(--mantine-primary-color-light);
+  color: inherit;
+  --action-description-color: var(--foyer-muted);
+  --action-description-opacity: 1;
+}
+
+.action mark {
+  background: none;
+  color: var(--mantine-primary-color-light-color);
+  font-weight: 600;
+}

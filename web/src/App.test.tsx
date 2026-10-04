@@ -133,6 +133,60 @@ describe('search', () => {
   })
 })
 
+describe('spotlight', () => {
+  const openSpotlight = async () => {
+    stubDashboard(page)
+    renderApp()
+    await screen.findByText('OPNsense')
+    await userEvent.keyboard(' ')
+    return screen.findByRole('textbox', { name: 'Jump to a bookmark' })
+  }
+
+  it('opens on Space with hosts, tags and categories to pick from', async () => {
+    const box = await openSpotlight()
+
+    expect(box).toHaveFocus()
+    expect(box).toHaveValue('')
+    expect(screen.getByRole('button', { name: /#docker-4/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /#router/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Infrastructure/ })).toBeInTheDocument()
+  })
+
+  it('narrows to a picked tag, then opens the highlighted bookmark on Enter', async () => {
+    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
+    const box = await openSpotlight()
+
+    await userEvent.click(screen.getByRole('button', { name: /#arr/ }))
+    expect(screen.getByText('Showing')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Sonarr/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Jellyfin/ })).toBeNull()
+
+    await userEvent.type(box, 'rad{Enter}')
+    expect(open).toHaveBeenCalledWith('https://radarr.lan')
+  })
+
+  it('clears the filter on Backspace in an empty box', async () => {
+    const box = await openSpotlight()
+
+    await userEvent.click(screen.getByRole('button', { name: /#docker-4/ }))
+    await userEvent.type(box, '{Backspace}')
+
+    expect(screen.queryByText('Showing')).toBeNull()
+    expect(screen.getByRole('button', { name: /#router/ })).toBeInTheDocument()
+  })
+
+  it('stays shut while editing', async () => {
+    stubDashboard(page)
+    renderApp()
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
+    ;(document.activeElement as HTMLElement).blur()
+
+    await userEvent.keyboard(' ')
+
+    expect(screen.queryByRole('textbox', { name: 'Jump to a bookmark' })).toBeNull()
+  })
+})
+
 describe('live updates', () => {
   it('refetches when bookmarks change', async () => {
     let current = page()

@@ -15,6 +15,7 @@ import { EmptyState } from './features/empty-state/EmptyState.tsx'
 import { ImportModal } from './features/import/ImportModal.tsx'
 import { searchBookmarks } from './features/search/search.ts'
 import { SearchResults } from './features/search/SearchResults.tsx'
+import { FoyerSpotlight } from './features/spotlight/FoyerSpotlight.tsx'
 import { TopBar } from './features/top-bar/TopBar.tsx'
 import { useLiveUpdates } from './hooks/useLiveUpdates.ts'
 import { usePhone } from './hooks/usePhone.ts'
@@ -181,6 +182,7 @@ export default function App() {
         </div>
       </AppShell.Main>
 
+      <FoyerSpotlight categories={categories} enabled={!editing && !panel && !importing} />
       <FormPanel panel={livePanel} onPanelChange={setPanel} categories={categories} />
       <ImportModal opened={importing} onClose={() => setImporting(false)} />
     </AppShell>
