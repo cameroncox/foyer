@@ -50,3 +50,28 @@
   flex-wrap: wrap;
   gap: 4px;
 }
+
+/* A board tile on a phone: icon over a centered name, tags dropped to fit three across. */
+@media (max-width: 48em) {
+  .card[data-tile] {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 6px 10px;
+    min-width: 0;
+  }
+
+  .card[data-tile] .body {
+    align-items: center;
+    width: 100%;
+  }
+
+  .card[data-tile] .name {
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .card[data-tile] .tags {
+    display: none;
+  }
+}

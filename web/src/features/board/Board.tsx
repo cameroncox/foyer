@@ -20,7 +20,7 @@ export function Board({ categories }: { categories: readonly DashboardCategory[]
             </h2>
             <div className={classes.grid}>
               {category.bookmarks.map((bookmark) => (
-                <BookmarkCard key={bookmark.id} bookmark={bookmark} />
+                <BookmarkCard key={bookmark.id} bookmark={bookmark} tile />
               ))}
             </div>
           </section>
