@@ -13,8 +13,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { Button, Group, Text, TextInput } from '@mantine/core'
-import { IconDownload } from '@tabler/icons-react'
+import { ActionIcon, Button, Group, Text, TextInput } from '@mantine/core'
+import { IconChevronLeft, IconDownload } from '@tabler/icons-react'
 import { useState } from 'react'
 
 import type { Dashboard } from '../../api/client.ts'
@@ -27,10 +27,12 @@ interface Props {
   dashboard: Dashboard
   onReorder: (result: NonNullable<ReturnType<typeof moveCategory>>) => void
   onImport: () => void
+  /** Phone only, where the drawer is a full screen: the back button to the cards. */
+  onBack?: () => void
 }
 
 /** Edit mode's right-hand drawer: categories in order, Uncategorized pinned last, add and import. */
-export function CategoryDrawer({ dashboard, onReorder, onImport }: Props) {
+export function CategoryDrawer({ dashboard, onReorder, onImport, onBack }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -65,6 +67,19 @@ export function CategoryDrawer({ dashboard, onReorder, onImport }: Props) {
   return (
     <div className={classes.drawer}>
       <div className={classes.header}>
+        {onBack && (
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size={44}
+            radius="md"
+            aria-label="Back to edit mode"
+            onClick={onBack}
+            className={classes.back}
+          >
+            <IconChevronLeft size={22} />
+          </ActionIcon>
+        )}
         <h2 className={classes.title}>Categories</h2>
         <Text size="xs" c="dimmed">
           Drag to reorder

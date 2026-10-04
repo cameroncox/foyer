@@ -1,7 +1,8 @@
-import { ActionIcon, Popover, ScrollArea } from '@mantine/core'
+import { ActionIcon, Drawer, Popover, ScrollArea } from '@mantine/core'
 import { IconPlus, IconX } from '@tabler/icons-react'
 
 import type { Bookmark, DashboardCategory } from '../../api/client.ts'
+import { usePhone } from '../../hooks/usePhone.ts'
 import { BookmarkForm } from './BookmarkForm.tsx'
 import { DockerBookmarkForm } from './DockerBookmarkForm.tsx'
 import classes from './FormPanel.module.css'
@@ -19,11 +20,45 @@ interface Props {
 
 /**
  * The floating + (any mode) and the popover above it, which holds Add or an Edit form. While
- * open, the + turns into × and closes it.
+ * open, the + turns into × and closes it. On a phone the form is a bottom sheet instead.
  */
 export function FormPanel({ panel, onPanelChange, categories }: Props) {
   const close = () => onPanelChange(null)
   const open = panel !== null
+  const phone = usePhone()
+  const form = <PanelForm panel={panel} categories={categories} onDone={close} />
+
+  if (phone) {
+    return (
+      <>
+        {!open && (
+          <ActionIcon
+            className={classes.fab}
+            size={60}
+            radius="xl"
+            aria-label="Add bookmark"
+            onClick={() => onPanelChange({ kind: 'add' })}
+          >
+            <IconPlus size={26} />
+          </ActionIcon>
+        )}
+        <Drawer
+          opened={open}
+          onClose={close}
+          position="bottom"
+          size="auto"
+          padding={16}
+          withCloseButton={false}
+          aria-labelledby={FORM_TITLE_ID}
+          styles={{ content: { height: 'auto', borderRadius: '18px 18px 0 0' } }}
+          classNames={{ content: classes.sheet }}
+        >
+          <div className={classes.grabber} aria-hidden="true" />
+          {form}
+        </Drawer>
+      </>
+    )
+  }
 
   return (
     <Popover
@@ -53,32 +88,43 @@ export function FormPanel({ panel, onPanelChange, categories }: Props) {
       </Popover.Target>
       <Popover.Dropdown p={22} role="dialog" aria-labelledby={FORM_TITLE_ID}>
         <ScrollArea.Autosize mah="calc(100vh - 160px)" offsetScrollbars>
-          {panel?.kind === 'add' && (
-            <BookmarkForm
-              key="add"
-              categories={categories}
-              initialName={panel.name}
-              onDone={close}
-            />
-          )}
-          {panel?.kind === 'edit' &&
-            (panel.bookmark.docker ? (
-              <DockerBookmarkForm
-                key={panel.bookmark.id}
-                categories={categories}
-                bookmark={panel.bookmark}
-                onDone={close}
-              />
-            ) : (
-              <BookmarkForm
-                key={panel.bookmark.id}
-                categories={categories}
-                bookmark={panel.bookmark}
-                onDone={close}
-              />
-            ))}
+          {form}
         </ScrollArea.Autosize>
       </Popover.Dropdown>
     </Popover>
+  )
+}
+
+function PanelForm({
+  panel,
+  categories,
+  onDone,
+}: {
+  panel: Panel
+  categories: readonly DashboardCategory[]
+  onDone: () => void
+}) {
+  return (
+    <>
+      {panel?.kind === 'add' && (
+        <BookmarkForm key="add" categories={categories} initialName={panel.name} onDone={onDone} />
+      )}
+      {panel?.kind === 'edit' &&
+        (panel.bookmark.docker ? (
+          <DockerBookmarkForm
+            key={panel.bookmark.id}
+            categories={categories}
+            bookmark={panel.bookmark}
+            onDone={onDone}
+          />
+        ) : (
+          <BookmarkForm
+            key={panel.bookmark.id}
+            categories={categories}
+            bookmark={panel.bookmark}
+            onDone={onDone}
+          />
+        ))}
+    </>
   )
 }

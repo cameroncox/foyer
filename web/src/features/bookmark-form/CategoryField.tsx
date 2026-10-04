@@ -34,6 +34,8 @@ export function CategoryField({
         onChange={(v) => onChange(v ?? uncategorized)}
         allowDeselect={false}
         searchable
+        // Typing replaces the current category's name rather than appending to it.
+        onFocus={(e) => e.currentTarget.select()}
         nothingFoundMessage="No matching category"
         clearable={value !== uncategorized}
         clearButtonProps={{ 'aria-label': 'Clear category' }}

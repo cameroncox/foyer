@@ -40,15 +40,44 @@
 
 @media (max-width: 48em) {
   .inner {
-    gap: 10px;
+    gap: 8px;
+    padding-right: 8px;
+  }
+
+  .brand {
+    font-size: 19px;
+  }
+
+  /* Pushes the menu button right when there's no search box between them. */
+  .brand,
+  .editingTitle {
+    flex: 1 1 auto;
   }
 
   .search {
     flex: 1 1 auto;
   }
 
-  .brand,
-  .actions {
+  .brand:has(+ .search) {
     flex: none;
   }
+}
+
+.editingTitle {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* The phone menu: a sheet from the top holding its own copy of the header row. */
+.menu {
+  background: var(--foyer-card);
+}
+
+.menuHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  padding: 0 8px 0 var(--foyer-gutter);
+  border-bottom: 1px solid var(--foyer-border);
 }

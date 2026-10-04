@@ -14,3 +14,12 @@ export function EditHint({ className }: { className?: string }) {
     </div>
   )
 }
+
+/** The phone's shorter version, a banner above the cards: the top bar has no room for it. */
+export function PhoneEditHint() {
+  return (
+    <div className={`${classes.hint} ${classes.phone}`} role="status">
+      Tap a card to edit it. Drag the handle to reorder.
+    </div>
+  )
+}

@@ -23,6 +23,13 @@
   gap: 6px;
 }
 
+/* Keyboard shortcuts mean nothing on a phone. */
+@media (max-width: 48em) {
+  .hint {
+    display: none;
+  }
+}
+
 .none {
   padding: 48px 0;
   text-align: center;

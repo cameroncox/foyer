@@ -19,6 +19,16 @@
   font-weight: 600;
 }
 
+/* Phone: back button, title, then the hint pushed right. */
+.back {
+  align-self: center;
+  margin: -10px 4px -10px -12px;
+}
+
+.back + .title {
+  flex: 1;
+}
+
 .list {
   list-style: none;
   margin: 0;

@@ -1,9 +1,11 @@
-import { Button, CloseButton, Kbd, TextInput } from '@mantine/core'
+import { ActionIcon, Button, CloseButton, Kbd, TextInput } from '@mantine/core'
 import { useHotkeys } from '@mantine/hooks'
-import { IconCheck, IconPencil, IconSearch } from '@tabler/icons-react'
-import { useRef } from 'react'
+import { IconCheck, IconList, IconMenu2, IconPencil, IconSearch } from '@tabler/icons-react'
+import { useRef, useState } from 'react'
 
+import { usePhone } from '../../hooks/usePhone.ts'
 import { EditHint } from '../edit-mode/EditHint.tsx'
+import { PhoneMenu } from './PhoneMenu.tsx'
 import { ThemeMenu } from './ThemeMenu.tsx'
 import classes from './TopBar.module.css'
 
@@ -14,10 +16,21 @@ interface Props {
   onSubmit: () => void
   editing: boolean
   onEditingChange: (editing: boolean) => void
+  /** Phone menu's Add bookmark. */
+  onAdd: () => void
+  /** Phone edit mode's Categories button; the drawer is a full screen there. */
+  onOpenCategories: () => void
 }
 
-/** The Foyer name, a centered search box (/ focuses it), the theme picker and Edit / Done. */
-export function TopBar({ query, onQueryChange, onSubmit, editing, onEditingChange }: Props) {
+/**
+ * The Foyer name, a centered search box (/ focuses it), the theme picker and Edit / Done. On a
+ * phone: the name and a menu holding the rest, or Categories and Done while editing.
+ */
+export function TopBar(props: Props) {
+  return usePhone() ? <PhoneTopBar {...props} /> : <DesktopTopBar {...props} />
+}
+
+function DesktopTopBar({ query, onQueryChange, onSubmit, editing, onEditingChange }: Props) {
   const input = useRef<HTMLInputElement>(null)
   useHotkeys([['/', () => !editing && input.current?.focus()]])
 
@@ -80,6 +93,72 @@ export function TopBar({ query, onQueryChange, onSubmit, editing, onEditingChang
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function PhoneTopBar({
+  query,
+  onQueryChange,
+  editing,
+  onEditingChange,
+  onAdd,
+  onOpenCategories,
+}: Props) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  if (editing) {
+    return (
+      <div className={classes.bar}>
+        <div className={classes.inner}>
+          <div className={classes.editingTitle}>Editing</div>
+          <Button variant="default" leftSection={<IconList size={16} />} onClick={onOpenCategories}>
+            Categories
+          </Button>
+          <Button onClick={() => onEditingChange(false)}>Done</Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={classes.bar}>
+      <div className={classes.inner}>
+        <div className={classes.brand}>Foyer</div>
+        {/* A search made in the menu stays visible here, so it's clear the page is filtered. */}
+        {query && (
+          <TextInput
+            className={classes.search}
+            type="search"
+            aria-label="Search bookmarks"
+            value={query}
+            onChange={(e) => onQueryChange(e.currentTarget.value)}
+            leftSection={<IconSearch size={16} stroke={2} aria-hidden="true" />}
+            rightSection={
+              <CloseButton aria-label="Clear search" onClick={() => onQueryChange('')} />
+            }
+          />
+        )}
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          size={44}
+          radius="md"
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(true)}
+        >
+          <IconMenu2 size={22} />
+        </ActionIcon>
+      </div>
+      <PhoneMenu
+        opened={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        query={query}
+        onQueryChange={onQueryChange}
+        onAdd={onAdd}
+        onEdit={() => onEditingChange(true)}
+      />
     </div>
   )
 }

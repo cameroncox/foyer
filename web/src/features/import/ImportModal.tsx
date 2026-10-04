@@ -16,6 +16,7 @@ import { useState } from 'react'
 
 import type { ImportPreview } from '../../api/client.ts'
 import { useImport, usePreviewImport } from '../../api/mutations.ts'
+import { usePhone } from '../../hooks/usePhone.ts'
 import classes from './ImportModal.module.css'
 import { defaultSelection, importRows, selectedCount, totals } from './rows.ts'
 
@@ -31,6 +32,7 @@ interface Props {
 export function ImportModal({ opened, onClose }: Props) {
   const preview = usePreviewImport()
   const importer = useImport()
+  const phone = usePhone()
   const [file, setFile] = useState<{ name: string; html: string } | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
@@ -97,6 +99,7 @@ export function ImportModal({ opened, onClose }: Props) {
       onClose={close}
       title="Import bookmarks"
       size="xl"
+      fullScreen={phone}
       scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="md">

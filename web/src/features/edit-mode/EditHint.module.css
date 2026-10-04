@@ -11,3 +11,11 @@
   font-size: 13px;
   line-height: 1.35;
 }
+
+/* Phone: full-bleed under the top bar, pulling up over the page's top padding. */
+.phone {
+  margin: -20px calc(-1 * var(--foyer-gutter)) 18px;
+  padding: 9px var(--foyer-gutter);
+  min-height: 0;
+  border-radius: 0;
+}

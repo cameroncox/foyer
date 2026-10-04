@@ -10,3 +10,16 @@
   background: var(--foyer-text);
   color: var(--foyer-card);
 }
+
+/* Phone: a sheet from the bottom, no taller than the screen minus a strip of the page. */
+.sheet {
+  max-height: calc(100dvh - 48px);
+}
+
+.grabber {
+  width: 40px;
+  height: 5px;
+  margin: -8px auto 12px;
+  border-radius: 3px;
+  background: var(--foyer-border-strong);
+}

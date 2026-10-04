@@ -8,6 +8,7 @@ import type { Bookmark } from '../../api/client.ts'
 import { useDeleteBookmark } from '../../api/mutations.ts'
 import { BookmarkIcon } from '../../components/BookmarkIcon.tsx'
 import { TagChip } from '../../components/TagChip.tsx'
+import { usePhone } from '../../hooks/usePhone.ts'
 import classes from './EditCard.module.css'
 
 interface Props {
@@ -18,7 +19,8 @@ interface Props {
 
 /**
  * A card in edit mode: drag handle (the only place a drag starts), then pencil and delete for
- * manual cards, or the host tag and pencil for Docker cards.
+ * manual cards, or the host tag and pencil for Docker cards. On a phone the whole card opens
+ * the form (Delete lives there) and the handle moves to the right, where a thumb finds it.
  */
 export function EditCard({ bookmark, editing, onEdit }: Props) {
   const {
@@ -32,6 +34,38 @@ export function EditCard({ bookmark, editing, onEdit }: Props) {
   } = useSortable({ id: bookmark.id })
   const remove = useDeleteBookmark()
   const [confirming, setConfirming] = useState(false)
+  const phone = usePhone()
+  const editLabel = bookmark.docker
+    ? `Edit category and tags of ${bookmark.name}`
+    : `Edit ${bookmark.name}`
+
+  const handle = (
+    <button
+      type="button"
+      ref={setActivatorNodeRef}
+      {...attributes}
+      {...listeners}
+      className={classes.handle}
+      aria-label={`Drag ${bookmark.name}`}
+    >
+      <IconGripVertical size={phone ? 20 : 16} />
+    </button>
+  )
+  const body = (
+    <>
+      <BookmarkIcon bookmark={bookmark} compact />
+      <div className={classes.text}>
+        <span className={classes.name}>{bookmark.name}</span>
+        {bookmark.hostTag ? (
+          <span>
+            <TagChip tag={bookmark.hostTag} host />
+          </span>
+        ) : (
+          <span className={classes.url}>{hostOf(bookmark.url)}</span>
+        )}
+      </div>
+    </>
+  )
 
   return (
     <div
@@ -45,77 +79,66 @@ export function EditCard({ bookmark, editing, onEdit }: Props) {
       data-dragging={isDragging || undefined}
       data-stopped={bookmark.status === 'stopped' || undefined}
     >
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
-        className={classes.handle}
-        aria-label={`Drag ${bookmark.name}`}
-        style={{ border: 0, background: 'transparent', padding: 0 }}
-      >
-        <IconGripVertical size={16} />
-      </button>
-      <BookmarkIcon bookmark={bookmark} compact />
-      <div className={classes.text}>
-        <span className={classes.name}>{bookmark.name}</span>
-        {bookmark.hostTag ? (
-          <span>
-            <TagChip tag={bookmark.hostTag} host />
-          </span>
-        ) : (
-          <span className={classes.url}>{hostOf(bookmark.url)}</span>
-        )}
-      </div>
-      <ActionIcon
-        variant="subtle"
-        color="gray"
-        size={30}
-        aria-label={
-          bookmark.docker ? `Edit category and tags of ${bookmark.name}` : `Edit ${bookmark.name}`
-        }
-        onClick={onEdit}
-      >
-        <IconPencil size={16} />
-      </ActionIcon>
-      {!bookmark.docker && (
-        <Popover
-          opened={confirming}
-          onChange={setConfirming}
-          position="bottom-end"
-          withArrow
-          shadow="md"
-        >
-          <Popover.Target>
-            <ActionIcon
-              variant="subtle"
-              color="red"
-              size={30}
-              aria-label={`Delete ${bookmark.name}`}
-              onClick={() => setConfirming((c) => !c)}
+      {phone ? (
+        <>
+          <button type="button" className={classes.body} aria-label={editLabel} onClick={onEdit}>
+            {body}
+          </button>
+          {handle}
+        </>
+      ) : (
+        <>
+          {handle}
+          {body}
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size={30}
+            aria-label={editLabel}
+            onClick={onEdit}
+          >
+            <IconPencil size={16} />
+          </ActionIcon>
+          {!bookmark.docker && (
+            <Popover
+              opened={confirming}
+              onChange={setConfirming}
+              position="bottom-end"
+              withArrow
+              shadow="md"
             >
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Popover.Target>
-          <Popover.Dropdown>
-            <Text size="sm" fw={500}>
-              Delete “{bookmark.name}”?
-            </Text>
-            <Group justify="flex-end" gap="xs" mt="xs">
-              <Button variant="default" size="xs" onClick={() => setConfirming(false)}>
-                Keep
-              </Button>
-              <Button
-                color="red"
-                size="xs"
-                loading={remove.isPending}
-                onClick={() => remove.mutate(bookmark.id)}
-              >
-                Delete
-              </Button>
-            </Group>
-          </Popover.Dropdown>
-        </Popover>
+              <Popover.Target>
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size={30}
+                  aria-label={`Delete ${bookmark.name}`}
+                  onClick={() => setConfirming((c) => !c)}
+                >
+                  <IconTrash size={16} />
+                </ActionIcon>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <Text size="sm" fw={500}>
+                  Delete “{bookmark.name}”?
+                </Text>
+                <Group justify="flex-end" gap="xs" mt="xs">
+                  <Button variant="default" size="xs" onClick={() => setConfirming(false)}>
+                    Keep
+                  </Button>
+                  <Button
+                    color="red"
+                    size="xs"
+                    loading={remove.isPending}
+                    onClick={() => remove.mutate(bookmark.id)}
+                  >
+                    Delete
+                  </Button>
+                </Group>
+              </Popover.Dropdown>
+            </Popover>
+          )}
+        </>
       )}
     </div>
   )

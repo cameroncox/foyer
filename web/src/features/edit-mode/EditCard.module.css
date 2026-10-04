@@ -29,6 +29,9 @@
   place-items: center;
   width: 22px;
   height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--foyer-muted);
   cursor: grab;
   border-radius: 6px;
@@ -63,4 +66,38 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Phone: the card is one big button to the form, with the handle on the right. */
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 2px 6px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.body:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  border-radius: 8px;
+}
+
+@media (max-width: 48em) {
+  .card {
+    padding: 6px 0 6px 6px;
+  }
+
+  .handle {
+    width: 48px;
+    height: 48px;
+    border-left: 1px solid var(--foyer-border);
+    border-radius: 0;
+  }
 }
