@@ -20,9 +20,9 @@ services:
       FOYER_DOCKERHOSTS_DOCKER2_NAME: docker-2
       FOYER_DOCKERHOSTS_DOCKER2_URI: http://172.16.78.22:2375
       FOYER_DOCKERHOSTS_DOCKER3_NAME: docker-3
-      FOYER_DOCKERHOSTS_DOCKER3_URI: http://[DOCKER-3 IP]:2375
+      FOYER_DOCKERHOSTS_DOCKER3_URI: http://172.16.78.23:2375
       FOYER_DOCKERHOSTS_DOCKER4_NAME: docker-4
-      FOYER_DOCKERHOSTS_DOCKER4_URI: http://[DOCKER-4 IP]:2375
+      FOYER_DOCKERHOSTS_DOCKER4_URI: http://172.16.78.37:2375
       # FOYER_HOMEPAGE_LABELS: "true"   # read homepage.* labels as a fallback (default true)
       # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
       # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down
