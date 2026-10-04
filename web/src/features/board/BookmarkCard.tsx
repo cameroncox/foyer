@@ -14,7 +14,7 @@ interface Props {
   first?: boolean
 }
 
-/** Icon, then name with tags under it. The URL and status show on hover; clicking opens the URL. */
+/** Icon, then name with tags under it. The URL and status show on hover; clicking opens the URL in a new tab. */
 export function BookmarkCard({ bookmark, matchedTag, first }: Props) {
   const status = statusLabel(bookmark)
 
@@ -27,6 +27,8 @@ export function BookmarkCard({ bookmark, matchedTag, first }: Props) {
     >
       <a
         href={bookmark.url}
+        target="_blank"
+        rel="noopener noreferrer"
         className={classes.card}
         data-stopped={bookmark.status === 'stopped' || undefined}
         data-first={first || undefined}
