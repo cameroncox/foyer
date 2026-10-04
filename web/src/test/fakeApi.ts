@@ -1,0 +1,58 @@
+import { vi } from 'vitest'
+
+import type { Dashboard } from '../api/client.ts'
+
+export interface ApiCall {
+  method: string
+  path: string
+  body: unknown
+}
+
+type Handler = (call: ApiCall) => unknown | Response
+
+const json = (value: unknown, status = 200) =>
+  new Response(value === undefined ? null : JSON.stringify(value), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+/**
+ * Stubs fetch with a tiny router: GET /api/dashboard serves `dashboard()`, other calls hit
+ * `routes` by "METHOD /path" (default: 204), and every call is recorded with its JSON body.
+ */
+export function stubApi(dashboard: () => Dashboard, routes: Record<string, Handler> = {}) {
+  const calls: ApiCall[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (request: Request) => {
+      const path = new URL(request.url).pathname
+      const text = request.method === 'GET' ? '' : await request.text()
+      const call = { method: request.method, path, body: text ? JSON.parse(text) : undefined }
+      if (!(request.method === 'GET' && path === '/api/dashboard')) {
+        calls.push(call)
+      }
+
+      const handler = routes[`${request.method} ${path}`]
+      if (handler) {
+        const result = handler(call)
+        return result instanceof Response ? result : json(result)
+      }
+
+      return request.method === 'GET' && path === '/api/dashboard'
+        ? json(dashboard())
+        : new Response(null, { status: 204 })
+    }),
+  )
+
+  return {
+    calls,
+    /** The recorded calls of one kind, e.g. 'POST /api/bookmarks'. */
+    called: (route: string) => calls.filter((c) => `${c.method} ${c.path}` === route),
+  }
+}
+
+export const problem = (status: number, detail: string) =>
+  new Response(JSON.stringify({ status, detail }), {
+    status,
+    headers: { 'Content-Type': 'application/problem+json' },
+  })

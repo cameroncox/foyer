@@ -39,3 +39,6 @@ class NoopResizeObserver {
 }
 
 window.ResizeObserver ??= NoopResizeObserver as unknown as typeof ResizeObserver
+
+// jsdom has no scrollIntoView; Mantine's dropdowns call it on the selected option.
+Element.prototype.scrollIntoView ??= function scrollIntoView() {}

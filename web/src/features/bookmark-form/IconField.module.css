@@ -1,0 +1,18 @@
+.preview {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 9px;
+  border: 1px dashed var(--foyer-border-strong);
+  background: var(--foyer-tile);
+  color: var(--foyer-muted);
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+
+.preview img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}

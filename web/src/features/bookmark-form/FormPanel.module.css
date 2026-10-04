@@ -1,0 +1,12 @@
+.fab {
+  position: fixed;
+  right: calc(var(--app-shell-aside-offset, 0px) + var(--foyer-gutter));
+  bottom: 32px;
+  z-index: 150;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.fab[data-open] {
+  background: var(--foyer-text);
+  color: var(--foyer-card);
+}

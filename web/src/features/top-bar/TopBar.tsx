@@ -1,6 +1,6 @@
-import { CloseButton, Kbd, TextInput } from '@mantine/core'
+import { Button, CloseButton, Kbd, TextInput } from '@mantine/core'
 import { useHotkeys } from '@mantine/hooks'
-import { IconSearch } from '@tabler/icons-react'
+import { IconCheck, IconPencil, IconSearch } from '@tabler/icons-react'
 import { useRef } from 'react'
 
 import { ThemeMenu } from './ThemeMenu.tsx'
@@ -11,12 +11,14 @@ interface Props {
   onQueryChange: (query: string) => void
   /** Enter in the search box: open the first result. */
   onSubmit: () => void
+  editing: boolean
+  onEditingChange: (editing: boolean) => void
 }
 
-/** The Foyer name, a centered search box (/ focuses it), and the theme picker. */
-export function TopBar({ query, onQueryChange, onSubmit }: Props) {
+/** The Foyer name, a centered search box (/ focuses it), the theme picker and Edit / Done. */
+export function TopBar({ query, onQueryChange, onSubmit, editing, onEditingChange }: Props) {
   const input = useRef<HTMLInputElement>(null)
-  useHotkeys([['/', () => input.current?.focus()]])
+  useHotkeys([['/', () => !editing && input.current?.focus()]])
 
   return (
     <div className={classes.bar}>
@@ -30,6 +32,7 @@ export function TopBar({ query, onQueryChange, onSubmit }: Props) {
           placeholder="Search bookmarks"
           aria-label="Search bookmarks"
           value={query}
+          disabled={editing}
           onChange={(e) => onQueryChange(e.currentTarget.value)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -53,6 +56,24 @@ export function TopBar({ query, onQueryChange, onSubmit }: Props) {
         />
         <div className={classes.actions}>
           <ThemeMenu />
+          {editing ? (
+            <Button
+              size="md"
+              leftSection={<IconCheck size={16} />}
+              onClick={() => onEditingChange(false)}
+            >
+              Done
+            </Button>
+          ) : (
+            <Button
+              size="md"
+              variant="default"
+              leftSection={<IconPencil size={16} />}
+              onClick={() => onEditingChange(true)}
+            >
+              Edit
+            </Button>
+          )}
         </div>
       </div>
     </div>

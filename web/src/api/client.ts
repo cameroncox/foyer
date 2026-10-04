@@ -36,3 +36,10 @@ export function unwrap<T>(result: { data?: T; error?: unknown; response: Respons
 
   return result.data as T
 }
+
+export type CreateBookmarkRequest = Schemas['CreateBookmarkRequest']
+export type UpdateBookmarkRequest = Schemas['UpdateBookmarkRequest']
+export type ReorderBookmarksRequest = Schemas['ReorderBookmarksRequest']
+export type ImportPreview = Schemas['ImportPreview']
+export type ImportPreviewFolder = Schemas['ImportPreviewFolder']
+export type ImportResult = Schemas['ImportResult']

@@ -1,0 +1,66 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  background: var(--foyer-card);
+  border: 1px solid var(--foyer-border-strong);
+  border-radius: 12px;
+}
+
+.card[data-editing] {
+  border-color: var(--mantine-primary-color-filled);
+  box-shadow: 0 0 0 4px var(--mantine-primary-color-light);
+}
+
+.card[data-dragging] {
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.card[data-stopped] {
+  opacity: 0.6;
+}
+
+.handle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 36px;
+  color: var(--foyer-muted);
+  cursor: grab;
+  border-radius: 6px;
+  /* The handle is the only place a drag starts, so the page still scrolls on touch. */
+  touch-action: none;
+}
+
+.handle:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.url {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 11px;
+  color: var(--foyer-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

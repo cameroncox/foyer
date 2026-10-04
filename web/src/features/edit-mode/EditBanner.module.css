@@ -1,0 +1,7 @@
+.banner {
+  padding: 10px var(--foyer-gutter);
+  background: var(--mantine-primary-color-light);
+  color: var(--mantine-primary-color-light-color);
+  border-bottom: 1px solid var(--mantine-primary-color-light-hover);
+  font-size: 14px;
+}

@@ -1,4 +1,5 @@
 import { MantineProvider } from '@mantine/core'
+import { Notifications } from '@mantine/notifications'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode, useMemo, useState } from 'react'
 
@@ -40,6 +41,7 @@ export function Root({
     <StrictMode>
       <AccentContext value={accentState}>
         <MantineProvider theme={theme} defaultColorScheme="auto" env={mantineEnv}>
+          <Notifications position="top-right" />
           <QueryClientProvider client={queryClient}>
             <App />
           </QueryClientProvider>

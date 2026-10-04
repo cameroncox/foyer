@@ -1,0 +1,43 @@
+.locked {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--foyer-page);
+  border: 1px solid var(--foyer-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lockedTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--foyer-muted);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 6px 10px;
+  font-size: 13px;
+  margin: 0;
+}
+
+.fields dt {
+  color: var(--foyer-muted);
+}
+
+.fields dd {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+}

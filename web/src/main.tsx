@@ -4,6 +4,7 @@ import '@fontsource/ibm-plex-sans/600.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import '@mantine/core/styles.css'
+import '@mantine/notifications/styles.css'
 import './styles/global.css'
 
 import { createRoot } from 'react-dom/client'

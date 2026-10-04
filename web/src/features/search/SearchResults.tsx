@@ -1,4 +1,5 @@
-import { Kbd } from '@mantine/core'
+import { Button, Kbd } from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 
 import { BookmarkCard } from '../board/BookmarkCard.tsx'
 import type { SearchHit } from './search.ts'
@@ -8,12 +9,25 @@ import classes from './SearchResults.module.css'
 interface Props {
   query: string
   hits: readonly SearchHit[]
+  /** "Nothing matches": open Add with the query as the name. */
+  onAdd: (name: string) => void
 }
 
 /** One flat grid of matches, the first ringed because Enter opens it. */
-export function SearchResults({ query, hits }: Props) {
+export function SearchResults({ query, hits, onAdd }: Props) {
   if (hits.length === 0) {
-    return <p className={classes.none}>Nothing matches “{query.trim()}”</p>
+    return (
+      <div className={classes.none}>
+        <p>Nothing matches “{query.trim()}”</p>
+        <Button
+          variant="light"
+          leftSection={<IconPlus size={16} />}
+          onClick={() => onAdd(query.trim())}
+        >
+          Add bookmark
+        </Button>
+      </div>
+    )
   }
 
   return (
