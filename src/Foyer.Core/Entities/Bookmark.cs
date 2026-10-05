@@ -35,6 +35,9 @@ public sealed class Bookmark
     /// <summary>False once the container is removed or unlabeled; the record is kept so it can come back in place.</summary>
     public bool IsPresent { get; set; } = true;
 
+    /// <summary>When a sync last found the container gone or unlabeled; null while present. Drives pruning.</summary>
+    public DateTimeOffset? MissingSince { get; set; }
+
     /// <summary>Category named by labels (null = Uncategorized), kept so Reset to labels works offline.</summary>
     public string? LabelCategory { get; set; }
 

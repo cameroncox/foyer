@@ -192,4 +192,45 @@ public sealed class DockerSyncServiceTests : IAsyncLifetime
         await SettledListCallsAsync();
         (await PresentCountAsync()).ShouldBe(1);
     }
+
+    [Fact]
+    public async Task Pass_PrunesBookmarksGoneLongerThanPruneAfter()
+    {
+        await _db.AddDockerAsync("old", isPresent: false, missingSince: TestDb.Now.AddDays(-31));
+        await _db.AddDockerAsync("recent", isPresent: false, missingSince: TestDb.Now.AddDays(-1));
+        _source.SetContainers(Containers.Labeled("sonarr"));
+
+        await StartAsync(Fast with { PruneAfter = TimeSpan.FromDays(30) });
+
+        await Eventually.HoldsAsync(async () => await ContainerNamesAsync() is ["recent", "sonarr"]);
+    }
+
+    [Fact]
+    public async Task PruneAfterNull_KeepsHiddenBookmarks()
+    {
+        await _db.AddDockerAsync("old", isPresent: false, missingSince: TestDb.Now.AddDays(-365));
+
+        await StartAsync(Fast with { PruneAfter = null });
+        await Eventually.HoldsAsync(() => _sync.PassesCompleted > 0);
+
+        (await ContainerNamesAsync()).ShouldBe(["old"]);
+    }
+
+    [Fact]
+    public async Task UnreachableHost_PrunesNothing()
+    {
+        await _db.AddDockerAsync("old", isPresent: false, missingSince: TestDb.Now.AddDays(-31));
+        _source.ListError = new HttpRequestException("connection refused");
+
+        await StartAsync(Fast with { PruneAfter = TimeSpan.FromDays(30) });
+        await Eventually.HoldsAsync(() => _sync.PassesCompleted > 0);
+
+        (await ContainerNamesAsync()).ShouldBe(["old"]);
+    }
+
+    private async Task<List<string?>> ContainerNamesAsync()
+    {
+        await using var db = _db.Fresh();
+        return await db.Bookmarks.OrderBy(b => b.ContainerName).Select(b => b.ContainerName).ToListAsync();
+    }
 }

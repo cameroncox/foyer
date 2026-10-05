@@ -13,7 +13,8 @@ namespace Foyer.Core.Docker;
 /// one plan, so open pages redraw at most once per pass. Passes run at startup, shortly after
 /// a burst of events settles, every resync interval, and every poll interval while the event
 /// stream is down. A pass that can't reach the host changes nothing, so its bookmarks stay
-/// on the page until it's back.
+/// on the page until it's back. A pass that can also deletes bookmarks whose containers have
+/// been gone longer than <see cref="SyncOptions.PruneAfter"/>.
 /// </summary>
 public sealed partial class DockerSyncService(
     DockerHostOptions host,
@@ -128,6 +129,12 @@ public sealed partial class DockerSyncService(
                 {
                     LogApplied(host.Name, plan.Creates.Count, plan.Updates.Count, plan.Hides.Count);
                 }
+
+                if (options.PruneAfter is { } pruneAfter
+                    && await store.PruneMissingAsync(host.Name, pruneAfter, ct) is var pruned and > 0)
+                {
+                    LogPruned(host.Name, pruned, pruneAfter.TotalDays);
+                }
             }
             finally
             {
@@ -232,6 +239,9 @@ public sealed partial class DockerSyncService(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Docker host {Host}: {Created} added, {Updated} updated, {Hidden} hidden")]
     private partial void LogApplied(string host, int created, int updated, int hidden);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Docker host {Host}: deleted {Count} bookmark(s) whose containers were gone over {Days} days")]
+    private partial void LogPruned(string host, int count, double days);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Docker host {Host}: saving the sync failed")]
     private partial void LogApplyFailed(Exception ex, string host);

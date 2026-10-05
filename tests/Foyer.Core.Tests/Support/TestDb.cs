@@ -94,6 +94,7 @@ public sealed class TestDb : IAsyncDisposable
         int categoryId = Category.UncategorizedId,
         string host = "docker-1",
         bool isPresent = true,
+        DateTimeOffset? missingSince = null,
         params string[] labelTags)
     {
         var bookmark = new Bookmark
@@ -107,6 +108,7 @@ public sealed class TestDb : IAsyncDisposable
             ContainerName = container,
             ContainerState = "running",
             IsPresent = isPresent,
+            MissingSince = missingSince,
             LabelTags = [.. labelTags],
             CreatedAt = Now,
         };

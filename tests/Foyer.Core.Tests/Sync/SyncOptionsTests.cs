@@ -16,6 +16,7 @@ public sealed class SyncOptionsTests
         options.HomepageLabels.ShouldBeTrue();
         options.ResyncInterval.ShouldBe(TimeSpan.FromSeconds(300));
         options.PollInterval.ShouldBe(TimeSpan.FromSeconds(30));
+        options.PruneAfter.ShouldBe(TimeSpan.FromDays(30));
     }
 
     [Fact]
@@ -24,12 +25,18 @@ public sealed class SyncOptionsTests
         var options = Parse(
             ("FOYER_HOMEPAGE_LABELS", "false"),
             ("foyer_resync_interval", "600"),
-            ("FOYER_POLL_INTERVAL", " 10 "));
+            ("FOYER_POLL_INTERVAL", " 10 "),
+            ("FOYER_PRUNE_AFTER_DAYS", "2"));
 
         options.HomepageLabels.ShouldBeFalse();
         options.ResyncInterval.ShouldBe(TimeSpan.FromMinutes(10));
         options.PollInterval.ShouldBe(TimeSpan.FromSeconds(10));
+        options.PruneAfter.ShouldBe(TimeSpan.FromDays(2));
     }
+
+    [Fact]
+    public void PruneAfterZero_NeverPrunes() =>
+        Parse(("FOYER_PRUNE_AFTER_DAYS", "0")).PruneAfter.ShouldBeNull();
 
     [Fact]
     public void BlankValues_KeepDefaults() =>
@@ -41,8 +48,9 @@ public sealed class SyncOptionsTests
         var ex = Should.Throw<FoyerConfigurationException>(() => Parse(
             ("FOYER_HOMEPAGE_LABELS", "yes"),
             ("FOYER_RESYNC_INTERVAL", "0"),
-            ("FOYER_POLL_INTERVAL", "5m")));
+            ("FOYER_POLL_INTERVAL", "5m"),
+            ("FOYER_PRUNE_AFTER_DAYS", "-1")));
 
-        ex.Problems.Count.ShouldBe(3);
+        ex.Problems.Count.ShouldBe(4);
     }
 }

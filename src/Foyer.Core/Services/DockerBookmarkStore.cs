@@ -51,6 +51,7 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
             if (touched.TryGetValue(id, out var bookmark))
             {
                 bookmark.IsPresent = false;
+                bookmark.MissingSince = clock.GetUtcNow();
             }
         }
 
@@ -78,6 +79,30 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
         await db.SaveChangesAsync(ct);
         notifier.BookmarksChanged();
         return true;
+    }
+
+    /// <summary>
+    /// Deletes <paramref name="host"/>'s hidden bookmarks whose container has been gone longer than
+    /// <paramref name="after"/>, overrides and all. Returns how many went. Nothing on the page
+    /// changes, so no one is notified.
+    /// </summary>
+    public async Task<int> PruneMissingAsync(string host, TimeSpan after, CancellationToken ct = default)
+    {
+        var cutoff = clock.GetUtcNow() - after;
+
+        // SQLite can't compare DateTimeOffsets, so the age check runs here; hidden rows are few.
+        var missing = await db.Bookmarks
+            .Where(b => b.Source == BookmarkSource.Docker && b.DockerHost == host && !b.IsPresent && b.MissingSince != null)
+            .ToListAsync(ct);
+        var stale = missing.Where(b => b.MissingSince <= cutoff).ToList();
+        if (stale.Count == 0)
+        {
+            return 0;
+        }
+
+        db.Bookmarks.RemoveRange(stale);
+        await db.SaveChangesAsync(ct);
+        return stale.Count;
     }
 
     /// <summary>Clears a Docker bookmark's category and tag overrides and re-applies its labels.</summary>
@@ -112,6 +137,10 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
         bookmark.ContainerState = update.ContainerState;
         bookmark.Health = update.Health;
         bookmark.IsPresent = update.IsPresent;
+        if (update.IsPresent)
+        {
+            bookmark.MissingSince = null;
+        }
 
         if (update.ClearOverrides)
         {

@@ -30,6 +30,7 @@ services:
       # FOYER_HOMEPAGE_LABELS: "true"   # read homepage.* labels as a fallback (default true)
       # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
       # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down
+      # FOYER_PRUNE_AFTER_DAYS: "30"    # days a removed container's hidden bookmark is kept (0 = forever)
     volumes:
       # Create it before the first up (mkdir data); a missing dir is created root-owned.
       - ./data:/data

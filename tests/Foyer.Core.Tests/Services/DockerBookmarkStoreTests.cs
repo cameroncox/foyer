@@ -1,6 +1,7 @@
 using Foyer.Core.Entities;
 using Foyer.Core.Exceptions;
 using Foyer.Core.Tests.Support;
+using Microsoft.EntityFrameworkCore;
 
 namespace Foyer.Core.Tests.Services;
 
@@ -223,5 +224,80 @@ public sealed class DockerBookmarkStoreTests
         await t.Docker.ApplyAsync(new ReconcilePlan("docker-2", [], [], [id]));
 
         (await t.DockerBookmarkAsync("whoami")).IsPresent.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Hiding_StampsMissingSince_AndComingBack_ClearsIt()
+    {
+        await using var t = await TestDb.CreateAsync();
+        await t.SyncAsync("docker-1", Containers.Labeled("sonarr"));
+
+        await t.SyncAsync("docker-1");
+        (await t.DockerBookmarkAsync("sonarr")).MissingSince.ShouldBe(TestDb.Now);
+
+        await t.SyncAsync("docker-1", Containers.Labeled("sonarr"));
+        (await t.DockerBookmarkAsync("sonarr")).MissingSince.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task ResetToLabels_OnAHiddenBookmark_KeepsItsMissingSince()
+    {
+        await using var t = await TestDb.CreateAsync();
+        var gone = await t.AddDockerAsync("sonarr", isPresent: false, missingSince: TestDb.Now.AddDays(-3));
+
+        await t.Docker.ResetToLabelsAsync(gone.Id);
+
+        (await t.DockerBookmarkAsync("sonarr")).MissingSince.ShouldBe(TestDb.Now.AddDays(-3));
+    }
+
+    [Fact]
+    public async Task PruneMissing_DeletesOnlyThisHostsBookmarksGoneLongEnough()
+    {
+        await using var t = await TestDb.CreateAsync();
+        await t.AddDockerAsync("old", isPresent: false, missingSince: TestDb.Now.AddDays(-8));
+        await t.AddDockerAsync("exactly", isPresent: false, missingSince: TestDb.Now.AddDays(-7));
+        await t.AddDockerAsync("recent", isPresent: false, missingSince: TestDb.Now.AddDays(-6));
+        await t.AddDockerAsync("unstamped", isPresent: false);
+        await t.AddDockerAsync("present");
+        await t.AddDockerAsync("old", host: "docker-2", isPresent: false, missingSince: TestDb.Now.AddDays(-8));
+        var notificationsBefore = t.Notifier.Count;
+
+        var pruned = await t.Docker.PruneMissingAsync("docker-1", TimeSpan.FromDays(7));
+
+        pruned.ShouldBe(2);
+        (await t.NamesInAsync(Category.UncategorizedId)).ShouldBe(["recent", "unstamped", "present", "old"]);
+        t.Notifier.Count.ShouldBe(notificationsBefore);
+    }
+
+    [Fact]
+    public async Task PruneMissing_DeletesTheBookmarksTags()
+    {
+        await using var t = await TestDb.CreateAsync();
+        await t.SyncAsync("docker-1", Containers.Labeled("sonarr"));
+        var id = (await t.DockerBookmarkAsync("sonarr")).Id;
+        await t.Bookmarks.UpdateAsync(id, new BookmarkEdit(CategoryRef.Existing(Category.UncategorizedId), ["custom"]));
+        await t.SyncAsync("docker-1");
+
+        await t.Docker.PruneMissingAsync("docker-1", TimeSpan.Zero);
+
+        await using var db = t.Fresh();
+        (await db.Bookmarks.CountAsync()).ShouldBe(0);
+        (await db.Set<BookmarkTag>().CountAsync()).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task PrunedContainer_ThatComesBack_IsANewBookmark()
+    {
+        await using var t = await TestDb.CreateAsync();
+        await t.SyncAsync("docker-1", Containers.Labeled("sonarr", "Media"));
+        var first = (await t.DockerBookmarkAsync("sonarr")).Id;
+        await t.SyncAsync("docker-1");
+        await t.Docker.PruneMissingAsync("docker-1", TimeSpan.Zero);
+
+        await t.SyncAsync("docker-1", Containers.Labeled("sonarr", "Media"));
+
+        var sonarr = await t.DockerBookmarkAsync("sonarr");
+        sonarr.Id.ShouldNotBe(first);
+        sonarr.IsPresent.ShouldBeTrue();
     }
 }

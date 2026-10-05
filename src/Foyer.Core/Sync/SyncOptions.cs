@@ -10,6 +10,7 @@ namespace Foyer.Core.Sync;
 /// <param name="Debounce">Quiet time after an event before re-listing, so a burst becomes one sync.</param>
 /// <param name="MaxDebounce">Longest an event can wait for quiet, so a constant stream still syncs.</param>
 /// <param name="ReconnectMin">First wait before reconnecting a dropped event stream; doubles up to <paramref name="ReconnectMax"/>.</param>
+/// <param name="PruneAfter">How long a hidden bookmark's container can stay gone before the bookmark is deleted, or null to keep it forever (FOYER_PRUNE_AFTER_DAYS).</param>
 public sealed record SyncOptions(
     bool HomepageLabels,
     TimeSpan ResyncInterval,
@@ -17,11 +18,13 @@ public sealed record SyncOptions(
     TimeSpan Debounce,
     TimeSpan MaxDebounce,
     TimeSpan ReconnectMin,
-    TimeSpan ReconnectMax)
+    TimeSpan ReconnectMax,
+    TimeSpan? PruneAfter)
 {
     public const string HomepageLabelsKey = "FOYER_HOMEPAGE_LABELS";
     public const string ResyncIntervalKey = "FOYER_RESYNC_INTERVAL";
     public const string PollIntervalKey = "FOYER_POLL_INTERVAL";
+    public const string PruneAfterDaysKey = "FOYER_PRUNE_AFTER_DAYS";
 
     public static SyncOptions Default { get; } = new(
         HomepageLabels: true,
@@ -30,7 +33,8 @@ public sealed record SyncOptions(
         Debounce: TimeSpan.FromMilliseconds(500),
         MaxDebounce: TimeSpan.FromSeconds(5),
         ReconnectMin: TimeSpan.FromSeconds(1),
-        ReconnectMax: TimeSpan.FromSeconds(60));
+        ReconnectMax: TimeSpan.FromSeconds(60),
+        PruneAfter: TimeSpan.FromDays(30));
 
     /// <summary>Reads the FOYER_* sync settings over <see cref="Default"/>; throws listing every bad value.</summary>
     public static SyncOptions Parse(IEnumerable<KeyValuePair<string, string?>> settings)
@@ -59,6 +63,18 @@ public sealed record SyncOptions(
             ResyncInterval = Seconds(values, ResyncIntervalKey, options.ResyncInterval, problems),
             PollInterval = Seconds(values, PollIntervalKey, options.PollInterval, problems),
         };
+
+        if (values.TryGetValue(PruneAfterDaysKey, out var days))
+        {
+            if (int.TryParse(days, NumberStyles.None, CultureInfo.InvariantCulture, out var count))
+            {
+                options = options with { PruneAfter = count == 0 ? null : TimeSpan.FromDays(count) };
+            }
+            else
+            {
+                problems.Add($"{PruneAfterDaysKey} '{days}' must be a whole number of days, or 0 to never prune.");
+            }
+        }
 
         return problems.Count > 0 ? throw new FoyerConfigurationException(problems) : options;
     }

@@ -145,6 +145,7 @@ bookmark manager with manually added bookmarks only.
 | `FOYER_HOMEPAGE_LABELS` | `true` | Fall back to `homepage.*` labels |
 | `FOYER_RESYNC_INTERVAL` | `300` | Seconds between full resyncs |
 | `FOYER_POLL_INTERVAL` | `30` | Poll interval when a host's event stream is down |
+| `FOYER_PRUNE_AFTER_DAYS` | `30` | Days a removed container's hidden bookmark is kept before it's deleted (`0` = forever) |
 | `FOYER_DATA_DIR` | `/data` | SQLite file and icon cache |
 | `FOYER_TITLE` | `Foyer` | Name in the top bar and the browser tab (up to 60 characters) |
 | `FOYER_SEARCH_URL` | `https://duckduckgo.com/?q=` | The spotlight's web search; the query replaces `%s`, or is appended. Bangs (`!g …`) go straight to DuckDuckGo |

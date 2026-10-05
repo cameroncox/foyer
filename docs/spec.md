@@ -46,6 +46,7 @@ Foyer is configured through environment variables only; bookmarks, categories an
 | `FOYER_HOMEPAGE_LABELS` | `true` | Read `homepage.*` labels as a fallback |
 | `FOYER_RESYNC_INTERVAL` | `300` | Seconds between full resyncs |
 | `FOYER_POLL_INTERVAL` | `30` | Seconds between polls for a host whose event stream is down |
+| `FOYER_PRUNE_AFTER_DAYS` | `30` | Days a removed or unlabeled container's bookmark is kept, hidden, before it's deleted; `0` keeps it forever |
 | `FOYER_DATA_DIR` | `/data` | Location of the SQLite file and icon cache |
 | `FOYER_TITLE` | `Foyer` | Name in the top bar and the browser tab, up to 60 characters |
 | `FOYER_SEARCH_URL` | `https://duckduckgo.com/?q=` | The spotlight's web search. The query replaces `%s`, or is appended when there's none; anything but an http(s) URL stops startup |
@@ -126,6 +127,7 @@ Three tables hold everything the server stores; display settings never reach the
 | ContainerState | string? | running, exited, paused, restarting, … |
 | Health | string? | healthy, unhealthy, starting, or none |
 | IsPresent | bool | False once the container is removed or unlabeled |
+| MissingSince | timestamp? | When the sync found it gone; cleared when it comes back. Drives pruning |
 | LabelTags | string\[\] | From `coxdev.bookmark.tags` |
 | CategoryOverridden, TagsOverridden | bool | Set when edited in the UI |
 | CreatedAt | timestamp |  |
@@ -165,8 +167,11 @@ Container lifecycle:
 | Removed (`compose down`, `docker rm`) | Gone | Kept, `IsPresent = false` |
 | Label removed or `enabled=false` | Gone | Kept, `IsPresent = false` |
 | Comes back | Returns in its old spot | Category, tags and position intact |
+| Gone longer than `FOYER_PRUNE_AFTER_DAYS` | Gone | Deleted; if it comes back, it's a new bookmark |
 
 Docker bookmarks can't be deleted or hidden from the UI. Only the container or its labels take one off the page.
+
+A hidden record is what lets a returning container come back as the same bookmark, so it's kept for `FOYER_PRUNE_AFTER_DAYS` (30 by default). After that, a sync pass that reaches the host deletes it, which stops short-lived containers, such as ones started by CI on a watched host, from piling up. An unreachable host prunes nothing. Bookmarks already hidden when this was introduced start their wait at the upgrade.
 
 ## Icons
 
@@ -337,5 +342,4 @@ These stay out of Foyer for good, not just for version 1:
 - **Auth.** Foyer always sits behind Tinyauth or whatever fronts it.
 - **Discovery agents.** docker-socket-proxy already solves per-host access; Foyer won't ship its own agent.
 - **Status for manual bookmarks.** No URL pinging; manual cards never get a dot.
-- **Cleanup of removed containers.** A downed or removed container just vanishes. Its hidden record is what lets a container that returns under the same host and name come back as the same bookmark; a different name arrives as a new one.
 - **Server-side display settings.** Theme and color scheme are per device, permanently; only the title and web search come from FOYER\_\* variables.
