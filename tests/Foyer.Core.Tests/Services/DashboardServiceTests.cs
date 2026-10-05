@@ -17,7 +17,7 @@ public sealed class DashboardServiceTests
         await t.AddDockerAsync("sonarr", media.Id);
         await t.AddManualAsync("Router");
 
-        var dashboard = await new DashboardService(t.Fresh()).GetAsync();
+        var dashboard = await new DashboardService(t.Fresh(), t.Profile, t.Options).GetAsync();
 
         dashboard.Select(c => c.Category.Name).ShouldBe(["Media", "Empty", Category.UncategorizedName]);
         dashboard[0].Bookmarks.Select(b => b.Name).ShouldBe(["Jellyfin", "sonarr"]);

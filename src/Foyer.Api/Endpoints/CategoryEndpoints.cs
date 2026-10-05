@@ -32,7 +32,7 @@ internal static class CategoryEndpoints
                 return TypedResults.NoContent();
             })
             .WithName("DeleteCategory")
-            .WithSummary("Delete, moving its bookmarks to the end of Uncategorized; Uncategorized answers 409")
+            .WithSummary("Delete, moving its bookmarks to the end of Uncategorized; Uncategorized, or one holding another profile's shared bookmarks, answers 409")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 

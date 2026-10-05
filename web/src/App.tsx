@@ -19,6 +19,8 @@ import { Footer } from './features/footer/Footer.tsx'
 import { ImportModal } from './features/import/ImportModal.tsx'
 import { FoyerSpotlight } from './features/spotlight/FoyerSpotlight.tsx'
 import { TopBar } from './features/top-bar/TopBar.tsx'
+import { useCanEdit } from './features/profiles/profileContext.ts'
+import { DefaultBanner } from './features/sharing/DefaultBanner.tsx'
 import { useLiveUpdates } from './hooks/useLiveUpdates.ts'
 import { usePhone } from './hooks/usePhone.ts'
 import { useDocumentTitle } from './hooks/useTitle.ts'
@@ -40,6 +42,7 @@ export default function App() {
   const [picked, setPicked] = useState<ReadonlySet<number>>(new Set())
   const phone = usePhone()
   const [spotlight] = useState(createSpotlight)
+  const canEdit = useCanEdit()
 
   const categories = useMemo(() => dashboard.data?.categories ?? [], [dashboard.data])
   const empty = categories.every((c) => c.bookmarks.length === 0)
@@ -165,6 +168,7 @@ export default function App() {
 
       <AppShell.Main>
         <div className={classes.main}>
+          <DefaultBanner />
           {dashboard.isPending ? (
             <Center py="xl">
               <Loader aria-label="Loading bookmarks" />
@@ -207,7 +211,7 @@ export default function App() {
               />
             </>
           ) : empty ? (
-            <EmptyState onAdd={() => setPanel({ kind: 'add' })} />
+            <EmptyState onAdd={canEdit ? () => setPanel({ kind: 'add' }) : undefined} />
           ) : (
             <Board categories={categories} />
           )}
@@ -219,9 +223,14 @@ export default function App() {
         spotlight={spotlight}
         categories={categories}
         enabled={!editing && !panel && !importing}
-        onAdd={(name) => setPanel({ kind: 'add', name })}
+        onAdd={canEdit ? (name) => setPanel({ kind: 'add', name }) : undefined}
       />
-      <FormPanel panel={livePanel} onPanelChange={setPanel} categories={categories} />
+      <FormPanel
+        panel={livePanel}
+        onPanelChange={setPanel}
+        categories={categories}
+        canAdd={canEdit}
+      />
       <ImportModal opened={importing} onClose={() => setImporting(false)} />
     </AppShell>
   )

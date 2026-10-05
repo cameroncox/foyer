@@ -1,0 +1,72 @@
+.target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  max-width: 240px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--foyer-border);
+  border-radius: var(--mantine-radius-default);
+  background: var(--mantine-color-body);
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color 120ms ease;
+}
+
+.target:hover {
+  border-color: var(--mantine-primary-color-filled);
+}
+
+/* Default, for someone who can edit it: its changes reach every profile's Docker cards. */
+.target[data-default-editor] {
+  border-color: var(--mantine-color-yellow-outline);
+  background: var(--mantine-color-yellow-light);
+  color: var(--mantine-color-yellow-light-color);
+  font-weight: 600;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The phone menu's list. */
+.list {
+  border: 1px solid var(--foyer-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+.row + .row {
+  border-top: 1px solid var(--foyer-border);
+}
+
+.row[data-current] {
+  background: var(--mantine-primary-color-light);
+  font-weight: 600;
+}
+
+.rowName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rowAction {
+  color: var(--mantine-primary-color-filled);
+  font-weight: 500;
+}

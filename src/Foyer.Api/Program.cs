@@ -4,10 +4,12 @@ using Foyer.Api;
 using Foyer.Api.Configuration;
 using Foyer.Api.Endpoints;
 using Foyer.Api.Errors;
+using Foyer.Api.Profiles;
 using Foyer.Core;
 using Foyer.Core.Data;
 using Foyer.Core.Events;
 using Foyer.Core.Exceptions;
+using Foyer.Core.Profiles;
 using Microsoft.EntityFrameworkCore;
 
 if (args is ["--healthcheck", ..])
@@ -31,7 +33,7 @@ catch (FoyerConfigurationException ex)
 Directory.CreateDirectory(settings.DataDir);
 
 builder.Services.AddSingleton(settings);
-builder.Services.AddFoyerCore(settings.DataDir);
+builder.Services.AddFoyerCore(settings.DataDir, settings.Profiles);
 builder.Services.AddFoyerDockerSync(settings.Hosts, settings.Sync);
 builder.Services.AddSingleton<ChangeBroadcaster>();
 builder.Services.AddSingleton(EventStreamOptions.Default);
@@ -51,6 +53,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 StartupLog.Starting(app.Logger, FoyerVersion.Current, settings.Hosts.Count);
+LogProfileMode(app.Logger, settings.Profiles);
 
 await using (var scope = app.Services.CreateAsyncScope())
 {
@@ -59,6 +62,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseWhen(http => http.Request.Path.StartsWithSegments("/api"), api => api.UseMiddleware<ProfileMiddleware>());
 
 app.MapOpenApi();
 
@@ -67,6 +71,7 @@ app.UseStaticFiles();
 
 app.MapSettings();
 app.MapManifest();
+app.MapProfiles();
 app.MapDashboard();
 app.MapBookmarks();
 app.MapCategories();
@@ -83,3 +88,18 @@ app.MapFallbackToFile("index.html");
 
 await app.RunAsync();
 return 0;
+
+static void LogProfileMode(ILogger logger, ProfileOptions profiles)
+{
+    if (!profiles.Enabled)
+    {
+        StartupLog.ProfilesOff(logger);
+        return;
+    }
+
+    var proxies = profiles.TrustedProxies.Count == 0 ? "any address" : string.Join(", ", profiles.TrustedProxies);
+    var editors = profiles.HasDefaultEditors
+        ? string.Join(", ", profiles.DefaultEditorUsers.Concat(profiles.DefaultEditorGroups.Select(g => $"group {g}")))
+        : "none listed, so only requests without a user header";
+    StartupLog.ProfilesOn(logger, profiles.UserHeader, proxies, editors);
+}

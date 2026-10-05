@@ -131,9 +131,31 @@ form start there; each category can have its own link. The link points at the ad
 opened on, so drag it from the address you'll use day to day. It isn't offered on phones, where
 bookmarklets don't see the page they're run from.
 
+## Profiles
+
+A profile is a named view of Foyer with its own bookmarks, categories and order, at
+`/{name}`. **Default** is the home profile and the only one that holds Docker bookmarks;
+upgrading from 1.0 moves everything into it. Pick or create profiles from the menu beside the
+title (at the top of the menu on a phone); `/` reopens the one last picked on that device.
+
+- **Without an auth proxy**, everyone sees Default and every profile made there, and can edit
+  them all.
+- **Behind one** (Tinyauth, or anything that sends `Remote-User`), each user also gets a
+  personal profile, made the first time they visit, and can make more that only they see.
+  Default is read-only for them unless they're listed in `FOYER_DEFAULT_REMOTE_USERS` or
+  `FOYER_DEFAULT_REMOTE_GROUPS`. Set `FOYER_TRUSTED_PROXIES` to the proxy's address once Foyer
+  can be reached any other way, or anyone can claim to be any user.
+- **Shared bookmarks** show in every profile, read-only, in a category of the same name. Share
+  one with the Shared switch in its Add or Edit form; Docker bookmarks can be shared from Default.
+
+`FOYER_PROFILES=false` turns all of this off: every request uses Default, as in 1.0. Other
+profiles, and the bookmarks they share, are hidden until it's turned back on. See the
+[1.1 spec](docs/spec-1.1.md) for the details.
+
 ## Configuration
 
-Environment variables only. See the [spec](docs/spec.md) for the full list; the essentials:
+Environment variables only. See the [spec](docs/spec.md) and the [1.1 spec](docs/spec-1.1.md)
+for the full list; the essentials:
 
 Docker hosts are optional: with no `FOYER_DOCKERHOSTS_{KEY}_URI` set, Foyer runs as a plain
 bookmark manager with manually added bookmarks only.
@@ -149,6 +171,14 @@ bookmark manager with manually added bookmarks only.
 | `FOYER_DATA_DIR` | `/data` | SQLite file and icon cache |
 | `FOYER_TITLE` | `Foyer` | Name in the top bar and the browser tab (up to 60 characters) |
 | `FOYER_SEARCH_URL` | `https://duckduckgo.com/?q=` | The spotlight's web search; the query replaces `%s`, or is appended. Bangs (`!g …`) go straight to DuckDuckGo |
+| `FOYER_PROFILES` | `true` | `false` turns profiles off; every request uses Default, as in 1.0 |
+| `FOYER_PROFILE_HEADER` | `Remote-User` | Header the auth proxy names the user in |
+| `FOYER_GROUPS_HEADER` | `Remote-Groups` | Header listing the user's groups, comma-separated |
+| `FOYER_TRUSTED_PROXIES` | empty (any address) | IPs or CIDRs allowed to send those headers, comma-separated; others get a 403 |
+| `FOYER_DEFAULT_REMOTE_USERS` | empty | Users who can edit Default, comma-separated. `@` and `_` match each other, since Tinyauth sends `me@example.com` as `me_example.com` |
+| `FOYER_DEFAULT_REMOTE_GROUPS` | empty | Groups whose members can edit Default, comma-separated |
+
+With no Default editors listed, only requests without a user header can edit Default.
 
 ## Built with AI
 

@@ -1,5 +1,6 @@
 using Foyer.Core.Entities;
 using Foyer.Core.Icons;
+using Foyer.Core.Profiles;
 
 namespace Foyer.Api.Contracts;
 
@@ -9,6 +10,10 @@ namespace Foyer.Api.Contracts;
 /// <param name="HostTag">The automatic host tag for Docker bookmarks (shown as #docker-4).</param>
 /// <param name="Status">The status dot; null for manual bookmarks.</param>
 /// <param name="Docker">Set for Docker bookmarks only.</param>
+/// <param name="IsShared">Shown in every profile: the caller's own shared bookmark, or another profile's.</param>
+/// <param name="CanEdit">Whether the caller can change it: their own, in a profile they can edit.</param>
+/// <param name="SharedBy">For another profile's shared bookmark, the user who owns it, if that profile has one.</param>
+/// <param name="SharedFrom">For another profile's shared bookmark, the profile it's from.</param>
 public sealed record BookmarkResponse(
     int Id,
     BookmarkSource Source,
@@ -20,9 +25,20 @@ public sealed record BookmarkResponse(
     IReadOnlyList<string> Tags,
     string? HostTag,
     DockerStatus? Status,
-    DockerInfoResponse? Docker)
+    DockerInfoResponse? Docker,
+    bool IsShared,
+    bool CanEdit,
+    string? SharedBy,
+    string? SharedFrom)
 {
-    public static BookmarkResponse From(Bookmark b) =>
+    /// <summary>The caller's own bookmark, just saved.</summary>
+    public static BookmarkResponse From(Bookmark b) => From(b, canEdit: true, owner: null);
+
+    /// <summary>A bookmark on the current profile's page; <paramref name="owner"/> is set for another profile's shared one.</summary>
+    public static BookmarkResponse From(Bookmark b, ProfileContext context, Profile? owner) =>
+        From(b, canEdit: owner is null && context.CanEdit, owner);
+
+    private static BookmarkResponse From(Bookmark b, bool canEdit, Profile? owner) =>
         new(
             b.Id,
             b.Source,
@@ -44,5 +60,9 @@ public sealed record BookmarkResponse(
                     b.LabelTags,
                     b.CategoryOverridden,
                     b.TagsOverridden)
-                : null);
+                : null,
+            b.IsShared,
+            canEdit,
+            owner?.OwnerUser,
+            owner?.Name);
 }

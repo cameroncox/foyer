@@ -3,7 +3,8 @@ import { IconBookmark, IconPlus } from '@tabler/icons-react'
 
 import classes from './EmptyState.module.css'
 
-export function EmptyState({ onAdd }: { onAdd: () => void }) {
+/** `onAdd` is left out on a profile the page can't change, which hides the button. */
+export function EmptyState({ onAdd }: { onAdd?: () => void }) {
   return (
     <section className={classes.box}>
       <div className={classes.badge}>
@@ -14,9 +15,11 @@ export function EmptyState({ onAdd }: { onAdd: () => void }) {
         Add one by hand, or label a container with <Code>coxdev.bookmark.enabled=true</Code> and it
         will show up here.
       </p>
-      <Button mt={8} size="md" leftSection={<IconPlus size={18} />} onClick={onAdd}>
-        Add bookmark
-      </Button>
+      {onAdd && (
+        <Button mt={8} size="md" leftSection={<IconPlus size={18} />} onClick={onAdd}>
+          Add bookmark
+        </Button>
+      )}
     </section>
   )
 }

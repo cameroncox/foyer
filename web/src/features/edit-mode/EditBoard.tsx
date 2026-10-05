@@ -54,7 +54,8 @@ export interface Selection {
 
 /**
  * Every category (empty ones too, as drop targets) as a grid of draggable cards. A card moves
- * between categories as it's dragged over them; the drop sends one reorder request.
+ * between categories as it's dragged over them; the drop sends one reorder request. Another
+ * profile's shared card stays in its own category, since only its owner can move it.
  */
 export function EditBoard({ dashboard, editingId, onEdit, onMove, selection }: Props) {
   const sensors = useSensors(
@@ -124,6 +125,11 @@ export function EditBoard({ dashboard, editingId, onEdit, onMove, selection }: P
 
     const overCategory = parseCategoryKey(over.id) ?? findContainer(dragging, Number(over.id))
     if (overCategory === undefined) {
+      return
+    }
+
+    const card = byId.get(Number(active.id))
+    if (card && !card.canEdit && overCategory !== from.current?.categoryId) {
       return
     }
 

@@ -2,6 +2,7 @@ using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using Foyer.Api.Configuration;
 using Foyer.Core.Events;
+using Foyer.Core.Profiles;
 
 namespace Foyer.Api.Endpoints;
 
@@ -16,11 +17,11 @@ internal static class EventEndpoints
 
     public static IEndpointRouteBuilder MapEvents(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/events", (ChangeBroadcaster changes, EventStreamOptions options, CancellationToken ct) =>
-                TypedResults.ServerSentEvents(StreamAsync(changes, options.Heartbeat, ct)))
+        app.MapGet("/api/events", (ChangeBroadcaster changes, EventStreamOptions options, ProfileContext profile, CancellationToken ct) =>
+                TypedResults.ServerSentEvents(StreamAsync(changes, profile.ProfileId, options.Heartbeat, ct)))
             .WithName("Events")
             .WithTags("Events")
-            .WithSummary("Server-sent events: connected on open, bookmarks-changed when data changes, ping as a keep-alive");
+            .WithSummary("Server-sent events for one profile (?profile=): connected on open, bookmarks-changed when its data changes, ping as a keep-alive");
 
         return app;
     }
@@ -32,10 +33,11 @@ internal static class EventEndpoints
     /// </summary>
     private static async IAsyncEnumerable<SseItem<string>> StreamAsync(
         ChangeBroadcaster changes,
+        int profileId,
         TimeSpan heartbeat,
         [EnumeratorCancellation] CancellationToken ct)
     {
-        var subscription = changes.SubscribeAsync(ct).GetAsyncEnumerator(ct);
+        var subscription = changes.SubscribeAsync(ct, profileId).GetAsyncEnumerator(ct);
 
         // Subscribes before "connected" goes out, so no change falls in between.
         var next = subscription.MoveNextAsync().AsTask();

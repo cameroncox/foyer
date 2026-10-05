@@ -3,6 +3,8 @@ import { IconPlus, IconX } from '@tabler/icons-react'
 
 import type { Bookmark, DashboardCategory } from '../../api/client.ts'
 import { usePhone } from '../../hooks/usePhone.ts'
+import { ReadOnlyBookmark } from '../sharing/ReadOnlyBookmark.tsx'
+import { isReadOnly } from '../sharing/shared.ts'
 import { BookmarkForm } from './BookmarkForm.tsx'
 import { DockerBookmarkForm } from './DockerBookmarkForm.tsx'
 import classes from './FormPanel.module.css'
@@ -16,13 +18,17 @@ interface Props {
   panel: Panel
   onPanelChange: (panel: Panel) => void
   categories: readonly DashboardCategory[]
+  /** False on a profile the page can't change: no +. */
+  canAdd?: boolean
 }
 
 /**
- * The floating + (any mode) and the popover above it, which holds Add or an Edit form. While
- * open, the + turns into × and closes it. On a phone the form is a bottom sheet instead.
+ * The floating + (any mode) and the popover above it, which holds Add or an Edit form (or, for
+ * another profile's shared bookmark, what it is and who it's from). While open, the + turns into
+ * × and closes it. On a phone the form is a bottom sheet instead. A profile the page can't
+ * change has no +.
  */
-export function FormPanel({ panel, onPanelChange, categories }: Props) {
+export function FormPanel({ panel, onPanelChange, categories, canAdd = true }: Props) {
   const close = () => onPanelChange(null)
   const open = panel !== null
   const phone = usePhone()
@@ -31,7 +37,7 @@ export function FormPanel({ panel, onPanelChange, categories }: Props) {
   if (phone) {
     return (
       <>
-        {!open && (
+        {!open && canAdd && (
           <ActionIcon
             className={classes.fab}
             size={60}
@@ -58,6 +64,10 @@ export function FormPanel({ panel, onPanelChange, categories }: Props) {
         </Drawer>
       </>
     )
+  }
+
+  if (!canAdd && !open) {
+    return null
   }
 
   return (
@@ -110,7 +120,16 @@ function PanelForm({
         <BookmarkForm key="add" categories={categories} initialName={panel.name} onDone={onDone} />
       )}
       {panel?.kind === 'edit' &&
-        (panel.bookmark.docker ? (
+        (isReadOnly(panel.bookmark) ? (
+          <ReadOnlyBookmark
+            key={panel.bookmark.id}
+            bookmark={panel.bookmark}
+            categoryName={
+              categories.find((c) => c.id === panel.bookmark.categoryId)?.name ?? 'its category'
+            }
+            onDone={onDone}
+          />
+        ) : panel.bookmark.docker ? (
           <DockerBookmarkForm
             key={panel.bookmark.id}
             categories={categories}

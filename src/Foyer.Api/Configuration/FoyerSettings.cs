@@ -1,5 +1,6 @@
 using Foyer.Core.Docker;
 using Foyer.Core.Exceptions;
+using Foyer.Core.Profiles;
 using Foyer.Core.Sync;
 
 namespace Foyer.Api.Configuration;
@@ -14,6 +15,7 @@ internal sealed record FoyerSettings(
     string DataDir,
     IReadOnlyList<DockerHostOptions> Hosts,
     SyncOptions Sync,
+    ProfileOptions Profiles,
     string Title,
     string SearchUrl)
 {
@@ -38,6 +40,7 @@ internal sealed record FoyerSettings(
         var problems = new List<string>();
         var hosts = Collect(() => DockerHostsParser.Parse(settings), problems) ?? [];
         var sync = Collect(() => SyncOptions.Parse(settings), problems) ?? SyncOptions.Default;
+        var profiles = Collect(() => ProfileOptions.Parse(settings), problems) ?? ProfileOptions.Default;
         var title = config[TitleKey]?.Trim() is { Length: > 0 } t ? t : DefaultTitle;
         if (title.Length > MaxTitleLength)
         {
@@ -58,7 +61,7 @@ internal sealed record FoyerSettings(
 
         var dir = config[DataDirKey];
         var dataDir = string.IsNullOrWhiteSpace(dir) ? DefaultDataDir : Path.GetFullPath(dir, env.ContentRootPath);
-        return new FoyerSettings(dataDir, hosts, sync, title, searchUrl);
+        return new FoyerSettings(dataDir, hosts, sync, profiles, title, searchUrl);
     }
 
     private static T? Collect<T>(Func<T> parse, List<string> problems)

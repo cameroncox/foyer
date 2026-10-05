@@ -7,6 +7,16 @@ export type Dashboard = Schemas['DashboardResponse']
 export type DashboardCategory = Schemas['DashboardCategoryResponse']
 export type Bookmark = Schemas['BookmarkResponse']
 export type DockerStatus = Schemas['DockerStatus']
+export type Me = Schemas['MeResponse']
+export type Profile = Schemas['ProfileResponse']
+
+/** Names the profile a call acts on; the page sends it from its URL. */
+export const PROFILE_HEADER = 'X-Foyer-Profile'
+
+/** Headers for a call within `profile`; none without one, leaving the server to pick. */
+export function profileHeaders(profile: string | undefined): Record<string, string> {
+  return profile ? { [PROFILE_HEADER]: profile } : {}
+}
 
 /**
  * Typed client for Foyer's API, on the page's own origin. fetch is looked up per call so tests

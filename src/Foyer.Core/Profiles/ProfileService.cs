@@ -1,0 +1,172 @@
+using Foyer.Core.Data;
+using Foyer.Core.Entities;
+using Foyer.Core.Events;
+using Foyer.Core.Exceptions;
+using Foyer.Core.Sharing;
+using Microsoft.EntityFrameworkCore;
+
+namespace Foyer.Core.Profiles;
+
+/// <summary>Creates, renames and deletes profiles, and makes each user's personal profile on first sight.</summary>
+public sealed class ProfileService(
+    FoyerDbContext db,
+    ProfileContext context,
+    ProfileOptions options,
+    IChangeNotifier notifier,
+    TimeProvider clock,
+    SharingService sharing)
+{
+    /// <summary>The profiles <paramref name="caller"/> can pick: Default, their personal and other profiles, then ownerless ones.</summary>
+    public async Task<IReadOnlyList<Profile>> VisibleAsync(Caller caller, CancellationToken ct = default)
+    {
+        // OwnerUser uses NOCASE collation, so == here is case-insensitive in SQLite.
+        var profiles = await db.Profiles
+            .AsNoTracking()
+            .Where(p => p.IsSystem || p.OwnerUser == null || p.OwnerUser == caller.User)
+            .ToListAsync(ct);
+
+        return profiles
+            .OrderBy(p => p.IsSystem ? 0 : p.IsPersonal ? 1 : p.OwnerUser is not null ? 2 : 3)
+            .ThenBy(p => p.Slug, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// <paramref name="user"/>'s personal profile, made now if they have none: named as the header
+    /// was sent, at its slug (with -2, -3, … if that's taken), with an empty Uncategorized.
+    /// </summary>
+    public async Task<Profile> EnsurePersonalAsync(string user, CancellationToken ct = default)
+    {
+        if (await FindPersonalAsync(user, ct) is { } existing)
+        {
+            return existing;
+        }
+
+        var clashes = await db.Profiles.AsNoTracking()
+            .Where(p => p.OwnerUser == null || p.OwnerUser == user)
+            .ToListAsync(ct);
+        var profile = new Profile
+        {
+            Name = user,
+            Slug = ProfileNames.PersonalSlug(user, clashes),
+            OwnerUser = user,
+            IsPersonal = true,
+            CreatedAt = clock.GetUtcNow(),
+        };
+
+        try
+        {
+            await AddWithUncategorizedAsync(profile, ct);
+            return profile;
+        }
+        catch (DbUpdateException)
+        {
+            // Two first requests at once: the other one made it.
+            db.ChangeTracker.Clear();
+            return await FindPersonalAsync(user, ct) ?? throw new InvalidOperationException(
+                $"Couldn't create a personal profile for '{user}'.");
+        }
+    }
+
+    /// <summary>A new profile owned by the caller's user, or ownerless without one.</summary>
+    public async Task<Profile> CreateAsync(string name, CancellationToken ct = default)
+    {
+        EnsureEnabled();
+        name = ProfileNames.Validate(name);
+        var owner = context.Caller.User;
+        await EnsureAvailableAsync(name, owner, exceptId: null, ct);
+
+        var profile = new Profile
+        {
+            Name = name,
+            Slug = name.ToLowerInvariant(),
+            OwnerUser = owner,
+            CreatedAt = clock.GetUtcNow(),
+        };
+        await AddWithUncategorizedAsync(profile, ct);
+        return profile;
+    }
+
+    public async Task<Profile> RenameAsync(int id, string name, CancellationToken ct = default)
+    {
+        var profile = await FindManageableAsync(id, "renamed", ct);
+        name = ProfileNames.Validate(name);
+        await EnsureAvailableAsync(name, profile.OwnerUser, exceptId: id, ct);
+
+        profile.Name = name;
+        profile.Slug = name.ToLowerInvariant();
+        await db.SaveChangesAsync(ct);
+        return profile;
+    }
+
+    /// <summary>Deletes a profile with its bookmarks and categories.</summary>
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var profile = await FindManageableAsync(id, "deleted", ct);
+
+        // Bookmarks first: they restrict their category, so the profile's cascade can't take them.
+        // Their tags and placements in other profiles cascade with them.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.Bookmarks.Where(b => b.ProfileId == profile.Id).ExecuteDeleteAsync(ct);
+        await db.Profiles.Where(p => p.Id == profile.Id).ExecuteDeleteAsync(ct);
+        await transaction.CommitAsync(ct);
+        notifier.BookmarksChanged();
+    }
+
+    private Task<Profile?> FindPersonalAsync(string user, CancellationToken ct) =>
+        db.Profiles.AsNoTracking().SingleOrDefaultAsync(p => p.IsPersonal && p.OwnerUser == user, ct);
+
+    /// <summary>Adds a profile with its Uncategorized, holding every bookmark shared so far.</summary>
+    private async Task AddWithUncategorizedAsync(Profile profile, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        db.Profiles.Add(profile);
+        await db.SaveChangesAsync(ct);
+        db.Categories.Add(new Category
+        {
+            ProfileId = profile.Id,
+            Name = Category.UncategorizedName,
+            IsSystem = true,
+        });
+        await db.SaveChangesAsync(ct);
+        await sharing.PlaceAllInAsync(profile.Id, ct);
+        await transaction.CommitAsync(ct);
+    }
+
+    private async Task<Profile> FindManageableAsync(int id, string action, CancellationToken ct)
+    {
+        EnsureEnabled();
+        var profile = await db.Profiles.FindAsync([id], ct);
+        if (profile is null || !ProfileResolver.IsVisible(context.Caller, profile))
+        {
+            throw new NotFoundException($"Profile {id} not found.");
+        }
+
+        if (profile.IsSystem)
+        {
+            throw new ForbiddenException($"{Profile.DefaultName} can't be {action}.");
+        }
+
+        return profile.IsPersonal
+            ? throw new ForbiddenException($"A personal profile can't be {action}.")
+            : profile;
+    }
+
+    private async Task EnsureAvailableAsync(string name, string? owner, int? exceptId, CancellationToken ct)
+    {
+        // Slug uses NOCASE collation, so == here is case-insensitive in SQLite.
+        var sameSlug = await db.Profiles.AsNoTracking().Where(p => p.Slug == name).ToListAsync(ct);
+        if (!ProfileNames.IsAvailable(name, owner, sameSlug, exceptId))
+        {
+            throw new RuleViolationException(ProfileNames.Unavailable);
+        }
+    }
+
+    private void EnsureEnabled()
+    {
+        if (!options.Enabled)
+        {
+            throw new RuleViolationException($"Profiles are turned off ({ProfileOptions.EnabledKey}=false).");
+        }
+    }
+}

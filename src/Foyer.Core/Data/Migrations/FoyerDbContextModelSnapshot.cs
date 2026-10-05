@@ -55,6 +55,9 @@ namespace Foyer.Core.Data.Migrations
                     b.Property<bool>("IsPresent")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsShared")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LabelCategory")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -70,6 +73,9 @@ namespace Foyer.Core.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("ProfileId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
@@ -88,6 +94,8 @@ namespace Foyer.Core.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
 
                     b.HasIndex("CategoryId", "SortOrder");
 
@@ -131,12 +139,15 @@ namespace Foyer.Core.Data.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<int>("ProfileId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("ProfileId", "Name")
                         .IsUnique();
 
                     b.ToTable("Categories");
@@ -147,8 +158,82 @@ namespace Foyer.Core.Data.Migrations
                             Id = 1,
                             IsSystem = true,
                             Name = "Uncategorized",
+                            ProfileId = 1,
                             SortOrder = 0
                         });
+                });
+
+            modelBuilder.Entity("Foyer.Core.Entities.Profile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPersonal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerUser")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUser", "Slug")
+                        .IsUnique();
+
+                    b.ToTable("Profiles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 5, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsPersonal = false,
+                            IsSystem = true,
+                            Name = "Default",
+                            Slug = "default"
+                        });
+                });
+
+            modelBuilder.Entity("Foyer.Core.Entities.SharedPlacement", b =>
+                {
+                    b.Property<int>("ProfileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BookmarkId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ProfileId", "BookmarkId");
+
+                    b.HasIndex("BookmarkId");
+
+                    b.HasIndex("CategoryId", "SortOrder");
+
+                    b.ToTable("SharedPlacements");
                 });
 
             modelBuilder.Entity("Foyer.Core.Entities.Bookmark", b =>
@@ -159,6 +244,12 @@ namespace Foyer.Core.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Foyer.Core.Entities.Profile", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Category");
                 });
 
@@ -167,6 +258,36 @@ namespace Foyer.Core.Data.Migrations
                     b.HasOne("Foyer.Core.Entities.Bookmark", null)
                         .WithMany("UserTags")
                         .HasForeignKey("BookmarkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Foyer.Core.Entities.Category", b =>
+                {
+                    b.HasOne("Foyer.Core.Entities.Profile", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Foyer.Core.Entities.SharedPlacement", b =>
+                {
+                    b.HasOne("Foyer.Core.Entities.Bookmark", null)
+                        .WithMany()
+                        .HasForeignKey("BookmarkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Foyer.Core.Entities.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Foyer.Core.Entities.Profile", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -5,6 +5,9 @@ import { useState } from 'react'
 import { usePhone } from '../../hooks/usePhone.ts'
 import { useTitle } from '../../hooks/useTitle.ts'
 import { EditHint } from '../edit-mode/EditHint.tsx'
+import { useCanEdit } from '../profiles/profileContext.ts'
+import { type ProfileDialog, ProfileDialogs } from '../profiles/ProfileDialogs.tsx'
+import { ProfilePicker } from '../profiles/ProfilePicker.tsx'
 import { PhoneMenu } from './PhoneMenu.tsx'
 import { ThemeMenu } from './ThemeMenu.tsx'
 import classes from './TopBar.module.css'
@@ -20,22 +23,43 @@ interface Props {
   onOpenCategories: () => void
 }
 
-/**
- * The Foyer name, a centered button dressed as a search box that opens the spotlight, the theme
- * picker and an Edit icon (Done while editing). On a phone: the name, a search icon, and a menu
- * holding the rest, or Categories and Done while editing.
- */
-export function TopBar(props: Props) {
-  return usePhone() ? <PhoneTopBar {...props} /> : <DesktopTopBar {...props} />
+interface BarProps extends Props {
+  onDialog: (dialog: ProfileDialog) => void
 }
 
-function DesktopTopBar({ editing, onEditingChange, onSearch }: Props) {
+/**
+ * The Foyer name and profile picker, a centered button dressed as a search box that opens the
+ * spotlight, the theme picker and an Edit icon (Done while editing). On a phone: the name, a
+ * search icon, and a menu holding the rest, or Categories and Done while editing. Edit isn't
+ * offered on a profile the page can't change.
+ */
+export function TopBar(props: Props) {
+  const phone = usePhone()
+  const [dialog, setDialog] = useState<ProfileDialog>(null)
+
+  return (
+    <>
+      {phone ? (
+        <PhoneTopBar {...props} onDialog={setDialog} />
+      ) : (
+        <DesktopTopBar {...props} onDialog={setDialog} />
+      )}
+      <ProfileDialogs dialog={dialog} onClose={() => setDialog(null)} />
+    </>
+  )
+}
+
+function DesktopTopBar({ editing, onEditingChange, onSearch, onDialog }: BarProps) {
   const title = useTitle()
+  const canEdit = useCanEdit()
 
   return (
     <div className={classes.bar}>
       <div className={classes.inner}>
-        <div className={classes.brand}>{title}</div>
+        <div className={classes.brand}>
+          <span className={classes.title}>{title}</span>
+          {!editing && <ProfilePicker onDialog={onDialog} />}
+        </div>
         {editing ? (
           <EditHint className={classes.search} />
         ) : (
@@ -62,17 +86,19 @@ function DesktopTopBar({ editing, onEditingChange, onSearch }: Props) {
               Done
             </Button>
           ) : (
-            <Tooltip label="Edit page" withinPortal>
-              <ActionIcon
-                variant="default"
-                size={44}
-                radius="md"
-                aria-label="Edit page"
-                onClick={() => onEditingChange(true)}
-              >
-                <IconPencil size={20} stroke={1.8} />
-              </ActionIcon>
-            </Tooltip>
+            canEdit && (
+              <Tooltip label="Edit page" withinPortal>
+                <ActionIcon
+                  variant="default"
+                  size={44}
+                  radius="md"
+                  aria-label="Edit page"
+                  onClick={() => onEditingChange(true)}
+                >
+                  <IconPencil size={20} stroke={1.8} />
+                </ActionIcon>
+              </Tooltip>
+            )
           )}
         </div>
       </div>
@@ -80,7 +106,14 @@ function DesktopTopBar({ editing, onEditingChange, onSearch }: Props) {
   )
 }
 
-function PhoneTopBar({ editing, onEditingChange, onAdd, onSearch, onOpenCategories }: Props) {
+function PhoneTopBar({
+  editing,
+  onEditingChange,
+  onAdd,
+  onSearch,
+  onOpenCategories,
+  onDialog,
+}: BarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const title = useTitle()
 
@@ -101,7 +134,9 @@ function PhoneTopBar({ editing, onEditingChange, onAdd, onSearch, onOpenCategori
   return (
     <div className={classes.bar}>
       <div className={classes.inner}>
-        <div className={classes.brand}>{title}</div>
+        <div className={classes.brand}>
+          <span className={classes.title}>{title}</span>
+        </div>
         <ActionIcon
           variant="subtle"
           color="gray"
@@ -130,6 +165,7 @@ function PhoneTopBar({ editing, onEditingChange, onAdd, onSearch, onOpenCategori
         onClose={() => setMenuOpen(false)}
         onAdd={onAdd}
         onEdit={() => onEditingChange(true)}
+        onDialog={onDialog}
       />
     </div>
   )

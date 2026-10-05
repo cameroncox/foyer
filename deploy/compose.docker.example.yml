@@ -31,6 +31,12 @@ services:
       # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
       # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down
       # FOYER_PRUNE_AFTER_DAYS: "30"    # days a removed container's hidden bookmark is kept (0 = forever)
+      # FOYER_PROFILES: "false"         # turn profiles off; everything is Default, as in 1.0
+      # With the auth middleware below sending Remote-User (Tinyauth does), each user gets a
+      # personal profile, and Default is read-only to everyone not listed here:
+      # FOYER_TRUSTED_PROXIES: "[TRAEFIK IP OR CIDR]"   # only Traefik may name the user
+      # FOYER_DEFAULT_REMOTE_USERS: "[YOUR USER]"       # who can edit Default (@ and _ match each other)
+      # FOYER_DEFAULT_REMOTE_GROUPS: "[ADMIN GROUP]"    # or a group from Remote-Groups
     volumes:
       # Create it before the first up (mkdir data); a missing dir is created root-owned.
       - ./data:/data

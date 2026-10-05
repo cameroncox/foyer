@@ -13,13 +13,15 @@ public sealed class OpenApiTests
         var doc = await client.GetStringAsync("/openapi/v1.json");
 
         foreach (var path in new[] { "/api/dashboard", "/api/bookmarks/{id}", "/api/bookmarks/{id}/reset", "/api/bookmarks/order",
-                     "/api/categories/order", "/api/import/preview", "/api/icons/{key}", "/api/events" })
+                     "/api/categories/order", "/api/import/preview", "/api/icons/{key}", "/api/events",
+                     "/api/me", "/api/profiles", "/api/profiles/{id}" })
         {
             doc.ShouldContain($"\"{path}\"");
         }
 
         doc.ShouldContain("\"docker\"");
         doc.ShouldContain("\"unhealthy\"");
+        doc.ShouldContain("\"ownerless\"");
         doc.ShouldNotContain("/healthz");
     }
 }

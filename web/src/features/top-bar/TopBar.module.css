@@ -20,6 +20,13 @@
   flex: 1 1 0;
   /* A long FOYER_TITLE gives way before the search box does. */
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.title {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -72,7 +79,7 @@
     padding-right: 8px;
   }
 
-  .brand {
+  .title {
     font-size: 19px;
   }
 

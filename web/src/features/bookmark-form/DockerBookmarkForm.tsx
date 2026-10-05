@@ -4,7 +4,9 @@ import { useState } from 'react'
 
 import type { Bookmark, DashboardCategory } from '../../api/client.ts'
 import { useResetBookmark, useUpdateBookmark } from '../../api/mutations.ts'
-import { categoryFields, NEW_CATEGORY } from './categoryChoice.ts'
+import { useCurrentProfile } from '../profiles/profileContext.ts'
+import { SharedField } from '../sharing/SharedField.tsx'
+import { categoryFields, categoryName, NEW_CATEGORY } from './categoryChoice.ts'
 import { CategoryField } from './CategoryField.tsx'
 import classes from './DockerBookmarkForm.module.css'
 import { TagsField } from './TagsField.tsx'
@@ -16,8 +18,8 @@ interface Props {
 }
 
 /**
- * Edit a Docker bookmark: name, URL and icon are locked to its labels; only Category and Tags
- * change here. Reset to labels hands both back to the labels. No Delete.
+ * Edit a Docker bookmark: name, URL and icon are locked to its labels; only Category, Tags and
+ * Shared change here. Reset to labels hands category and tags back to the labels. No Delete.
  */
 export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
   const docker = bookmark.docker!
@@ -27,6 +29,8 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
   const [newCategory, setNewCategory] = useState('')
   const [newCategoryError, setNewCategoryError] = useState<string>()
   const [tags, setTags] = useState(bookmark.tags)
+  const [isShared, setShared] = useState(bookmark.isShared)
+  const sharing = useCurrentProfile()?.me.profilesEnabled ?? false
   const error = update.error ?? reset.error
 
   const save = (event: React.FormEvent) => {
@@ -40,7 +44,14 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
     update.mutate(
       {
         id: bookmark.id,
-        body: { tags, name: null, url: null, icon: null, ...categoryFields(category, newCategory) },
+        body: {
+          tags,
+          name: null,
+          url: null,
+          icon: null,
+          ...categoryFields(category, newCategory),
+          ...(sharing ? { isShared } : {}),
+        },
       },
       { onSuccess: onDone },
     )
@@ -94,6 +105,14 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
           newNameError={newCategoryError}
         />
         <TagsField value={tags} onChange={setTags} hostTag={bookmark.hostTag} />
+        <SharedField
+          checked={isShared}
+          onChange={setShared}
+          wasShared={bookmark.isShared}
+          name={bookmark.name}
+          categoryName={categoryName(categories, category, newCategory)}
+          docker
+        />
 
         <Group gap="xs" justify="flex-end">
           <Button

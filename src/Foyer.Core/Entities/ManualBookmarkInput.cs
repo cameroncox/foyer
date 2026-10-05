@@ -6,4 +6,5 @@ public sealed record ManualBookmarkInput(
     string Url,
     string? Icon,
     CategoryRef Category,
-    IReadOnlyList<string>? Tags);
+    IReadOnlyList<string>? Tags,
+    bool IsShared = false);

@@ -1,7 +1,9 @@
 using Foyer.Core.Data;
 using Foyer.Core.Entities;
 using Foyer.Core.Events;
+using Foyer.Core.Profiles;
 using Foyer.Core.Services;
+using Foyer.Core.Sharing;
 using Foyer.Core.Sync;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -35,13 +37,26 @@ public sealed class TestDb : IAsyncDisposable
 
     public CountingNotifier Notifier { get; } = new();
 
-    public CategoryService Categories => new(Db, Notifier);
+    /// <summary>The profile the services work within; Default, editable, until a test says otherwise.</summary>
+    public ProfileContext Profile { get; } = new();
 
-    public BookmarkService Bookmarks => new(Db, Notifier, new FixedTimeProvider(Now));
+    /// <summary>FOYER_PROFILES and friends, for the services that read them; on by default.</summary>
+    public ProfileOptions Options { get; set; } = ProfileOptions.Default;
 
-    public OrderingService Ordering => new(Db, Notifier);
+    public SharingService Sharing => new(Db);
 
-    public DockerBookmarkStore Docker => new(Db, Notifier, new FixedTimeProvider(Now));
+    public CategoryService Categories => new(Db, Notifier, Profile, Sharing);
+
+    public BookmarkService Bookmarks => new(Db, Notifier, new FixedTimeProvider(Now), Profile, Sharing);
+
+    public OrderingService Ordering => new(Db, Notifier, Profile, Options, Sharing);
+
+    public DockerBookmarkStore Docker => new(Db, Notifier, new FixedTimeProvider(Now), Profile, Sharing);
+
+    public DashboardService Dashboard => new(Db, Profile, Options);
+
+    public ProfileService Profiles(ProfileOptions? options = null) =>
+        new(Db, Profile, options ?? Options, Notifier, new FixedTimeProvider(Now), Sharing);
 
     /// <summary>One sync pass for a host, as the Docker sync service runs it.</summary>
     public async Task<bool> SyncAsync(string host, params ContainerInfo[] containers)
@@ -78,6 +93,8 @@ public sealed class TestDb : IAsyncDisposable
         services.AddDbContext<FoyerDbContext>(o => o.UseSqlite(_connectionString));
         services.AddSingleton<IChangeNotifier>(Notifier);
         services.AddSingleton<TimeProvider>(new FixedTimeProvider(Now));
+        services.AddScoped<ProfileContext>();
+        services.AddScoped<SharingService>();
         services.AddScoped<DockerBookmarkStore>();
         return services.BuildServiceProvider();
     }
@@ -100,6 +117,7 @@ public sealed class TestDb : IAsyncDisposable
         var bookmark = new Bookmark
         {
             Source = BookmarkSource.Docker,
+            ProfileId = Entities.Profile.DefaultId,
             Name = container,
             Url = $"https://{container}.lan",
             CategoryId = categoryId,

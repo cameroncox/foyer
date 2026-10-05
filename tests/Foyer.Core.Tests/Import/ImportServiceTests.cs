@@ -10,7 +10,7 @@ public sealed class ImportServiceTests
 {
     // Chrome fixture ids, in document order: f1 bar loose, f2 Homelab, f3 Network, f4 Media,
     // f5 Other loose, f6 Other/Network.
-    private static ImportService Service(TestDb t) => new(t.Db, t.Notifier, new FixedTimeProvider(TestDb.Now));
+    private static ImportService Service(TestDb t) => new(t.Db, t.Notifier, new FixedTimeProvider(TestDb.Now), t.Profile);
 
     [Fact]
     public async Task Preview_ShowsTargetsAndCounts_AndSavesNothing()

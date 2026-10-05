@@ -17,6 +17,10 @@ function bookmark(name: string, extra: Partial<Bookmark> = {}): Bookmark {
     hostTag: null,
     status: null,
     docker: null,
+    isShared: false,
+    canEdit: true,
+    sharedBy: null,
+    sharedFrom: null,
     ...extra,
   }
 }

@@ -3,6 +3,8 @@ import { Tooltip } from '@mantine/core'
 import type { Bookmark } from '../../api/client.ts'
 import { BookmarkIcon } from '../../components/BookmarkIcon.tsx'
 import { TagChip, TagOverflowChip } from '../../components/TagChip.tsx'
+import { SharedMark } from '../sharing/SharedMark.tsx'
+import { sharedLabel } from '../sharing/shared.ts'
 import classes from './BookmarkCard.module.css'
 import { statusLabel } from './status.ts'
 
@@ -16,8 +18,9 @@ interface Props {
 const VISIBLE_TAGS = 2
 
 /**
- * Icon, then name with up to two tags under it. The URL, status and any tags left off show on
- * hover; clicking opens the URL in this tab (middle-click still opens a new one).
+ * Icon, then name with up to two tags (and the shared icon) under it. The URL, status, who
+ * shared it and any tags left off show on hover; clicking opens the URL in this tab
+ * (middle-click still opens a new one).
  */
 export function BookmarkCard({ bookmark, tile }: Props) {
   const status = statusLabel(bookmark)
@@ -30,7 +33,12 @@ export function BookmarkCard({ bookmark, tile }: Props) {
 
   return (
     <Tooltip
-      label={[bookmark.url, status, hidden ? chips.map((c) => `#${c.tag}`).join(' ') : null]
+      label={[
+        bookmark.url,
+        status,
+        sharedLabel(bookmark),
+        hidden ? chips.map((c) => `#${c.tag}`).join(' ') : null,
+      ]
         .filter(Boolean)
         .join(' · ')}
       openDelay={500}
@@ -47,12 +55,13 @@ export function BookmarkCard({ bookmark, tile }: Props) {
         <BookmarkIcon bookmark={bookmark} statusLabel={status} />
         <div className={classes.body}>
           <span className={classes.name}>{bookmark.name}</span>
-          {chips.length > 0 && (
+          {(chips.length > 0 || bookmark.isShared) && (
             <div className={classes.tags}>
               {shown.map((c) => (
                 <TagChip key={`${c.host}:${c.tag}`} tag={c.tag} host={c.host} />
               ))}
               {hidden > 0 && <TagOverflowChip count={hidden} />}
+              <SharedMark bookmark={bookmark} />
             </div>
           )}
         </div>

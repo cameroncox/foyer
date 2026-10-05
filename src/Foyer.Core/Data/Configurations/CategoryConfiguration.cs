@@ -13,8 +13,13 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasMaxLength(100)
             .UseCollation("NOCASE");
 
-        // Unique regardless of case, so "downloads" and "Downloads" are one category.
-        builder.HasIndex(c => c.Name).IsUnique();
+        // Unique per profile regardless of case, so "downloads" and "Downloads" are one category.
+        builder.HasIndex(c => new { c.ProfileId, c.Name }).IsUnique();
+
+        builder.HasOne<Profile>()
+            .WithMany()
+            .HasForeignKey(c => c.ProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(c => c.Bookmarks)
             .WithOne(b => b.Category)

@@ -1,4 +1,5 @@
 using Foyer.Core.Entities;
+using Foyer.Core.Profiles;
 
 namespace Foyer.Api.Contracts;
 
@@ -9,6 +10,12 @@ public sealed record DashboardCategoryResponse(
     bool IsSystem,
     IReadOnlyList<BookmarkResponse> Bookmarks)
 {
-    public static DashboardCategoryResponse From(DashboardCategory c) =>
-        new(c.Category.Id, c.Category.Name, c.Category.IsSystem, c.Bookmarks.Select(BookmarkResponse.From).ToList());
+    public static DashboardCategoryResponse From(DashboardCategory c, ProfileContext context) =>
+        new(
+            c.Category.Id,
+            c.Category.Name,
+            c.Category.IsSystem,
+            c.Bookmarks
+                .Select(b => BookmarkResponse.From(b, context, b.ProfileId == context.ProfileId ? null : c.Owners?[b.ProfileId]))
+                .ToList());
 }

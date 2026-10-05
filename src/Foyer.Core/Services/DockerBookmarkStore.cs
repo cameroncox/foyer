@@ -2,13 +2,20 @@ using Foyer.Core.Data;
 using Foyer.Core.Entities;
 using Foyer.Core.Events;
 using Foyer.Core.Exceptions;
+using Foyer.Core.Profiles;
+using Foyer.Core.Sharing;
 using Foyer.Core.Sync;
 using Microsoft.EntityFrameworkCore;
 
 namespace Foyer.Core.Services;
 
-/// <summary>Reads and writes Docker bookmarks for the sync rules.</summary>
-public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notifier, TimeProvider clock)
+/// <summary>Reads and writes Docker bookmarks for the sync rules. Docker bookmarks always live in Default.</summary>
+public sealed class DockerBookmarkStore(
+    FoyerDbContext db,
+    IChangeNotifier notifier,
+    TimeProvider clock,
+    ProfileContext profile,
+    SharingService sharing)
 {
     /// <summary>Every Docker bookmark stored for <paramref name="host"/>, hidden ones included.</summary>
     public async Task<IReadOnlyList<KnownDockerBookmark>> LoadKnownAsync(string host, CancellationToken ct = default)
@@ -22,7 +29,11 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
         return bookmarks.Select(KnownDockerBookmark.From).ToList();
     }
 
-    /// <summary>Applies a plan in one save. Returns false (and notifies no one) when there was nothing to do.</summary>
+    /// <summary>
+    /// Applies a plan. Returns false (and notifies no one) when there was nothing to do. Shared
+    /// bookmarks that labels move are placed again in other profiles, and their changes reach every
+    /// page; the rest only show in Default.
+    /// </summary>
     public async Task<bool> ApplyAsync(ReconcilePlan plan, CancellationToken ct = default)
     {
         if (plan.IsEmpty)
@@ -30,7 +41,7 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
             return false;
         }
 
-        var categories = new CategoryLookup(db);
+        var categories = new CategoryLookup(db, Profile.DefaultId);
 
         var touchedIds = plan.Updates.Select(u => u.Id).Concat(plan.Hides).ToList();
         var touched = await db.Bookmarks
@@ -38,11 +49,14 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
             .Where(b => b.Source == BookmarkSource.Docker && b.DockerHost == plan.Host && touchedIds.Contains(b.Id))
             .ToDictionaryAsync(b => b.Id, ct);
 
+        var movedShared = new List<Bookmark>();
         foreach (var update in plan.Updates)
         {
-            if (touched.TryGetValue(update.Id, out var bookmark))
+            if (touched.TryGetValue(update.Id, out var bookmark)
+                && await ApplyUpdateAsync(bookmark, update, categories, ct)
+                && bookmark.IsShared)
             {
-                await ApplyUpdateAsync(bookmark, update, categories, ct);
+                movedShared.Add(bookmark);
             }
         }
 
@@ -61,6 +75,7 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
             db.Bookmarks.Add(new Bookmark
             {
                 Source = BookmarkSource.Docker,
+                ProfileId = Profile.DefaultId,
                 Name = create.Labels.Name,
                 Url = create.Labels.Url,
                 Icon = create.Labels.Icon,
@@ -76,8 +91,11 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
             });
         }
 
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        notifier.BookmarksChanged();
+        await sharing.PlaceAsync(movedShared, replace: true, ct);
+        await transaction.CommitAsync(ct);
+        notifier.BookmarksChanged(touched.Values.Any(b => b.IsShared) ? null : Profile.DefaultId);
         return true;
     }
 
@@ -105,14 +123,18 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
         return stale.Count;
     }
 
-    /// <summary>Clears a Docker bookmark's category and tag overrides and re-applies its labels.</summary>
+    /// <summary>
+    /// Clears a Docker bookmark's category and tag overrides and re-applies its labels. Only from
+    /// Default, by someone who can edit it.
+    /// </summary>
     public async Task ResetToLabelsAsync(int id, CancellationToken ct = default)
     {
+        profile.EnsureCanEdit();
         var bookmark = await db.Bookmarks
             .AsNoTracking()
             .Include(b => b.Category)
-            .SingleOrDefaultAsync(b => b.Id == id, ct)
-            ?? throw new NotFoundException($"Bookmark {id} not found.");
+            .SingleOrDefaultAsync(b => b.Id == id && b.ProfileId == profile.ProfileId, ct)
+            ?? throw await sharing.NotYoursAsync(id, profile.ProfileId, ct);
 
         if (!bookmark.IsDocker)
         {
@@ -123,7 +145,8 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
         await ApplyAsync(new ReconcilePlan(bookmark.DockerHost!, [], [update], []), ct);
     }
 
-    private static async Task ApplyUpdateAsync(
+    /// <summary>Applies one update; true when it moved the bookmark to another category.</summary>
+    private static async Task<bool> ApplyUpdateAsync(
         Bookmark bookmark,
         DockerBookmarkUpdate update,
         CategoryLookup categories,
@@ -149,11 +172,14 @@ public sealed class DockerBookmarkStore(FoyerDbContext db, IChangeNotifier notif
             bookmark.UserTags.Clear();
         }
 
-        if (update.MoveToCategory is not null)
+        if (update.MoveToCategory is null)
         {
-            var category = await categories.GetOrCreateAsync(update.MoveToCategory, ct);
-            bookmark.Category = category;
-            bookmark.SortOrder = await categories.NextSortOrderAsync(category, ct);
+            return false;
         }
+
+        var category = await categories.GetOrCreateAsync(update.MoveToCategory, ct);
+        bookmark.Category = category;
+        bookmark.SortOrder = await categories.NextSortOrderAsync(category, ct);
+        return true;
     }
 }

@@ -13,6 +13,8 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  // The router reads the URL; each test starts at /.
+  window.history.replaceState(null, '', '/')
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })

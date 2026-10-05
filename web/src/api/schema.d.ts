@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current profile, the profiles this caller can pick, and whether it can edit Default */
+        get: operations["GetMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dashboard": {
         parameters: {
             query?: never;
@@ -28,7 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Categories in drawer order, each with its bookmarks on the page in order */
+        /** The profile's categories in drawer order, each with its own and other profiles' shared bookmarks on the page, in order */
         get: operations["GetDashboard"];
         put?: never;
         post?: never;
@@ -45,11 +62,46 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Server-sent events: connected on open, bookmarks-changed when data changes, ping as a keep-alive */
+        /** Server-sent events for one profile (?profile=): connected on open, bookmarks-changed when its data changes, ping as a keep-alive */
         get: operations["Events"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a profile, owned by the caller's user, or ownerless without one */
+        post: operations["CreateProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profiles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename a profile, which moves it to the new name's URL; Default and personal profiles answer 403 */
+        put: operations["RenameProfile"];
+        post?: never;
+        /** Delete a profile with its bookmarks and categories; Default and personal profiles answer 403 */
+        delete: operations["DeleteProfile"];
         options?: never;
         head?: never;
         patch?: never;
@@ -80,10 +132,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Edit: every field for manual bookmarks, category and tags only for Docker */
+        /** Edit: every field for manual bookmarks, category, tags and sharing for Docker; another profile's answers 403 */
         put: operations["UpdateBookmark"];
         post?: never;
-        /** Delete a manual bookmark; Docker bookmarks answer 409 */
+        /** Delete a manual bookmark; Docker bookmarks answer 409, another profile's 403 */
         delete: operations["DeleteBookmark"];
         options?: never;
         head?: never;
@@ -132,7 +184,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Save a drag: the target category's full order after the drop */
+        /** Save a drag: the target category's full order after the drop; another profile's shared bookmarks only within their category */
         put: operations["ReorderBookmarks"];
         post?: never;
         delete?: never;
@@ -168,7 +220,7 @@ export interface paths {
         get?: never;
         put: operations["RenameCategory"];
         post?: never;
-        /** Delete, moving its bookmarks to the end of Uncategorized; Uncategorized answers 409 */
+        /** Delete, moving its bookmarks to the end of Uncategorized; Uncategorized, or one holding another profile's shared bookmarks, answers 409 */
         delete: operations["DeleteCategory"];
         options?: never;
         head?: never;
@@ -278,6 +330,10 @@ export interface components {
             hostTag: null | string;
             status: null | components["schemas"]["DockerStatus"];
             docker: null | components["schemas"]["DockerInfoResponse"];
+            isShared: boolean;
+            canEdit: boolean;
+            sharedBy: null | string;
+            sharedFrom: null | string;
         };
         /** @enum {unknown} */
         BookmarkSource: "manual" | "docker";
@@ -302,6 +358,7 @@ export interface components {
             categoryId: null | number;
             newCategoryName: null | string;
             tags: null | string[];
+            isShared?: null | boolean;
         };
         DashboardCategoryResponse: {
             /** Format: int32 */
@@ -366,6 +423,13 @@ export interface components {
             /** Format: int32 */
             skipped: number;
         };
+        MeResponse: {
+            profilesEnabled: boolean;
+            user: null | string;
+            current: components["schemas"]["ProfileResponse"];
+            canEditDefault: boolean;
+            profiles: components["schemas"]["ProfileResponse"][];
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -373,6 +437,20 @@ export interface components {
             status?: null | number;
             detail?: null | string;
             instance?: null | string;
+        };
+        /** @enum {unknown} */
+        ProfileKind: "default" | "personal" | "owned" | "ownerless";
+        ProfileNameRequest: {
+            name: string;
+        };
+        ProfileResponse: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            slug: string;
+            kind: components["schemas"]["ProfileKind"];
+            canEdit: boolean;
+            canManage: boolean;
         };
         ReorderBookmarksRequest: {
             /** Format: int32 */
@@ -401,6 +479,7 @@ export interface components {
             name: null | string;
             url: null | string;
             icon: null | string;
+            isShared?: null | boolean;
         };
     };
     responses: never;
@@ -427,6 +506,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+        };
+    };
+    GetMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
                 };
             };
         };
@@ -467,6 +566,157 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["SseItemOfstring"];
+                };
+            };
+        };
+    };
+    CreateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileNameRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RenameProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileNameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -546,6 +796,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -583,6 +842,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -708,6 +976,15 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

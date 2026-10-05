@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <None Include="Import/Fixtures/*.html" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Data/Fixtures/*.db" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

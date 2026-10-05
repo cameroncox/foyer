@@ -20,3 +20,16 @@ export function categoryFields(value: string, newName: string) {
 export function uncategorizedId(categories: readonly DashboardCategory[]): string {
   return String(categories.find((c) => c.isSystem)?.id ?? 1)
 }
+
+/** The name of the category a Category select value saves to, for describing where it'll show. */
+export function categoryName(
+  categories: readonly DashboardCategory[],
+  value: string,
+  newName: string,
+): string {
+  if (value === NEW_CATEGORY) {
+    return newName.trim() || 'the new category'
+  }
+
+  return categories.find((c) => String(c.id) === value)?.name ?? 'Uncategorized'
+}

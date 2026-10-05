@@ -6,6 +6,7 @@ import {
   IconHash,
   IconPlus,
   IconSearch,
+  IconUsers,
   IconWorldSearch,
   IconX,
 } from '@tabler/icons-react'
@@ -44,6 +45,7 @@ const FACET_ICONS: Record<ScopeKind, ReactNode> = {
   host: <IconBrandDocker size={18} stroke={1.75} />,
   tag: <IconHash size={18} stroke={1.75} />,
   category: <IconFolder size={18} stroke={1.75} />,
+  shared: <IconUsers size={18} stroke={1.75} />,
 }
 
 interface Props {
@@ -52,12 +54,12 @@ interface Props {
   categories: readonly DashboardCategory[]
   /** Off while editing or while a form or modal is up, so Space stays theirs. */
   enabled: boolean
-  /** "Add as a bookmark" when nothing matches: open Add with the query as the name. */
-  onAdd: (name: string) => void
+  /** "Add as a bookmark" when nothing matches: open Add with the query as the name. Left out on a read-only profile. */
+  onAdd?: (name: string) => void
 }
 
 /**
- * Space, ⌘K or / (or the top bar's search button) opens a jump-to box. Empty, it offers Docker hosts, tags and categories to narrow
+ * Space, ⌘K or / (or the top bar's search button) opens a jump-to box. Empty, it offers Docker hosts, tags, categories and Shared to narrow
  * by; typing searches bookmarks (and those filters), with a web search (FOYER_SEARCH_URL) last.
  * Enter opens the highlighted row. On DuckDuckGo, a query starting with a bang ("!g …") is only
  * a web search. On a phone it fills the screen, with an X to close it, and stands in for search.
@@ -92,7 +94,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
   const facetAction = (facet: Facet) => (
     <Spotlight.Action
       key={`${facet.kind}:${facet.value}`}
-      label={facet.kind === 'category' ? facet.value : `#${facet.value}`}
+      label={scopeLabel(facet)}
       leftSection={FACET_ICONS[facet.kind]}
       rightSection={<span className={classes.count}>{facet.count}</span>}
       closeSpotlightOnTrigger={false}
@@ -157,6 +159,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
             {facetGroup('Docker hosts', all.hosts)}
             {facetGroup('Tags', all.tags)}
             {facetGroup('Categories', all.categories)}
+            {facetGroup('Sharing', all.shared)}
           </>
         ) : (
           <>
@@ -192,7 +195,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
               </Spotlight.ActionsGroup>
             )}
             {/* After the web search, so Enter on a miss still searches the web. */}
-            {!bang && shownHits.length === 0 && (
+            {onAdd && !bang && shownHits.length === 0 && (
               <Spotlight.ActionsGroup label="Add">
                 <Spotlight.Action
                   label={`Add “${query.trim()}” as a bookmark`}

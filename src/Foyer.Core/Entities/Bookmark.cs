@@ -6,6 +6,12 @@ public sealed class Bookmark
 
     public BookmarkSource Source { get; set; }
 
+    /// <summary>The owning profile; always Default for Docker bookmarks.</summary>
+    public int ProfileId { get; set; }
+
+    /// <summary>Shown, read-only, in every other profile.</summary>
+    public bool IsShared { get; set; }
+
     /// <summary>For Docker bookmarks, the latest value from labels.</summary>
     public required string Name { get; set; }
 

@@ -4,12 +4,13 @@ namespace Foyer.Core.Events;
 
 /// <summary>
 /// In-process pub/sub behind the SSE stream. Each subscriber holds at most one pending change,
-/// so a burst of saves reaches a slow page as a single refetch.
+/// so a burst of saves reaches a slow page as a single refetch. A subscriber follows one profile
+/// (or all, with none), and hears changes to it and changes for everyone.
 /// </summary>
 public sealed class ChangeBroadcaster : IChangeNotifier
 {
     private readonly Lock _lock = new();
-    private readonly HashSet<Channel<bool>> _subscribers = [];
+    private readonly Dictionary<Channel<bool>, int?> _subscribers = [];
 
     public int SubscriberCount
     {
@@ -22,20 +23,27 @@ public sealed class ChangeBroadcaster : IChangeNotifier
         }
     }
 
-    public void BookmarksChanged()
+    public void BookmarksChanged(int? profileId = null)
     {
         lock (_lock)
         {
-            foreach (var subscriber in _subscribers)
+            foreach (var (subscriber, following) in _subscribers)
             {
-                subscriber.Writer.TryWrite(true);
+                if (profileId is null || following is null || following == profileId)
+                {
+                    subscriber.Writer.TryWrite(true);
+                }
             }
         }
     }
 
-    /// <summary>Yields once per change (coalesced) until <paramref name="ct"/> is cancelled.</summary>
+    /// <summary>
+    /// Yields once per change to <paramref name="profileId"/> (every profile with null), or for
+    /// everyone, coalesced, until <paramref name="ct"/> is cancelled.
+    /// </summary>
     public async IAsyncEnumerable<bool> SubscribeAsync(
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct,
+        int? profileId = null)
     {
         var channel = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
         {
@@ -45,7 +53,7 @@ public sealed class ChangeBroadcaster : IChangeNotifier
 
         lock (_lock)
         {
-            _subscribers.Add(channel);
+            _subscribers.Add(channel, profileId);
         }
 
         try

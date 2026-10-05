@@ -34,6 +34,19 @@ public sealed class FoyerSettingsTests
         ex.Problems.ShouldHaveSingleItem().ShouldContain("FOYER_TITLE");
     }
 
+    [Fact]
+    public void ProfileSettings_AreRead_AndBadOnesReportedWithTheRest()
+    {
+        Load(("FOYER_PROFILES", "true"), ("FOYER_TRUSTED_PROXIES", "192.0.2.10")).Profiles.Enabled.ShouldBeTrue();
+
+        var ex = Should.Throw<FoyerConfigurationException>(() => Load(
+            ("FOYER_TRUSTED_PROXIES", "traefik"),
+            ("FOYER_TITLE", new string('x', 61))));
+
+        ex.Problems.Count.ShouldBe(2);
+        ex.Problems.ShouldContain(p => p.Contains("'traefik'"));
+    }
+
     private sealed class TestEnvironment : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = "Test";

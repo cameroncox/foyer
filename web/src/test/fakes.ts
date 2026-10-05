@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { Bookmark, Dashboard, DashboardCategory } from '../api/client.ts'
+import type { Bookmark, Dashboard, DashboardCategory, Me, Profile } from '../api/client.ts'
 
 /** Stand-in for EventSource (jsdom has none). Tests fire events on the latest instance. */
 export class FakeEventSource {
@@ -54,6 +54,10 @@ export function bookmark(name: string, extra: Partial<Bookmark> = {}): Bookmark 
     hostTag: null,
     status: null,
     docker: null,
+    isShared: false,
+    canEdit: true,
+    sharedBy: null,
+    sharedFrom: null,
     ...extra,
   }
 }
@@ -85,10 +89,47 @@ export function category(name: string, bookmarks: Bookmark[], isSystem = false):
   return { id: nextId++, name, isSystem, bookmarks }
 }
 
-/** Stubs fetch so /api/dashboard answers with whatever `current()` returns at call time. */
+export function profile(name: string, extra: Partial<Profile> = {}): Profile {
+  return {
+    id: nextId++,
+    name,
+    slug: name.toLowerCase(),
+    kind: 'owned',
+    canEdit: true,
+    canManage: true,
+    ...extra,
+  }
+}
+
+export const defaultProfile = (extra: Partial<Profile> = {}) =>
+  profile('Default', { slug: 'default', kind: 'default', canManage: false, ...extra })
+
+/** /api/me with profiles off, as a 1.0 install answers: Default only, editable. */
+export function profilesOff(): Me {
+  const home = defaultProfile({ id: 1 })
+  return {
+    profilesEnabled: false,
+    user: null,
+    current: home,
+    canEditDefault: true,
+    profiles: [home],
+  }
+}
+
+/**
+ * Stubs fetch so /api/dashboard answers with whatever `current()` returns at call time, and
+ * /api/me with profiles off.
+ */
 export function stubDashboard(current: () => Dashboard | Response) {
   const fetch = vi.fn(async (request: Request) => {
-    if (new URL(request.url).pathname !== '/api/dashboard') {
+    const path = new URL(request.url).pathname
+    if (path === '/api/me') {
+      return new Response(JSON.stringify(profilesOff()), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (path !== '/api/dashboard') {
       return new Response(null, { status: 404 })
     }
 

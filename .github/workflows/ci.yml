@@ -1,11 +1,12 @@
 name: ci
 
-# Branch pushes other than develop are checked through their PRs; v* tags re-check before release.
+# Pushes to develop and feature branches (feature-* or feature/*) are checked and build an image;
+# other branch pushes are checked through their PRs; v* tags re-check before release.
 # Changes only to docs and examples skip CI (a change touching anything else runs it as usual);
 # GitHub always runs for tags, whatever they touch.
 on:
   push:
-    branches: [develop]
+    branches: [develop, 'feature-*', 'feature/**']
     tags: ['v*']
     paths-ignore:
       - '**.md'
@@ -104,10 +105,12 @@ jobs:
       - name: Check schema.d.ts is current
         run: git diff --exit-code web/src/api/schema.d.ts
 
-  # Builds and pushes the image once every check above has passed, for pushes to develop and
-  # v* tags only (PRs and other branches stop at the checks):
-  #   tag vX.Y.Z      -> :X.Y.Z and :latest (latest tracks the last version tag, never develop)
-  #   push to develop -> :dev and :<7-char sha> (any earlier develop build can be rolled back to)
+  # Builds and pushes the image once every check above has passed, for pushes to develop, feature
+  # branches and v* tags only (PRs and other branches stop at the checks):
+  #   tag vX.Y.Z             -> :X.Y.Z and :latest (latest tracks the last version tag, never develop)
+  #   push to develop        -> :dev and :<7-char sha> (any earlier develop build can be rolled back to)
+  #   push to a feature branch -> :<branch>, with / turned into - (feature/profiles -> :feature-profiles),
+  #                               replaced by each push; nothing else moves
   # Pushes to <vars.REGISTRY>/<owner>/<repo>: set the REGISTRY repo variable to the
   # registry's host (a Gitea instance, or ghcr.io). Logs in as the REGISTRY_USERNAME variable with
   # the REGISTRY_TOKEN secret (a token that can write packages for the repo's owner); without them
@@ -115,7 +118,12 @@ jobs:
   # permissions below.
   release:
     needs: [dotnet, web, api-contract]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
+    if: >-
+      github.event_name == 'push' && (
+        github.ref == 'refs/heads/develop'
+        || startsWith(github.ref, 'refs/heads/feature-')
+        || startsWith(github.ref, 'refs/heads/feature/')
+        || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -138,6 +146,11 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF_NAME#v}"
             echo "tags=$IMAGE:$version,$IMAGE:latest" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/heads/feature[-/]* ]]; then
+            # A Docker tag is up to 128 of [a-z0-9_.-] and can't start with . or -.
+            branch="$(echo "${GITHUB_REF_NAME,,}" | sed -E 's/[^a-z0-9_.-]+/-/g; s/^[.-]+//' | cut -c1-128)"
+            version="0.0.0-$branch+$sha"
+            echo "tags=$IMAGE:$branch" >> "$GITHUB_OUTPUT"
           else
             version="0.0.0-dev+$sha"
             echo "tags=$IMAGE:dev,$IMAGE:$sha" >> "$GITHUB_OUTPUT"

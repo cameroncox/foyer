@@ -2,11 +2,22 @@ using Foyer.Core.Data;
 using Foyer.Core.Entities;
 using Foyer.Core.Events;
 using Foyer.Core.Exceptions;
+using Foyer.Core.Profiles;
+using Foyer.Core.Sharing;
 using Microsoft.EntityFrameworkCore;
 
 namespace Foyer.Core.Services;
 
-public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier, TimeProvider clock)
+/// <summary>
+/// Adds, edits and deletes the current profile's bookmarks. Another profile's shared bookmark
+/// shows here but only its owner changes it: 403 naming them, where one that isn't shown is 404.
+/// </summary>
+public sealed class BookmarkService(
+    FoyerDbContext db,
+    IChangeNotifier notifier,
+    TimeProvider clock,
+    ProfileContext profile,
+    SharingService sharing)
 {
     public const int MaxNameLength = 200;
     public const int MaxUrlLength = 2048;
@@ -14,12 +25,14 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
     public async Task<Bookmark> GetAsync(int id, CancellationToken ct = default) =>
         await db.Bookmarks
             .Include(b => b.UserTags)
-            .SingleOrDefaultAsync(b => b.Id == id, ct)
-        ?? throw new NotFoundException($"Bookmark {id} not found.");
+            .Include(b => b.Category)
+            .SingleOrDefaultAsync(b => b.Id == id && b.ProfileId == profile.ProfileId, ct)
+        ?? throw await sharing.NotYoursAsync(id, profile.ProfileId, ct);
 
     /// <summary>Adds a manual bookmark at the end of its category, creating the category if it's new.</summary>
     public async Task<Bookmark> CreateManualAsync(ManualBookmarkInput input, CancellationToken ct = default)
     {
+        profile.EnsureCanEdit();
         var name = ValidateName(input.Name);
         var url = ValidateUrl(input.Url);
         var tags = Tags.Normalize(input.Tags);
@@ -28,24 +41,32 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
         var bookmark = new Bookmark
         {
             Source = BookmarkSource.Manual,
+            ProfileId = category.ProfileId,
             Name = name,
             Url = url,
             Icon = NormalizeIcon(input.Icon),
             Category = category,
             SortOrder = await NextSortOrderAsync(category, ct),
+            IsShared = input.IsShared,
             CreatedAt = clock.GetUtcNow(),
         };
         SetUserTags(bookmark, tags);
 
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
         db.Bookmarks.Add(bookmark);
         await db.SaveChangesAsync(ct);
-        notifier.BookmarksChanged();
+        await sharing.PlaceAsync([bookmark], replace: false, ct);
+        await transaction.CommitAsync(ct);
+        Notify(bookmark.IsShared);
         return bookmark;
     }
 
     public async Task<Bookmark> UpdateAsync(int id, BookmarkEdit edit, CancellationToken ct = default)
     {
+        profile.EnsureCanEdit();
         var bookmark = await GetAsync(id, ct);
+        var wasShared = bookmark.IsShared;
+        var oldCategoryId = bookmark.CategoryId;
 
         if (bookmark.IsDocker)
         {
@@ -56,15 +77,30 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
             await ApplyManualEditAsync(bookmark, edit, ct);
         }
 
+        bookmark.IsShared = edit.IsShared ?? wasShared;
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        notifier.BookmarksChanged();
+        if (bookmark.IsShared)
+        {
+            // Newly shared, it goes everywhere; moved by its owner, it moves everywhere.
+            await sharing.PlaceAsync([bookmark], replace: wasShared && bookmark.CategoryId != oldCategoryId, ct);
+        }
+        else if (wasShared)
+        {
+            await sharing.UnplaceAsync(bookmark.Id, ct);
+        }
+
+        await transaction.CommitAsync(ct);
+        Notify(bookmark.IsShared || wasShared);
         return bookmark;
     }
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var bookmark = await db.Bookmarks.FindAsync([id], ct)
-            ?? throw new NotFoundException($"Bookmark {id} not found.");
+        profile.EnsureCanEdit();
+        var bookmark = await db.Bookmarks.SingleOrDefaultAsync(b => b.Id == id && b.ProfileId == profile.ProfileId, ct)
+            ?? throw await sharing.NotYoursAsync(id, profile.ProfileId, ct);
 
         if (bookmark.IsDocker)
         {
@@ -72,14 +108,16 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
                 "Docker bookmarks can't be deleted; remove the container or its labels instead.");
         }
 
+        // Its placements in other profiles cascade with it.
         db.Bookmarks.Remove(bookmark);
         await db.SaveChangesAsync(ct);
-        notifier.BookmarksChanged();
+        Notify(bookmark.IsShared);
     }
 
     /// <summary>
     /// Deletes several manual bookmarks at once, all or nothing: a Docker bookmark among them
-    /// refuses the lot. Ids that no longer exist (deleted in another tab, say) are skipped.
+    /// refuses the lot. Ids that no longer exist (deleted in another tab, say), or belong to
+    /// another profile (shared here, say), are skipped.
     /// Returns how many were deleted.
     /// </summary>
     public async Task<int> DeleteManyAsync(IReadOnlyCollection<int> ids, CancellationToken ct = default)
@@ -89,7 +127,8 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
             throw new InvalidInputException("Pick at least one bookmark to delete.");
         }
 
-        var bookmarks = await db.Bookmarks.Where(b => ids.Contains(b.Id)).ToListAsync(ct);
+        profile.EnsureCanEdit();
+        var bookmarks = await db.Bookmarks.Where(b => ids.Contains(b.Id) && b.ProfileId == profile.ProfileId).ToListAsync(ct);
         if (bookmarks.Any(b => b.IsDocker))
         {
             throw new RuleViolationException(
@@ -103,9 +142,12 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
 
         db.Bookmarks.RemoveRange(bookmarks);
         await db.SaveChangesAsync(ct);
-        notifier.BookmarksChanged();
+        Notify(bookmarks.Any(b => b.IsShared));
         return bookmarks.Count;
     }
+
+    /// <summary>A shared bookmark's change shows in every profile; anything else only in this one.</summary>
+    private void Notify(bool shared) => notifier.BookmarksChanged(shared ? null : profile.ProfileId);
 
     private async Task ApplyManualEditAsync(Bookmark bookmark, BookmarkEdit edit, CancellationToken ct)
     {
@@ -162,11 +204,15 @@ public sealed class BookmarkService(FoyerDbContext db, IChangeNotifier notifier,
     {
         if (!string.IsNullOrWhiteSpace(target.NewCategoryName))
         {
-            return await CategoryService.StageNewAsync(db, target.NewCategoryName, ct);
+            return await CategoryService.StageNewAsync(db, profile.ProfileId, target.NewCategoryName, ct);
         }
 
-        var id = target.CategoryId ?? Category.UncategorizedId;
-        return await db.Categories.FindAsync([id], ct)
+        if (target.CategoryId is not { } id)
+        {
+            return await CategoryService.UncategorizedAsync(db, profile.ProfileId, ct);
+        }
+
+        return await db.Categories.SingleOrDefaultAsync(c => c.Id == id && c.ProfileId == profile.ProfileId, ct)
             ?? throw new InvalidInputException($"Category {id} doesn't exist.");
     }
 

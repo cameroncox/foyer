@@ -28,6 +28,11 @@ internal sealed class BookmarkConfiguration : IEntityTypeConfiguration<Bookmark>
 
         builder.HasIndex(b => new { b.CategoryId, b.SortOrder });
 
+        builder.HasOne<Profile>()
+            .WithMany()
+            .HasForeignKey(b => b.ProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany(b => b.UserTags)
             .WithOne()
             .HasForeignKey(t => t.BookmarkId)

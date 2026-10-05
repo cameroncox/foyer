@@ -2,9 +2,11 @@ import { MantineProvider } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode, useMemo, useState } from 'react'
+import { BrowserRouter, Route, Routes } from 'react-router'
 
 import App from './App.tsx'
-import { QUICK_ADD_PATH } from './features/quick-add/bookmarklet.ts'
+import { ProfileGate } from './features/profiles/ProfileGate.tsx'
+import { QUICK_ADD_PATH, readQuickAdd } from './features/quick-add/bookmarklet.ts'
 import { QuickAddPage } from './features/quick-add/QuickAddPage.tsx'
 import { AccentContext } from './theme/AccentContext.ts'
 import { loadAccent, saveAccent } from './theme/accentStore.ts'
@@ -17,7 +19,11 @@ const defaultQueryClient = new QueryClient({
   },
 })
 
-/** Providers around the app. The saved accent is read before the first render, so it never flashes. */
+/**
+ * Providers and routes: the quick-add popup at /add, and the board at /{profile}, or / for the
+ * remembered or default profile. The saved accent is read before the first render, so it never
+ * flashes.
+ */
 export function Root({
   queryClient = defaultQueryClient,
   mantineEnv,
@@ -45,10 +51,31 @@ export function Root({
         <MantineProvider theme={theme} defaultColorScheme="auto" env={mantineEnv}>
           <Notifications position="top-right" />
           <QueryClientProvider client={queryClient}>
-            {window.location.pathname === QUICK_ADD_PATH ? <QuickAddPage /> : <App />}
+            <BrowserRouter>
+              <Routes>
+                <Route
+                  path={QUICK_ADD_PATH}
+                  element={
+                    <ProfileGate profile={readQuickAdd(window.location.search).profile}>
+                      <QuickAddPage />
+                    </ProfileGate>
+                  }
+                />
+                <Route path="/:profile?" element={<Board />} />
+                <Route path="*" element={<Board />} />
+              </Routes>
+            </BrowserRouter>
           </QueryClientProvider>
         </MantineProvider>
       </AccentContext>
     </StrictMode>
+  )
+}
+
+function Board() {
+  return (
+    <ProfileGate>
+      <App />
+    </ProfileGate>
   )
 }

@@ -22,6 +22,11 @@ services:
     # environment:
     #   FOYER_TITLE: "Foyer"            # name in the top bar and the browser tab
     #   FOYER_SEARCH_URL: "https://www.google.com/search?q=%s"   # spotlight web search (default DuckDuckGo)
+    #   FOYER_PROFILES: "false"         # turn profiles off; everything is Default, as in 1.0
+    #   # Behind an auth proxy that sends Remote-User (see the Traefik labels below):
+    #   FOYER_TRUSTED_PROXIES: "[PROXY IP OR CIDR]"     # only it may name the user
+    #   FOYER_DEFAULT_REMOTE_USERS: "[YOUR USER]"       # who can edit Default (@ and _ match each other)
+    #   FOYER_DEFAULT_REMOTE_GROUPS: "[ADMIN GROUP]"    # or a group from Remote-Groups
     volumes:
       # Next to this file. Create it before the first up; a missing dir is created root-owned.
       - ./data:/data
@@ -29,7 +34,8 @@ services:
       - "8080:8080"
     # Foyer has no login of its own, so don't expose it beyond your network without auth in front.
     # Behind Traefik instead: drop `ports`, uncomment these and the networks section below, and
-    # fill in the [BRACKETED] values.
+    # fill in the [BRACKETED] values. An auth middleware that sends Remote-User (Tinyauth does)
+    # gives each user a personal profile; set FOYER_TRUSTED_PROXIES and the Default editors above.
     # networks:
     #   - proxy
     # labels:

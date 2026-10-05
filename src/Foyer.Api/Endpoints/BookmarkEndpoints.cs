@@ -18,7 +18,8 @@ internal static class BookmarkEndpoints
                         request.Url,
                         request.Icon,
                         new CategoryRef(request.CategoryId, request.NewCategoryName),
-                        request.Tags),
+                        request.Tags,
+                        request.IsShared ?? false),
                     ct);
                 return TypedResults.Created($"/api/bookmarks/{created.Id}", BookmarkResponse.From(created));
             })
@@ -36,13 +37,15 @@ internal static class BookmarkEndpoints
                         request.Tags,
                         request.Name,
                         request.Url,
-                        request.Icon),
+                        request.Icon,
+                        request.IsShared),
                     ct);
                 return TypedResults.Ok(BookmarkResponse.From(updated));
             })
             .WithName("UpdateBookmark")
-            .WithSummary("Edit: every field for manual bookmarks, category and tags only for Docker")
+            .WithSummary("Edit: every field for manual bookmarks, category, tags and sharing for Docker; another profile's answers 403")
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -52,7 +55,8 @@ internal static class BookmarkEndpoints
                 return TypedResults.NoContent();
             })
             .WithName("DeleteBookmark")
-            .WithSummary("Delete a manual bookmark; Docker bookmarks answer 409")
+            .WithSummary("Delete a manual bookmark; Docker bookmarks answer 409, another profile's 403")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -79,8 +83,9 @@ internal static class BookmarkEndpoints
                 return TypedResults.NoContent();
             })
             .WithName("ReorderBookmarks")
-            .WithSummary("Save a drag: the target category's full order after the drop")
+            .WithSummary("Save a drag: the target category's full order after the drop; another profile's shared bookmarks only within their category")
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 

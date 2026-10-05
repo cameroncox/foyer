@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { DashboardCategory } from '../../api/client.ts'
 import { usePhone } from '../../hooks/usePhone.ts'
 import { useTitle } from '../../hooks/useTitle.ts'
+import { useProfileSlug } from '../profiles/profileContext.ts'
 import { bookmarkletHref } from './bookmarklet.ts'
 
 interface Props {
@@ -21,12 +22,13 @@ interface Props {
 export function BookmarkletLink({ categories }: Props) {
   const title = useTitle() || 'Foyer'
   const phone = usePhone()
+  const profile = useProfileSlug()
   const link = useRef<HTMLAnchorElement>(null)
   const [picked, setPicked] = useState<string | null>(null)
   // Uncategorized, or a category since deleted, needs no category in the link.
   const category = categories.find((c) => String(c.id) === picked && !c.isSystem)
 
-  const href = bookmarkletHref(window.location.origin, category?.id)
+  const href = bookmarkletHref(window.location.origin, category?.id, profile)
   const label = category ? `Add to ${title}: ${category.name}` : `Add to ${title}`
 
   // React refuses javascript: URLs in href, so it's set on the element directly.

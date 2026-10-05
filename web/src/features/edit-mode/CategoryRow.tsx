@@ -7,9 +7,14 @@ import { useState } from 'react'
 
 import type { DashboardCategory } from '../../api/client.ts'
 import { useDeleteCategory, useRenameCategory } from '../../api/mutations.ts'
+import { blockedDelete } from '../sharing/shared.ts'
 import classes from './CategoryDrawer.module.css'
 
-/** A drawer row: handle, inline rename (Enter or leaving the field saves, Esc reverts), count, delete. */
+/**
+ * A drawer row: handle, inline rename (Enter or leaving the field saves, Esc reverts), count,
+ * delete. Delete asks first, or explains why not when the category holds another profile's
+ * shared bookmarks.
+ */
 export function CategoryRow({ category }: { category: DashboardCategory }) {
   const {
     attributes,
@@ -25,6 +30,7 @@ export function CategoryRow({ category }: { category: DashboardCategory }) {
   const [name, setName] = useState(category.name)
   const [confirming, setConfirming] = useState(false)
   const count = category.bookmarks.length
+  const blocked = blockedDelete(category)
 
   const saveName = () => {
     const trimmed = name.trim()
@@ -41,6 +47,19 @@ export function CategoryRow({ category }: { category: DashboardCategory }) {
           notifications.show({ color: 'red', title: 'Couldn’t rename', message: error.message })
         },
       },
+    )
+  }
+
+  if (confirming && blocked) {
+    return (
+      <li className={classes.confirm}>
+        <div>{blocked}</div>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="default" size="xs" onClick={() => setConfirming(false)}>
+            OK
+          </Button>
+        </Group>
+      </li>
     )
   }
 

@@ -1,7 +1,14 @@
 import type { Bookmark } from '../../api/client.ts'
 
-/** Docker bookmarks follow their container, so only manual ones can be picked for deletion. */
-export const isSelectable = (bookmark: Bookmark) => !bookmark.docker
+/**
+ * Docker bookmarks follow their container and other profiles' shared ones belong to them, so
+ * only the profile's own manual bookmarks can be picked for deletion.
+ */
+export const isSelectable = (bookmark: Bookmark) => !bookmark.docker && bookmark.canEdit
+
+/** Why a card can't be picked, for its tooltip. */
+export const notSelectableReason = (bookmark: Bookmark) =>
+  bookmark.canEdit ? 'Docker bookmarks follow their container' : 'Only its owner can delete it'
 
 export function toggleOne(selected: ReadonlySet<number>, id: number): Set<number> {
   const next = new Set(selected)

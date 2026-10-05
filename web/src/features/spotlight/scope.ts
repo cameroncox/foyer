@@ -1,9 +1,9 @@
 import type { Bookmark, DashboardCategory } from '../../api/client.ts'
 import { type SearchHit, searchBookmarks } from '../search/search.ts'
 
-export type ScopeKind = 'host' | 'tag' | 'category'
+export type ScopeKind = 'host' | 'tag' | 'category' | 'shared'
 
-/** A filter picked in the spotlight: one Docker host, tag or category. */
+/** A filter picked in the spotlight: one Docker host, tag or category, or every shared bookmark. */
 export interface Scope {
   kind: ScopeKind
   value: string
@@ -18,15 +18,21 @@ export interface Facets {
   hosts: Facet[]
   tags: Facet[]
   categories: Facet[]
+  /** "Shared", when anything on the page is. */
+  shared: Facet[]
 }
+
+export const SHARED = 'Shared'
 
 /**
  * The filters the spotlight offers before anything is typed: every Docker host and tag
- * (alphabetical) and every non-empty category (page order), each with its bookmark count.
+ * (alphabetical), every non-empty category (page order) and Shared when anything is, each with
+ * its bookmark count.
  */
 export function facets(categories: readonly DashboardCategory[]): Facets {
   const hosts = new Map<string, number>()
   const tags = new Map<string, number>()
+  let shared = 0
   const bump = (map: Map<string, number>, key: string) => map.set(key, (map.get(key) ?? 0) + 1)
 
   for (const category of categories) {
@@ -36,6 +42,9 @@ export function facets(categories: readonly DashboardCategory[]): Facets {
       }
 
       new Set(bookmark.tags).forEach((tag) => bump(tags, tag))
+      if (bookmark.isShared) {
+        shared++
+      }
     }
   }
 
@@ -50,6 +59,7 @@ export function facets(categories: readonly DashboardCategory[]): Facets {
     categories: categories
       .filter((c) => c.bookmarks.length > 0)
       .map((c) => ({ kind: 'category', value: c.name, count: c.bookmarks.length })),
+    shared: shared > 0 ? [{ kind: 'shared', value: SHARED, count: shared }] : [],
   }
 }
 
@@ -60,7 +70,7 @@ export function matchingFacets(all: Facets, query: string): Facet[] {
     return []
   }
 
-  return [...all.hosts, ...all.tags, ...all.categories].filter((f) =>
+  return [...all.hosts, ...all.tags, ...all.categories, ...all.shared].filter((f) =>
     f.value.toLowerCase().includes(needle),
   )
 }
@@ -73,6 +83,8 @@ function inScope(category: DashboardCategory, bookmark: Bookmark, scope: Scope):
       return bookmark.tags.includes(scope.value)
     case 'category':
       return category.name === scope.value
+    case 'shared':
+      return bookmark.isShared
   }
 }
 
@@ -97,5 +109,5 @@ export function spotlightHits(
 }
 
 export function scopeLabel(scope: Scope): string {
-  return scope.kind === 'category' ? scope.value : `#${scope.value}`
+  return scope.kind === 'category' || scope.kind === 'shared' ? scope.value : `#${scope.value}`
 }

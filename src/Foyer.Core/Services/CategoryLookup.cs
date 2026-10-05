@@ -6,9 +6,9 @@ namespace Foyer.Core.Services;
 
 /// <summary>
 /// Finds categories by name (ignoring case) and hands out end-of-category sort orders across
-/// one batch of unsaved changes, creating categories that don't exist yet.
+/// one batch of unsaved changes, creating categories that don't exist yet. Works within one profile.
 /// </summary>
-internal sealed class CategoryLookup(FoyerDbContext db)
+internal sealed class CategoryLookup(FoyerDbContext db, int profileId)
 {
     private readonly Dictionary<string, Category> _byName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<Category, int> _nextSortOrder = [];
@@ -24,11 +24,11 @@ internal sealed class CategoryLookup(FoyerDbContext db)
         }
 
         // Name uses NOCASE collation, so == here is case-insensitive in SQLite.
-        var category = await db.Categories.SingleOrDefaultAsync(c => c.Name == name, ct);
+        var category = await db.Categories.SingleOrDefaultAsync(c => c.ProfileId == profileId && c.Name == name, ct);
         if (category is null)
         {
-            _nextCategorySortOrder ??= await CategoryService.NextCategorySortOrderAsync(db, ct);
-            category = await CategoryService.StageNewAsync(db, name, ct, _nextCategorySortOrder++);
+            _nextCategorySortOrder ??= await CategoryService.NextCategorySortOrderAsync(db, profileId, ct);
+            category = await CategoryService.StageNewAsync(db, profileId, name, ct, _nextCategorySortOrder++);
         }
 
         _byName[name] = category;
