@@ -135,3 +135,7 @@ bookmark manager with manually added bookmarks only.
 Foyer was made with the help of AI. The spec, project layout plan and wireframes in `docs/` were
 drafted with Claude (Anthropic), and much of the code was written with Claude Code, working from
 those documents alongside the maintainer.
+
+## License
+
+[MIT](LICENSE)
