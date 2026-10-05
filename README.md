@@ -7,6 +7,11 @@ bookmarks added by hand.
 
 One container: a .NET 10 minimal API that also serves the React app.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/main-dark.png">
+  <img alt="Foyer's main page: bookmarks in Media, Home, Infrastructure and Development categories, Docker ones with green or red status dots" src="docs/screenshots/main-light.png">
+</picture>
+
 ## Layout
 
 | Path | What |

@@ -8,6 +8,7 @@ drafted in. They describe the plan as of v1.0.0; where the code and these differ
 | [spec.md](spec.md) | Foyer Spec: behaviour, labels, data model, UI, API sketch, out of scope |
 | [project-layout-plan.md](project-layout-plan.md) | Project Layout Plan: repo tree, stack choices, tests, CI, build order |
 | [wireframes/](wireframes/) | Foyer Wireframes: 14 desktop and phone artboards, as PNGs |
+| [screenshots/](screenshots/) | The main page in light and dark, from a demo instance, for the README |
 
 The spec's architecture diagram was an embedded widget and didn't survive the Markdown export;
 it shows as a placeholder line.
