@@ -71,11 +71,15 @@ dotnet tool restore && dotnet ef migrations add <Name> -p src/Foyer.Core -o Data
 
 ## Image
 
+Released images are at `ghcr.io/cameroncox/foyer` (`:latest`, `:X.Y.Z`, and `:dev` for develop
+builds):
+
 ```bash
-docker build -t foyer .
 mkdir -p data
-docker run -p 8080:8080 --user "$(id -u):$(id -g)" -v "$PWD/data:/data" foyer
+docker run -p 8080:8080 --user "$(id -u):$(id -g)" -v "$PWD/data:/data" ghcr.io/cameroncox/foyer:latest
 ```
+
+To build it yourself instead, `docker build -t foyer .` and run `foyer`.
 
 The runtime image is chiseled and non-root (uid 1654 unless `--user` / compose `user:` overrides
 it; `./data` must be writable by that user). Its healthcheck runs

@@ -8,8 +8,8 @@
 
 services:
   foyer:
-    # An image you built (docker build -t foyer .) or pushed to your own registry.
-    image: foyer:latest
+    # Released images; :dev and :<sha> are develop builds. Or one you built: docker build -t foyer .
+    image: ghcr.io/cameroncox/foyer:latest
     container_name: foyer
     restart: unless-stopped
     # Run as the host user that owns ./data. Set UID/GID in .env; both default to 1000.
