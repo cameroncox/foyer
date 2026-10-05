@@ -44,7 +44,7 @@ export function TopBar(props: Props) {
       ) : (
         <DesktopTopBar {...props} onDialog={setDialog} />
       )}
-      <ProfileDialogs dialog={dialog} onClose={() => setDialog(null)} />
+      <ProfileDialogs dialog={dialog} onDialog={setDialog} />
     </>
   )
 }

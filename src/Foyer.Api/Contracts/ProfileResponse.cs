@@ -19,11 +19,19 @@ public enum ProfileKind
     Ownerless,
 }
 
-/// <param name="Name">For a personal profile, the user header as sent.</param>
+/// <param name="Name">For a personal profile, the user header as sent until it's renamed.</param>
 /// <param name="Slug">Where it lives: <c>/{slug}</c>.</param>
 /// <param name="CanEdit">Whether the caller can change its bookmarks and categories.</param>
-/// <param name="CanManage">Whether the caller can rename or delete it.</param>
-public sealed record ProfileResponse(int Id, string Name, string Slug, ProfileKind Kind, bool CanEdit, bool CanManage)
+/// <param name="CanRename">Whether the caller can rename it: any profile they see but Default.</param>
+/// <param name="CanDelete">Whether the caller can delete it: not Default or a personal profile.</param>
+public sealed record ProfileResponse(
+    int Id,
+    string Name,
+    string Slug,
+    ProfileKind Kind,
+    bool CanEdit,
+    bool CanRename,
+    bool CanDelete)
 {
     public static ProfileResponse From(Profile profile, ProfileOptions options, Caller caller) => new(
         profile.Id,
@@ -34,5 +42,6 @@ public sealed record ProfileResponse(int Id, string Name, string Slug, ProfileKi
             : profile.OwnerUser is null ? ProfileKind.Ownerless
             : ProfileKind.Owned,
         ProfileResolver.CanEdit(options, caller, profile),
-        ProfileResolver.CanManage(options, profile));
+        ProfileResolver.CanRename(options, profile),
+        ProfileResolver.CanDelete(options, profile));
 }

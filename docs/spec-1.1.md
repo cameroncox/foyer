@@ -25,11 +25,11 @@ A profile is a named view of Foyer: its own manual bookmarks, categories, order 
 - **Default** is a system profile at `/default`, and at `/` for header-less requests. It can't be renamed or deleted. Its bookmarks stay in Default unless marked shared, like any profile's, and bookmarks shared from other profiles show in it too.
 - **Docker bookmarks live only in Default.** Other profiles see one only when it's marked shared there, so a vendor profile stays free of containers. A shared Docker card keeps its live status dot, dimming and host tag everywhere it shows.
 - **Ownerless profiles** are made without a header. Everyone sees and edits them, header or not. Example: a "vendor" profile for one product's links, set as a Chrome profile's homepage at `/vendor`.
-- **User profiles** belong to one `Remote-User`. Nobody else sees them; anyone else gets a 404. The first one, made on first sight, is that user's **personal profile**. Its URL is the header value slugified (`cameron@casadecox.org` → `/cameron-casadecox-org`); the picker shows the header value as sent.
+- **User profiles** belong to one `Remote-User`. Nobody else sees them; anyone else gets a 404. The first one, made on first sight, is that user's **personal profile**. Its URL is the header value slugified (`cameron@casadecox.org` → `/cameron-casadecox-org`); it's named after the header value as sent until its owner renames it.
 - **Bad headers:** a `Remote-User` from an untrusted address, or one that's present but empty, gets a 403. The untrusted case is logged.
 - **Picking:** the URL wins. Every profile lives at `/{name}`. Picking one in the menu goes to its URL and is remembered per device, so `/` reopens it. If the remembered profile isn't visible to this request any more, `/` silently opens the personal profile (with a header) or Default (without), and the pick is forgotten.
 - **Names:** letters, digits and hyphens, up to 50. The URL is the name in lower case, matched case-insensitively. A name can't clash with any profile that someone could see alongside it: an ownerless name must be unused everywhere, and a user's names must not match an ownerless one. The error is just "That name isn't available", so it never reveals someone's private profile. A reserved name says Foyer uses it instead. Reserved (plus add and openapi, which the app already serves): `api`, `assets`, `default`, `healthz`.
-- **Managing:** the menu has New profile, plus rename and delete for profiles you can edit. Deleting asks first and removes its bookmarks and categories; if it shares any, the confirm says so: "vendor shares 3 bookmarks. They disappear for everyone." Default and a user's personal profile can't be renamed or deleted.
+- **Managing:** the menu has New profile, and a pencil on every profile you can rename; Delete sits in its rename dialog. Deleting asks first and removes its bookmarks and categories; if it shares any, the confirm says so: "vendor shares 3 bookmarks. They disappear for everyone." Default can't be renamed or deleted. A personal profile can be renamed but not deleted, since another would be made on the next visit.
 - **Import** lands in the current profile, unshared, Default included. Quick add uses the profile baked into its bookmarklet: the bookmarklet offered on a profile's page opens /add?profile=\<name>, so each Chrome profile drags its own. Adding to a profile you can't edit says so, and with a header offers to add to your personal profile instead.
 - **Upgrade from 1.0:** all existing bookmarks and categories move into Default, unshared. A no-auth install looks exactly like 1.0; behind auth, Default editors mark what everyone should see as shared.
 
@@ -77,11 +77,11 @@ A bookmark's own category and order stay on Bookmark, as in 1.0. Only other prof
 | Column | Type | Notes |
 | --- | --- | --- |
 | Id | int |  |
-| Name | string | Shown in the picker; the header value for a personal profile |
+| Name | string | Shown in the picker; for a personal profile, the header value until it's renamed |
 | Slug | string, case-insensitive | The URL; unique per owner, plus the availability rule under Profiles |
 | OwnerUser | string? | Remote-User value; null for ownerless profiles and Default |
 | IsSystem | bool | True only for Default |
-| IsPersonal | bool | The profile created for a user on first sight; can't be renamed or deleted |
+| IsPersonal | bool | The profile created for a user on first sight, found by this flag and its owner, never its name; can be renamed, not deleted |
 | CreatedAt | timestamp |  |
 
 **Category** gains ProfileId. Names are unique per profile, and each profile has its own Uncategorized.
@@ -176,7 +176,7 @@ Same endpoints as 1.0. Middleware resolves the profile once per request, and eve
 | GET | `/api/events` | `bookmarks-changed` goes to every profile when a shared bookmark changes, and otherwise only to pages showing the owning profile |
 | Any | `X-Foyer-Profile: {name}` | Sent by the page from its URL: the profile to act on; ?profile= on /api/events, since EventSource can't send headers. 404 if the caller can't see it; writes to Default need edit rights |
 | POST | `/api/profiles` | New: create a profile, owned by the caller's user or ownerless |
-| PUT, DELETE | `/api/profiles/{id}` | New: rename or delete; 403 for Default or a personal profile, 404 for someone else's (the same answer as one that doesn't exist) |
+| PUT, DELETE | `/api/profiles/{id}` | New: rename or delete; 403 for Default, or for deleting a personal profile; 404 for someone else's (the same answer as one that doesn't exist) |
 
 Import lands in the current profile, unshared.
 

@@ -151,12 +151,22 @@ public sealed class ProfileResolverTests
     }
 
     [Fact]
-    public void CanManage_NeverDefaultOrAPersonalProfile()
+    public void CanRename_AnyButDefault()
     {
-        ProfileResolver.CanManage(On, Default).ShouldBeFalse();
-        ProfileResolver.CanManage(On, Cameron).ShouldBeFalse();
-        ProfileResolver.CanManage(On, Work).ShouldBeTrue();
-        ProfileResolver.CanManage(On, Vendor).ShouldBeTrue();
-        ProfileResolver.CanManage(ProfileOptions.Default with { Enabled = false }, Vendor).ShouldBeFalse();
+        ProfileResolver.CanRename(On, Default).ShouldBeFalse();
+        ProfileResolver.CanRename(On, Cameron).ShouldBeTrue();
+        ProfileResolver.CanRename(On, Work).ShouldBeTrue();
+        ProfileResolver.CanRename(On, Vendor).ShouldBeTrue();
+        ProfileResolver.CanRename(ProfileOptions.Default with { Enabled = false }, Vendor).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void CanDelete_NeverDefaultOrAPersonalProfile()
+    {
+        ProfileResolver.CanDelete(On, Default).ShouldBeFalse();
+        ProfileResolver.CanDelete(On, Cameron).ShouldBeFalse();
+        ProfileResolver.CanDelete(On, Work).ShouldBeTrue();
+        ProfileResolver.CanDelete(On, Vendor).ShouldBeTrue();
+        ProfileResolver.CanDelete(ProfileOptions.Default with { Enabled = false }, Vendor).ShouldBeFalse();
     }
 }

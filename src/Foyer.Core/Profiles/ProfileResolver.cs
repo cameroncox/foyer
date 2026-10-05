@@ -96,7 +96,14 @@ public static class ProfileResolver
                 || options.DefaultEditorGroups.Intersect(caller.Groups, StringComparer.OrdinalIgnoreCase).Any());
     }
 
-    /// <summary>Whether the caller can rename or delete a profile they can see: never Default or a personal profile.</summary>
-    public static bool CanManage(ProfileOptions options, Profile profile) =>
-        options.Enabled && !profile.IsSystem && !profile.IsPersonal;
+    /// <summary>Whether the caller can rename a profile they can see: any but Default, whose URL Foyer reserves.</summary>
+    public static bool CanRename(ProfileOptions options, Profile profile) =>
+        options.Enabled && !profile.IsSystem;
+
+    /// <summary>
+    /// Whether the caller can delete a profile they can see: not Default, and not a personal
+    /// profile, which would only be made again on the user's next visit.
+    /// </summary>
+    public static bool CanDelete(ProfileOptions options, Profile profile) =>
+        CanRename(options, profile) && !profile.IsPersonal;
 }

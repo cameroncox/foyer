@@ -1,5 +1,5 @@
-import { Text, UnstyledButton } from '@mantine/core'
-import { IconCheck, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Text, UnstyledButton } from '@mantine/core'
+import { IconCheck, IconPencil, IconPlus } from '@tabler/icons-react'
 
 import { groupProfiles } from './groups.ts'
 import { useCurrentProfile } from './profileContext.ts'
@@ -14,7 +14,7 @@ interface Props {
   onDialog: (dialog: ProfileDialog) => void
 }
 
-/** The profile picker at the top of the phone menu: every profile, then New profile and the current one's actions. */
+/** The profile picker at the top of the phone menu: every profile, each with a pencil where it can be renamed, then New profile. */
 export function PhoneProfileList({ onDone, onDialog }: Props) {
   const current = useCurrentProfile()
   const pick = usePickProfile()
@@ -34,23 +34,38 @@ export function PhoneProfileList({ onDone, onDialog }: Props) {
       {[home, ...yours, ...everyones]
         .filter((p) => p !== undefined)
         .map((profile) => (
-          <UnstyledButton
+          <div
             key={profile.id}
             className={classes.row}
             data-current={profile.id === me.current.id || undefined}
-            aria-current={profile.id === me.current.id ? 'page' : undefined}
-            onClick={then(() => pick(profile.slug))}
           >
-            <ProfileIcon kind={profile.kind} />
-            <span className={classes.rowName}>{profile.name}</span>
-            {profile.id === me.current.id ? (
-              <IconCheck size={16} aria-hidden="true" />
-            ) : (
-              <Text size="xs" c="dimmed" ff="monospace">
-                /{profile.slug}
-              </Text>
+            <UnstyledButton
+              className={classes.rowPick}
+              aria-current={profile.id === me.current.id ? 'page' : undefined}
+              onClick={then(() => pick(profile.slug))}
+            >
+              <ProfileIcon kind={profile.kind} />
+              <span className={classes.rowName}>{profile.name}</span>
+              {profile.id === me.current.id ? (
+                <IconCheck size={16} aria-hidden="true" />
+              ) : (
+                <Text size="xs" c="dimmed" ff="monospace">
+                  /{profile.slug}
+                </Text>
+              )}
+            </UnstyledButton>
+            {profile.canRename && (
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size={44}
+                aria-label={`Rename ${profile.name}`}
+                onClick={then(() => onDialog({ kind: 'rename', profile }))}
+              >
+                <IconPencil size={18} />
+              </ActionIcon>
             )}
-          </UnstyledButton>
+          </div>
         ))}
       <UnstyledButton
         className={`${classes.row} ${classes.rowAction}`}
@@ -59,25 +74,6 @@ export function PhoneProfileList({ onDone, onDialog }: Props) {
         <IconPlus size={16} aria-hidden="true" />
         New profile
       </UnstyledButton>
-      {me.current.canManage && (
-        <>
-          <UnstyledButton
-            className={`${classes.row} ${classes.rowAction}`}
-            onClick={then(() => onDialog({ kind: 'rename', profile: me.current }))}
-          >
-            <IconPencil size={16} aria-hidden="true" />
-            Rename {me.current.name}
-          </UnstyledButton>
-          <UnstyledButton
-            className={`${classes.row} ${classes.rowAction}`}
-            c="red"
-            onClick={then(() => onDialog({ kind: 'delete', profile: me.current }))}
-          >
-            <IconTrash size={16} aria-hidden="true" />
-            Delete {me.current.name}
-          </UnstyledButton>
-        </>
-      )}
     </nav>
   )
 }

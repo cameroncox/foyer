@@ -98,7 +98,7 @@ public sealed class ProfileServiceTests
     }
 
     [Fact]
-    public async Task RenameAndDelete_AreRefused_ForDefaultAndPersonalProfiles()
+    public async Task Default_CantBeRenamedOrDeleted_NorAPersonalProfileDeleted()
     {
         await using var t = await TestDb.CreateAsync();
         var personal = await t.Profiles().EnsurePersonalAsync(Cameron.User!);
@@ -106,8 +106,35 @@ public sealed class ProfileServiceTests
 
         await Should.ThrowAsync<ForbiddenException>(() => t.Profiles().RenameAsync(Profile.DefaultId, "home"));
         await Should.ThrowAsync<ForbiddenException>(() => t.Profiles().DeleteAsync(Profile.DefaultId));
-        await Should.ThrowAsync<ForbiddenException>(() => t.Profiles().RenameAsync(personal.Id, "me"));
         await Should.ThrowAsync<ForbiddenException>(() => t.Profiles().DeleteAsync(personal.Id));
+    }
+
+    [Fact]
+    public async Task APersonalProfile_CanBeRenamed_AndStaysTheirs()
+    {
+        await using var t = await TestDb.CreateAsync();
+        var personal = await t.Profiles().EnsurePersonalAsync(Cameron.User!);
+        t.Profile.Use(personal, Cameron, canEdit: true);
+
+        var renamed = await t.Profiles().RenameAsync(personal.Id, "cameron");
+
+        renamed.Name.ShouldBe("cameron");
+        renamed.Slug.ShouldBe("cameron");
+        renamed.IsPersonal.ShouldBeTrue();
+        (await t.Profiles().EnsurePersonalAsync(Cameron.User!)).Id.ShouldBe(personal.Id);
+        (await t.Fresh().Profiles.CountAsync(TestContext.Current.CancellationToken)).ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task APersonalProfile_CantBeRenamedToAnOwnerlessProfilesName()
+    {
+        await using var t = await TestDb.CreateAsync();
+        await t.Profiles().CreateAsync("vendor");
+        var personal = await t.Profiles().EnsurePersonalAsync(Cameron.User!);
+        t.Profile.Use(personal, Cameron, canEdit: true);
+
+        (await Should.ThrowAsync<RuleViolationException>(() => t.Profiles().RenameAsync(personal.Id, "Vendor")))
+            .Message.ShouldBe(ProfileNames.Unavailable);
     }
 
     [Fact]

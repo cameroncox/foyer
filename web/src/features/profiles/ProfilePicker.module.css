@@ -32,6 +32,18 @@
   text-overflow: ellipsis;
 }
 
+/* A picker row: the profile, then its pencil. */
+.menuRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.menuItem {
+  flex: 1;
+  min-width: 0;
+}
+
 /* The phone menu's list. */
 .list {
   border: 1px solid var(--foyer-border);
@@ -56,6 +68,21 @@
 .row[data-current] {
   background: var(--mantine-primary-color-light);
   font-weight: 600;
+}
+
+/* A phone row's own button: the profile, filling the row before its pencil. */
+.rowPick {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.row:has(.rowPick) {
+  padding-right: 2px;
 }
 
 .rowName {

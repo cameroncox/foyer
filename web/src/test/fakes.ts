@@ -96,13 +96,20 @@ export function profile(name: string, extra: Partial<Profile> = {}): Profile {
     slug: name.toLowerCase(),
     kind: 'owned',
     canEdit: true,
-    canManage: true,
+    canRename: true,
+    canDelete: true,
     ...extra,
   }
 }
 
 export const defaultProfile = (extra: Partial<Profile> = {}) =>
-  profile('Default', { slug: 'default', kind: 'default', canManage: false, ...extra })
+  profile('Default', {
+    slug: 'default',
+    kind: 'default',
+    canRename: false,
+    canDelete: false,
+    ...extra,
+  })
 
 /** /api/me with profiles off, as a 1.0 install answers: Default only, editable. */
 export function profilesOff(): Me {

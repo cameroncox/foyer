@@ -17,16 +17,25 @@ export type ProfileDialog =
 
 interface Props {
   dialog: ProfileDialog
-  onClose: () => void
+  onDialog: (dialog: ProfileDialog) => void
 }
 
-/** New profile, Rename and Delete, opened from the picker or the phone menu. */
-export function ProfileDialogs({ dialog, onClose }: Props) {
+/**
+ * New profile, Rename and Delete, opened from the picker or the phone menu. Delete is reached
+ * from Rename, for profiles that can be deleted.
+ */
+export function ProfileDialogs({ dialog, onDialog }: Props) {
+  const onClose = () => onDialog(null)
   return (
     <>
       <NewProfileModal opened={dialog?.kind === 'new'} onClose={onClose} />
       {dialog?.kind === 'rename' && (
-        <RenameProfileModal key={dialog.profile.id} profile={dialog.profile} onClose={onClose} />
+        <RenameProfileModal
+          key={dialog.profile.id}
+          profile={dialog.profile}
+          onClose={onClose}
+          onDelete={() => onDialog({ kind: 'delete', profile: dialog.profile })}
+        />
       )}
       {dialog?.kind === 'delete' && (
         <DeleteProfileModal profile={dialog.profile} onClose={onClose} />
@@ -106,7 +115,15 @@ function NewProfileModal({ opened, onClose }: { opened: boolean; onClose: () => 
   )
 }
 
-function RenameProfileModal({ profile, onClose }: { profile: Profile; onClose: () => void }) {
+function RenameProfileModal({
+  profile,
+  onClose,
+  onDelete,
+}: {
+  profile: Profile
+  onClose: () => void
+  onDelete: () => void
+}) {
   const current = useCurrentProfile()
   const rename = useRenameProfile()
   const navigate = useNavigate()
@@ -143,6 +160,11 @@ function RenameProfileModal({ profile, onClose }: { profile: Profile; onClose: (
             error={form.errors.name ?? rename.error?.message}
           />
           <Group justify="flex-end">
+            {profile.canDelete && (
+              <Button variant="subtle" color="red" mr="auto" onClick={onDelete}>
+                Delete profile…
+              </Button>
+            )}
             <Button variant="default" onClick={onClose}>
               Cancel
             </Button>

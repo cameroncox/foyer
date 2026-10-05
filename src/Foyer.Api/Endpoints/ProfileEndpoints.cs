@@ -38,7 +38,7 @@ internal static class ProfileEndpoints
         group.MapPut("/{id:int}", async (int id, ProfileNameRequest request, ProfileContext context, ProfileService profiles, ProfileOptions options, CancellationToken ct) =>
                 TypedResults.Ok(ProfileResponse.From(await profiles.RenameAsync(id, request.Name, ct), options, context.Caller)))
             .WithName("RenameProfile")
-            .WithSummary("Rename a profile, which moves it to the new name's URL; Default and personal profiles answer 403")
+            .WithSummary("Rename a profile, which moves it to the new name's URL; Default answers 403")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)

@@ -30,7 +30,8 @@ public sealed class ProfileEndpointTests
         me.Current.Kind.ShouldBe(ProfileKind.Default);
         me.Current.Slug.ShouldBe("default");
         me.Current.CanEdit.ShouldBeTrue();
-        me.Current.CanManage.ShouldBeFalse();
+        me.Current.CanRename.ShouldBeFalse();
+        me.Current.CanDelete.ShouldBeFalse();
         me.CanEditDefault.ShouldBeTrue();
         me.Profiles.ShouldHaveSingleItem().Kind.ShouldBe(ProfileKind.Default);
     }
@@ -151,7 +152,8 @@ public sealed class ProfileEndpointTests
         var created = await (await client.PostJsonAsync("/api/profiles", new ProfileNameRequest("Work"))).ReadAsync<ProfileResponse>();
         created.Kind.ShouldBe(ProfileKind.Owned);
         created.Slug.ShouldBe("work");
-        created.CanManage.ShouldBeTrue();
+        created.CanRename.ShouldBeTrue();
+        created.CanDelete.ShouldBeTrue();
 
         using var atWork = app.ClientAs(user: Cameron, profile: "work");
         (await atWork.PostJsonAsync("/api/bookmarks", new CreateBookmarkRequest("Wiki", "https://wiki.example.com", null, null, null, [])))
@@ -195,14 +197,33 @@ public sealed class ProfileEndpointTests
     }
 
     [Fact]
-    public async Task DefaultAndPersonalProfiles_CantBeRenamedOrDeleted()
+    public async Task Default_CantBeRenamedOrDeleted_NorAPersonalProfileDeleted()
     {
         await using var app = App();
         using var client = app.ClientAs(user: Cameron);
         var me = await MeAsync(client);
 
+        me.Current.CanRename.ShouldBeTrue();
+        me.Current.CanDelete.ShouldBeFalse();
         (await client.PutJsonAsync("/api/profiles/1", new ProfileNameRequest("home"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await client.DeleteAsync($"/api/profiles/{me.Current.Id}")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task APersonalProfile_CanBeRenamed_AndIsStillTheOneOpenedAtSlash()
+    {
+        await using var app = App();
+        using var client = app.ClientAs(user: Cameron);
+        var me = await MeAsync(client);
+
+        var renamed = await (await client.PutJsonAsync($"/api/profiles/{me.Current.Id}", new ProfileNameRequest("cameron"))).ReadAsync<ProfileResponse>();
+
+        renamed.Slug.ShouldBe("cameron");
+        renamed.Kind.ShouldBe(ProfileKind.Personal);
+        var again = await MeAsync(client);
+        again.Current.Id.ShouldBe(me.Current.Id);
+        again.Current.Name.ShouldBe("cameron");
+        again.Profiles.Count.ShouldBe(2);
     }
 
     [Fact]

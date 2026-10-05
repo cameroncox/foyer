@@ -1,5 +1,6 @@
-import { Menu, Text, UnstyledButton } from '@mantine/core'
-import { IconCheck, IconChevronDown, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Menu, Text, UnstyledButton } from '@mantine/core'
+import { IconCheck, IconChevronDown, IconPencil, IconPlus } from '@tabler/icons-react'
+import { useState } from 'react'
 
 import type { Profile } from '../../api/client.ts'
 import { groupProfiles } from './groups.ts'
@@ -15,47 +16,66 @@ interface Props {
 
 /**
  * The current profile beside the instance name; open, it lists Default, the caller's profiles
- * and everyone's, then New profile, and Rename and Delete for the current one when allowed.
+ * and everyone's, each with a pencil to rename (and delete) it where allowed, then New profile.
  * Amber on Default for those who can edit it, since changes there reach every profile's Docker
  * cards. Nothing shows with profiles off.
  */
 export function ProfilePicker({ onDialog }: Props) {
   const current = useCurrentProfile()
   const pick = usePickProfile()
+  const [opened, setOpened] = useState(false)
   if (!current?.me.profilesEnabled) {
     return null
   }
 
   const { me } = current
   const { home, yours, everyones } = groupProfiles(me.profiles)
-  const item = (profile: Profile, description?: string) => (
-    <Menu.Item
-      key={profile.id}
-      leftSection={<ProfileIcon kind={profile.kind} />}
-      rightSection={
-        profile.id === me.current.id ? (
-          <IconCheck size={16} aria-label="Current profile" />
-        ) : (
-          <Text size="xs" c="dimmed" ff="monospace">
-            /{profile.slug}
-          </Text>
-        )
-      }
-      onClick={() => pick(profile.slug)}
-    >
-      <Text size="sm" fw={profile.id === me.current.id ? 600 : 400}>
-        {profile.name}
-      </Text>
-      {description && (
-        <Text size="xs" c="dimmed">
-          {description}
+  const open = (dialog: ProfileDialog) => {
+    setOpened(false)
+    onDialog(dialog)
+  }
+
+  const row = (profile: Profile, description?: string) => (
+    <div key={profile.id} className={classes.menuRow}>
+      <Menu.Item
+        className={classes.menuItem}
+        leftSection={<ProfileIcon kind={profile.kind} />}
+        rightSection={
+          profile.id === me.current.id ? (
+            <IconCheck size={16} aria-label="Current profile" />
+          ) : (
+            <Text size="xs" c="dimmed" ff="monospace">
+              /{profile.slug}
+            </Text>
+          )
+        }
+        onClick={() => pick(profile.slug)}
+      >
+        <Text size="sm" fw={profile.id === me.current.id ? 600 : 400}>
+          {profile.name}
         </Text>
+        {description && (
+          <Text size="xs" c="dimmed">
+            {description}
+          </Text>
+        )}
+      </Menu.Item>
+      {profile.canRename && (
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          size={36}
+          aria-label={`Rename ${profile.name}`}
+          onClick={() => open({ kind: 'rename', profile })}
+        >
+          <IconPencil size={16} />
+        </ActionIcon>
       )}
-    </Menu.Item>
+    </div>
   )
 
   return (
-    <Menu position="bottom-start" width={320} shadow="md">
+    <Menu position="bottom-start" width={340} shadow="md" opened={opened} onChange={setOpened}>
       <Menu.Target>
         <UnstyledButton
           className={classes.target}
@@ -69,35 +89,18 @@ export function ProfilePicker({ onDialog }: Props) {
       </Menu.Target>
       <Menu.Dropdown>
         {home &&
-          item(
+          row(
             home,
             `Home, with Docker bookmarks · ${home.canEdit ? 'you can edit' : 'read-only for you'}`,
           )}
         {yours.length > 0 && <Menu.Label>Yours</Menu.Label>}
-        {yours.map((p) => item(p))}
+        {yours.map((p) => row(p))}
         {everyones.length > 0 && <Menu.Label>Everyone’s</Menu.Label>}
-        {everyones.map((p) => item(p))}
+        {everyones.map((p) => row(p))}
         <Menu.Divider />
-        <Menu.Item leftSection={<IconPlus size={16} />} onClick={() => onDialog({ kind: 'new' })}>
+        <Menu.Item leftSection={<IconPlus size={16} />} onClick={() => open({ kind: 'new' })}>
           New profile
         </Menu.Item>
-        {me.current.canManage && (
-          <>
-            <Menu.Item
-              leftSection={<IconPencil size={16} />}
-              onClick={() => onDialog({ kind: 'rename', profile: me.current })}
-            >
-              Rename {me.current.name}…
-            </Menu.Item>
-            <Menu.Item
-              color="red"
-              leftSection={<IconTrash size={16} />}
-              onClick={() => onDialog({ kind: 'delete', profile: me.current })}
-            >
-              Delete {me.current.name}…
-            </Menu.Item>
-          </>
-        )}
       </Menu.Dropdown>
     </Menu>
   )

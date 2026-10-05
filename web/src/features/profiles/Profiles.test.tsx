@@ -13,7 +13,7 @@ const personal = profile('cameron_example.com', {
   id: 2,
   slug: 'cameron-example-com',
   kind: 'personal',
-  canManage: false,
+  canDelete: false,
 })
 const work = profile('work', { id: 3 })
 const vendor = profile('vendor', { id: 4, kind: 'ownerless' })
@@ -211,7 +211,7 @@ describe('Profiles', () => {
     renderApp()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Profile: work' }))
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Rename work…' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Rename work' }))
     await userEvent.clear(screen.getByLabelText('Name'))
     await userEvent.type(screen.getByLabelText('Name'), 'office')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -234,7 +234,8 @@ describe('Profiles', () => {
     renderApp()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Profile: work' }))
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Delete work…' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Rename work' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Delete profile…' }))
     await userEvent.click(screen.getByRole('button', { name: 'Delete profile' }))
 
     expect(
@@ -245,7 +246,7 @@ describe('Profiles', () => {
     expect(localStorage.getItem('foyer.profile')).toBeNull()
   })
 
-  it('offers no rename or delete for Default or a personal profile', async () => {
+  it('offers a rename on every row but Default, and no delete for a personal profile', async () => {
     stubApi(page, { 'GET /api/me': meFor().handler })
     renderApp()
 
@@ -253,8 +254,38 @@ describe('Profiles', () => {
       await screen.findByRole('button', { name: 'Profile: cameron_example.com' }),
     )
     await screen.findByRole('menu')
-    expect(screen.queryByRole('menuitem', { name: /Rename/ })).toBeNull()
-    expect(screen.queryByRole('menuitem', { name: /Delete/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Rename Default' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Rename work' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Rename vendor' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Rename cameron_example.com' }))
+    expect(await screen.findByLabelText('Name')).toHaveValue('cameron_example.com')
+    expect(screen.queryByRole('button', { name: 'Delete profile…' })).toBeNull()
+  })
+
+  it('renames the personal profile from its row while on another profile', async () => {
+    at('/work')
+    const profiles = [...all]
+    const api = stubApi(page, {
+      'GET /api/me': meFor(profiles).handler,
+      'PUT /api/profiles/2': () => {
+        const renamed = { ...personal, name: 'cameron', slug: 'cameron' }
+        profiles.splice(profiles.indexOf(personal), 1, renamed)
+        return renamed
+      },
+    })
+    renderApp()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Profile: work' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Rename cameron_example.com' }))
+    await userEvent.clear(screen.getByLabelText('Name'))
+    await userEvent.type(screen.getByLabelText('Name'), 'cameron')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(api.called('PUT /api/profiles/2')).toHaveLength(1))
+    expect(api.called('PUT /api/profiles/2')[0].body).toEqual({ name: 'cameron' })
+    // It wasn't the page's profile, so the page stays put.
+    expect(window.location.pathname).toBe('/work')
   })
 
   it('shows no picker with profiles off', async () => {

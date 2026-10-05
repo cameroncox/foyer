@@ -21,7 +21,10 @@ public sealed class Profile
     /// <summary>True only for Default, which can't be renamed or deleted and holds the Docker bookmarks.</summary>
     public bool IsSystem { get; set; }
 
-    /// <summary>The profile made for a user on first sight; can't be renamed or deleted.</summary>
+    /// <summary>
+    /// The profile made for a user on first sight, found by this flag and its owner, never its
+    /// name. It can be renamed but not deleted, since another would be made on the next visit.
+    /// </summary>
     public bool IsPersonal { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }

@@ -89,7 +89,12 @@ public sealed class ProfileService(
 
     public async Task<Profile> RenameAsync(int id, string name, CancellationToken ct = default)
     {
-        var profile = await FindManageableAsync(id, "renamed", ct);
+        var profile = await FindVisibleAsync(id, ct);
+        if (profile.IsSystem)
+        {
+            throw new ForbiddenException($"{Profile.DefaultName} can't be renamed.");
+        }
+
         name = ProfileNames.Validate(name);
         await EnsureAvailableAsync(name, profile.OwnerUser, exceptId: id, ct);
 
@@ -102,7 +107,14 @@ public sealed class ProfileService(
     /// <summary>Deletes a profile with its bookmarks and categories.</summary>
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var profile = await FindManageableAsync(id, "deleted", ct);
+        var profile = await FindVisibleAsync(id, ct);
+        if (profile.IsSystem || profile.IsPersonal)
+        {
+            throw new ForbiddenException(profile.IsSystem
+                ? $"{Profile.DefaultName} can't be deleted."
+                : "A personal profile can't be deleted; it would be made again on your next visit.");
+        }
+
 
         // Bookmarks first: they restrict their category, so the profile's cascade can't take them.
         // Their tags and placements in other profiles cascade with them.
@@ -133,22 +145,13 @@ public sealed class ProfileService(
         await transaction.CommitAsync(ct);
     }
 
-    private async Task<Profile> FindManageableAsync(int id, string action, CancellationToken ct)
+    /// <summary>A profile the caller can see, with profiles on; someone else's is as good as missing.</summary>
+    private async Task<Profile> FindVisibleAsync(int id, CancellationToken ct)
     {
         EnsureEnabled();
         var profile = await db.Profiles.FindAsync([id], ct);
-        if (profile is null || !ProfileResolver.IsVisible(context.Caller, profile))
-        {
-            throw new NotFoundException($"Profile {id} not found.");
-        }
-
-        if (profile.IsSystem)
-        {
-            throw new ForbiddenException($"{Profile.DefaultName} can't be {action}.");
-        }
-
-        return profile.IsPersonal
-            ? throw new ForbiddenException($"A personal profile can't be {action}.")
+        return profile is null || !ProfileResolver.IsVisible(context.Caller, profile)
+            ? throw new NotFoundException($"Profile {id} not found.")
             : profile;
     }
 

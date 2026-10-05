@@ -9,7 +9,7 @@ import { renderApp } from '../../test/render.tsx'
 import { facets, spotlightHits } from '../spotlight/scope.ts'
 import { blockedDelete, sharedLabel } from './shared.ts'
 
-const personal = profile('cameron', { id: 2, kind: 'personal', canManage: false })
+const personal = profile('cameron', { id: 2, kind: 'personal', canDelete: false })
 
 function me(current: Profile, extra: Partial<Me> = {}): Me {
   const home = defaultProfile({ id: 1, canEdit: current.kind === 'default' && current.canEdit })

@@ -97,7 +97,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Rename a profile, which moves it to the new name's URL; Default and personal profiles answer 403 */
+        /** Rename a profile, which moves it to the new name's URL; Default answers 403 */
         put: operations["RenameProfile"];
         post?: never;
         /** Delete a profile with its bookmarks and categories; Default and personal profiles answer 403 */
@@ -450,7 +450,8 @@ export interface components {
             slug: string;
             kind: components["schemas"]["ProfileKind"];
             canEdit: boolean;
-            canManage: boolean;
+            canRename: boolean;
+            canDelete: boolean;
         };
         ReorderBookmarksRequest: {
             /** Format: int32 */
