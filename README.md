@@ -102,12 +102,19 @@ own token pushes to `ghcr.io`. The image logs its version at startup.
 
 ## Deploy
 
-Examples in `deploy/`, all behind Traefik; fill in their `[BRACKETED]` values first:
+The quickest start runs Foyer on its own, as a bookmark manager on port 8080:
+
+```bash
+mkdir -p deploy/data && docker compose -f deploy/compose.example.yml up -d
+```
+
+Then open http://localhost:8080. The examples in `deploy/` (fill in any `[BRACKETED]` values
+first):
 
 | File | Runs |
 | --- | --- |
-| `compose.example.yml` | Foyer alone, as a bookmark manager with no Docker hosts |
-| `compose.docker.example.yml` | Foyer reading its own host's containers through a private, unpublished socket proxy |
+| `compose.example.yml` | Foyer alone, as a bookmark manager with no Docker hosts, on port 8080 (Traefik labels included, commented out) |
+| `compose.docker.example.yml` | Foyer behind Traefik, reading its own host's containers through a private, unpublished socket proxy |
 | `socket-proxy.example.yml` | A read-only proxy for another host Foyer reads; firewall its port to Foyer's host (see the file: ufw doesn't filter Docker's published ports) |
 
 ## Bookmarklet

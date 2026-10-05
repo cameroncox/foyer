@@ -18,6 +18,7 @@ web/dist/
 
 # Local data
 /data/
+/deploy/data/
 *.db
 *.db-shm
 *.db-wal
