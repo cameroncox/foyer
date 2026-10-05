@@ -105,7 +105,7 @@ own token pushes to `ghcr.io`. The image logs its version at startup.
 The quickest start runs Foyer on its own, as a bookmark manager on port 8080:
 
 ```bash
-mkdir -p deploy/data && docker compose -f deploy/compose.example.yml up -d
+mkdir -p deploy/data && FOYER_UID=$(id -u) FOYER_GID=$(id -g) docker compose -f deploy/compose.example.yml up -d
 ```
 
 Then open http://localhost:8080. The examples in `deploy/` (fill in any `[BRACKETED]` values

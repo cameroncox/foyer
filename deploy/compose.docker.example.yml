@@ -12,8 +12,9 @@ services:
     image: ghcr.io/cameroncox/foyer:latest
     container_name: foyer
     restart: unless-stopped
-    # Run as the host user that owns ./data. Set UID/GID in .env; both default to 1000.
-    user: "${UID:-1000}:${GID:-1000}"
+    # Run as the host user that owns ./data: set FOYER_UID/FOYER_GID (inline or in .env next to this
+    # file); both default to 1000. Not UID/GID, which shells won't pass on or let you set.
+    user: "${FOYER_UID:-1000}:${FOYER_GID:-1000}"
     security_opt:
       - no-new-privileges:true
     depends_on:
