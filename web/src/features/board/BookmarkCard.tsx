@@ -17,7 +17,7 @@ const VISIBLE_TAGS = 2
 
 /**
  * Icon, then name with up to two tags under it. The URL, status and any tags left off show on
- * hover; clicking opens the URL in a new tab.
+ * hover; clicking opens the URL in this tab (middle-click still opens a new one).
  */
 export function BookmarkCard({ bookmark, tile }: Props) {
   const status = statusLabel(bookmark)
@@ -39,8 +39,7 @@ export function BookmarkCard({ bookmark, tile }: Props) {
     >
       <a
         href={bookmark.url}
-        target="_blank"
-        rel="noopener noreferrer"
+        rel="noreferrer"
         className={classes.card}
         data-stopped={bookmark.status === 'stopped' || undefined}
         data-tile={tile || undefined}

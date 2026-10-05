@@ -202,7 +202,7 @@ The main page is a top bar, then categories in drawer order, each a grid of book
 - No URL on the card; hovering shows the URL and status as a tooltip.
 - Docker cards show a status dot on the icon's corner: green running, yellow unhealthy/starting/restarting/paused, red stopped. Stopped cards are also dimmed. Manual cards have no dot.
 - Tags: the automatic host tag is filled with a Docker icon; label and user tags are outlined.
-- Clicking a card opens its URL.
+- Clicking a card opens its URL in the same tab; middle-click (or Ctrl/⌘-click) opens a new tab as usual.
 
 **Categories:** shown in drawer order. A category with no visible bookmarks is hidden, Uncategorized included.
 
@@ -218,7 +218,7 @@ The main page is a top bar, then categories in drawer order, each a grid of book
 **Spotlight** (Space or ⌘K, outside edit mode and forms):
 
 - Empty, it offers Docker hosts, tags and categories to narrow by, each with its bookmark count. Picking one shows that filter as a chip; Backspace in the empty box clears it.
-- Typing searches bookmarks (and matching filters). Enter opens the highlighted bookmark in a new tab.
+- Typing searches bookmarks (and matching filters). Enter opens the highlighted bookmark in the same tab.
 - A web search row comes last: "Search DuckDuckGo for '…'" (the engine from `FOYER_SEARCH_URL`, named when known, else by its host). With no other match it is the only row, so Enter searches the web.
 - On DuckDuckGo, a query starting with a bang (`!g current c# standard`) is only that search, and DuckDuckGo resolves the bang. Other engines search the text as typed.
 - No web search inside a filter: that searches bookmarks only.

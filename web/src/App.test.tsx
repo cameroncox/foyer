@@ -60,14 +60,14 @@ describe('App', () => {
     expect(within(screen.getByText('OPNsense').closest('a')!).queryByRole('img')).toBeNull()
   })
 
-  it('links each card to its URL, in a new tab', async () => {
+  it('links each card to its URL, in this tab', async () => {
     stubDashboard(page)
     renderApp()
 
     const card = (await screen.findByText('OPNsense')).closest('a')
     expect(card).toHaveAttribute('href', 'https://opnsense.lan')
-    expect(card).toHaveAttribute('target', '_blank')
-    expect(card).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(card).not.toHaveAttribute('target')
+    expect(card).toHaveAttribute('rel', 'noreferrer')
   })
 
   it('shows an error with a retry when the dashboard fails', async () => {
