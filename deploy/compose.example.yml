@@ -1,8 +1,8 @@
-# Foyer behind Traefik, reading this host's containers and, optionally, other hosts'.
+# Foyer behind Traefik, as a bookmark manager: no Docker hosts, so bookmarks are added by hand.
 #
-# Foyer reads this host's containers through its own socket proxy on a private network (the
-# proxy is never published), and other hosts through their proxies (socket-proxy.example.yml).
-# Replace the [BRACKETED] values before starting it.
+# To also show labeled containers, add FOYER_DOCKERHOSTS_* entries: compose.docker.example.yml
+# reads this host through a private socket proxy, and socket-proxy.example.yml exposes another
+# host to Foyer. Replace the [BRACKETED] values before starting it.
 #
 #   docker compose -f compose.example.yml up -d
 
@@ -16,26 +16,14 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     security_opt:
       - no-new-privileges:true
-    depends_on:
-      - socket-proxy
-    environment:
-      # One NAME/URI pair per Docker host; KEY is any run of letters and digits. Leave them all
-      # out to run Foyer as a plain bookmark manager.
-      FOYER_DOCKERHOSTS_LOCAL_NAME: local
-      FOYER_DOCKERHOSTS_LOCAL_URI: http://socket-proxy:2375
-      # FOYER_DOCKERHOSTS_SERVER2_NAME: server-2
-      # FOYER_DOCKERHOSTS_SERVER2_URI: http://[SERVER-2 LAN IP]:2375
-      # FOYER_TITLE: "Foyer"            # name in the top bar and the browser tab
-      # FOYER_SEARCH_URL: "https://www.google.com/search?q=%s"   # spotlight web search (default DuckDuckGo)
-      # FOYER_HOMEPAGE_LABELS: "true"   # read homepage.* labels as a fallback (default true)
-      # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
-      # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down
+    # environment:
+    #   FOYER_TITLE: "Foyer"            # name in the top bar and the browser tab
+    #   FOYER_SEARCH_URL: "https://www.google.com/search?q=%s"   # spotlight web search (default DuckDuckGo)
     volumes:
       # Create it before the first up (mkdir data); a missing dir is created root-owned.
       - ./data:/data
     networks:
       - proxy
-      - foyer-docker
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -52,23 +40,7 @@ services:
       # - "traefik.http.routers.foyer-secure.middlewares=[AUTH MIDDLEWARE]"
       - "traefik.http.services.foyer.loadbalancer.server.port=8080"
 
-  # Read-only Docker API for Foyer only: containers and events, no writes. Not published.
-  socket-proxy:
-    image: tecnativa/docker-socket-proxy:v0.5.0
-    container_name: foyer-socket-proxy
-    restart: unless-stopped
-    environment:
-      CONTAINERS: 1
-      EVENTS: 1
-      POST: 0
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - foyer-docker
-
 networks:
   # Traefik's network; use whatever yours is called.
   proxy:
     external: true
-  foyer-docker:
-    internal: true

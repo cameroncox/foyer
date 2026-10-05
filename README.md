@@ -102,10 +102,13 @@ own token pushes to `ghcr.io`. The image logs its version at startup.
 
 ## Deploy
 
-`deploy/compose.example.yml` runs Foyer behind Traefik, reading its own host through a private,
-unpublished socket proxy. `deploy/socket-proxy.example.yml` is the read-only proxy for each other
-host Foyer reads; firewall its port to Foyer's host (see the file: ufw doesn't filter Docker's
-published ports). Fill in the `[BRACKETED]` values in both first.
+Examples in `deploy/`, all behind Traefik; fill in their `[BRACKETED]` values first:
+
+| File | Runs |
+| --- | --- |
+| `compose.example.yml` | Foyer alone, as a bookmark manager with no Docker hosts |
+| `compose.docker.example.yml` | Foyer reading its own host's containers through a private, unpublished socket proxy |
+| `socket-proxy.example.yml` | A read-only proxy for another host Foyer reads; firewall its port to Foyer's host (see the file: ufw doesn't filter Docker's published ports) |
 
 ## Bookmarklet
 

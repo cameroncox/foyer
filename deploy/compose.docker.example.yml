@@ -1,0 +1,73 @@
+# Foyer behind Traefik, reading this host's containers and, optionally, other hosts'.
+#
+# Foyer reads this host's containers through its own socket proxy on a private network (the
+# proxy is never published), and other hosts through their proxies (socket-proxy.example.yml).
+# Replace the [BRACKETED] values before starting it.
+#
+#   docker compose -f compose.docker.example.yml up -d
+
+services:
+  foyer:
+    # Released images; :dev and :<sha> are develop builds. Or one you built: docker build -t foyer .
+    image: ghcr.io/cameroncox/foyer:latest
+    container_name: foyer
+    restart: unless-stopped
+    # Run as the host user that owns ./data. Set UID/GID in .env; both default to 1000.
+    user: "${UID:-1000}:${GID:-1000}"
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - socket-proxy
+    environment:
+      # One NAME/URI pair per Docker host; KEY is any run of letters and digits.
+      FOYER_DOCKERHOSTS_LOCAL_NAME: local
+      FOYER_DOCKERHOSTS_LOCAL_URI: http://socket-proxy:2375
+      # FOYER_DOCKERHOSTS_SERVER2_NAME: server-2
+      # FOYER_DOCKERHOSTS_SERVER2_URI: http://[SERVER-2 LAN IP]:2375
+      # FOYER_TITLE: "Foyer"            # name in the top bar and the browser tab
+      # FOYER_SEARCH_URL: "https://www.google.com/search?q=%s"   # spotlight web search (default DuckDuckGo)
+      # FOYER_HOMEPAGE_LABELS: "true"   # read homepage.* labels as a fallback (default true)
+      # FOYER_RESYNC_INTERVAL: "300"    # seconds between full resyncs
+      # FOYER_POLL_INTERVAL: "30"       # seconds between polls while a host's event stream is down
+    volumes:
+      # Create it before the first up (mkdir data); a missing dir is created root-owned.
+      - ./data:/data
+    networks:
+      - proxy
+      - foyer-docker
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.foyer.entrypoints=http"
+      - "traefik.http.routers.foyer.rule=Host(`[FOYER HOSTNAME]`)"
+      - "traefik.http.middlewares.foyer-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.foyer.middlewares=foyer-https-redirect"
+      - "traefik.http.routers.foyer-secure.entrypoints=https"
+      - "traefik.http.routers.foyer-secure.rule=Host(`[FOYER HOSTNAME]`)"
+      - "traefik.http.routers.foyer-secure.tls=true"
+      - "traefik.http.routers.foyer-secure.service=foyer"
+      # Foyer has no login of its own. Put an auth middleware in front of it, such as a
+      # forwardAuth one defined in Traefik.
+      # - "traefik.http.routers.foyer-secure.middlewares=[AUTH MIDDLEWARE]"
+      - "traefik.http.services.foyer.loadbalancer.server.port=8080"
+
+  # Read-only Docker API for Foyer only: containers and events, no writes. Not published.
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: foyer-socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - foyer-docker
+
+networks:
+  # Traefik's network; use whatever yours is called.
+  proxy:
+    external: true
+  foyer-docker:
+    internal: true
