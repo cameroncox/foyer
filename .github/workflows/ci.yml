@@ -92,14 +92,18 @@ jobs:
   # v* tags only (PRs and other branches stop at the checks):
   #   tag vX.Y.Z      -> :X.Y.Z and :latest (latest tracks the last version tag, never develop)
   #   push to develop -> :dev and :<7-char sha> (any earlier develop build can be rolled back to)
-  # Pushes to <vars.REGISTRY>/<owner>/<repo>: set the REGISTRY repo variable to the Gitea
+  # Pushes to <vars.REGISTRY>/<owner>/<repo>: set the REGISTRY repo variable to the
   # registry's host (a Gitea instance, or ghcr.io). Logs in with repo secrets REGISTRY_USERNAME /
-  # REGISTRY_TOKEN (a token that can write packages for the repo's owner).
+  # REGISTRY_TOKEN (a token that can write packages for the repo's owner); without them it uses
+  # the run's own token, which on GitHub can push to ghcr.io given the permissions below.
   release:
     needs: [dotnet, web, api-contract]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
     env:
       REGISTRY: ${{ vars.REGISTRY }}
     steps:
@@ -129,8 +133,8 @@ jobs:
       - uses: docker/login-action@v3
         with:
           registry: ${{ vars.REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
+          username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: docker/build-push-action@v6
         with:

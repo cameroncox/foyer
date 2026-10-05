@@ -92,9 +92,9 @@ registry's host, such as your Gitea instance or `ghcr.io`:
 | Tag `vX.Y.Z` | `:X.Y.Z`, `:latest` |
 | Push to `develop` | `:dev`, `:<7-char sha>` |
 
-It needs repo secrets `REGISTRY_USERNAME` and `REGISTRY_TOKEN`: an access token that can write
-packages for the image's owner (on GitHub, a personal access token with `write:packages`). The
-image logs its version at startup.
+It logs in with repo secrets `REGISTRY_USERNAME` and `REGISTRY_TOKEN`: an access token that can
+write packages for the image's owner. On GitHub they can be left unset, and the run's own token
+pushes to `ghcr.io`. The image logs its version at startup.
 
 ## Deploy
 
