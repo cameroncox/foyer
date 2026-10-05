@@ -1,4 +1,5 @@
 .card {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -24,6 +25,17 @@
 
 .card[data-stopped] {
   opacity: 0.6;
+}
+
+/* Room for the shared badge, so a long name stops short of it. */
+.card[data-shared] {
+  padding-right: 30px;
+}
+
+.shared {
+  position: absolute;
+  top: 9px;
+  right: 9px;
 }
 
 .body {
@@ -73,5 +85,14 @@
 
   .card[data-tile] .tags {
     display: none;
+  }
+
+  .card[data-tile][data-shared] {
+    padding-right: 6px;
+  }
+
+  .card[data-tile] .shared {
+    top: 6px;
+    right: 6px;
   }
 }

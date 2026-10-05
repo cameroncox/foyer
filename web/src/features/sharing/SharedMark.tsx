@@ -6,7 +6,7 @@ import { sharedLabel } from './shared.ts'
 import classes from './Sharing.module.css'
 
 /** The small people icon on a shared card, naming who it's from. Nothing when not shared. */
-export function SharedMark({ bookmark }: { bookmark: Bookmark }) {
+export function SharedMark({ bookmark, className }: { bookmark: Bookmark; className?: string }) {
   const label = sharedLabel(bookmark)
   if (!label) {
     return null
@@ -14,7 +14,11 @@ export function SharedMark({ bookmark }: { bookmark: Bookmark }) {
 
   return (
     <Tooltip label={label} withinPortal openDelay={300}>
-      <span className={classes.mark} role="img" aria-label={label}>
+      <span
+        className={className ? `${classes.mark} ${className}` : classes.mark}
+        role="img"
+        aria-label={label}
+      >
         <IconUsers size={14} stroke={2} aria-hidden="true" />
       </span>
     </Tooltip>

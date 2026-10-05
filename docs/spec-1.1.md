@@ -143,7 +143,7 @@ Sharing is per bookmark. The owner edits it; everyone else can only reorder it i
 ## Main page
 
 - **Profile picker** sits next to the instance name and shows the current profile ("cameron ▾", "Default ▾"). It lists Default, your profiles, ownerless profiles, and New profile.
-- **Shared cards** carry a small shared icon beside the tags, for the owner and everyone else. The tooltip says who it's from: "Shared by cameron", or "Shared from vendor" / "Shared from Default" for profiles with no user.
+- **Shared cards** carry a small shared badge in the card's top corner, for the owner and everyone else. The tooltip says who it's from: "Shared by cameron", or "Shared from vendor" / "Shared from Default" for profiles with no user.
 - Search and spotlight cover everything the profile sees, shared bookmarks included. Spotlight gains a **Shared** filter; Docker host filters show only for Docker bookmarks the profile can see.
 - **Default banner:** on Default, its editors see "You're editing Default. Docker bookmarks live here. Only bookmarks marked shared show in other profiles.", with a way back to their personal profile. A profile the page can't change has no Edit or + button.
 

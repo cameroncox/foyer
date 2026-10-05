@@ -18,9 +18,9 @@ interface Props {
 const VISIBLE_TAGS = 2
 
 /**
- * Icon, then name with up to two tags (and the shared icon) under it. The URL, status, who
- * shared it and any tags left off show on hover; clicking opens the URL in this tab
- * (middle-click still opens a new one).
+ * Icon, then name with up to two tags under it; a shared card carries a small badge in its top
+ * corner. The URL, status, who shared it and any tags left off show on hover; clicking opens
+ * the URL in this tab (middle-click still opens a new one).
  */
 export function BookmarkCard({ bookmark, tile }: Props) {
   const status = statusLabel(bookmark)
@@ -51,17 +51,18 @@ export function BookmarkCard({ bookmark, tile }: Props) {
         className={classes.card}
         data-stopped={bookmark.status === 'stopped' || undefined}
         data-tile={tile || undefined}
+        data-shared={bookmark.isShared || undefined}
       >
+        <SharedMark bookmark={bookmark} className={classes.shared} />
         <BookmarkIcon bookmark={bookmark} statusLabel={status} />
         <div className={classes.body}>
           <span className={classes.name}>{bookmark.name}</span>
-          {(chips.length > 0 || bookmark.isShared) && (
+          {chips.length > 0 && (
             <div className={classes.tags}>
               {shown.map((c) => (
                 <TagChip key={`${c.host}:${c.tag}`} tag={c.tag} host={c.host} />
               ))}
               {hidden > 0 && <TagOverflowChip count={hidden} />}
-              <SharedMark bookmark={bookmark} />
             </div>
           )}
         </div>
