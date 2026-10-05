@@ -1,11 +1,27 @@
 name: ci
 
 # Branch pushes other than develop are checked through their PRs; v* tags re-check before release.
+# Changes only to docs and examples skip CI (a change touching anything else runs it as usual);
+# GitHub always runs for tags, whatever they touch.
 on:
   push:
     branches: [develop]
     tags: ['v*']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'deploy/**'
+      - 'dev/**'
+      - 'LICENSE'
+      - '.gitignore'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'deploy/**'
+      - 'dev/**'
+      - 'LICENSE'
+      - '.gitignore'
 
 # Runs on Gitea Actions (which reads .github/workflows when there's no .gitea/workflows) and on
 # GitHub Actions. No dependency caching: the Gitea runner's cache server isn't reachable from job
