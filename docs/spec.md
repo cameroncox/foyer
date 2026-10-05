@@ -66,11 +66,11 @@ Hosts come from the `FOYER_DOCKERHOSTS_{KEY}_*` variables (see Configuration). T
 FOYER_DOCKERHOSTS_DOCKER1_NAME=docker-1
 FOYER_DOCKERHOSTS_DOCKER1_URI=unix:///var/run/docker.sock
 FOYER_DOCKERHOSTS_DOCKER2_NAME=docker-2
-FOYER_DOCKERHOSTS_DOCKER2_URI=http://172.16.78.22:2375
+FOYER_DOCKERHOSTS_DOCKER2_URI=http://192.0.2.22:2375
 FOYER_DOCKERHOSTS_DOCKER3_NAME=docker-3
-FOYER_DOCKERHOSTS_DOCKER3_URI=http://172.16.78.23:2375
+FOYER_DOCKERHOSTS_DOCKER3_URI=http://192.0.2.23:2375
 FOYER_DOCKERHOSTS_DOCKER4_NAME=docker-4
-FOYER_DOCKERHOSTS_DOCKER4_URI=http://172.16.78.37:2375
+FOYER_DOCKERHOSTS_DOCKER4_URI=http://192.0.2.37:2375
 ```
 
 - **Socket proxies:** docker-2, 3 and 4 run docker-socket-proxy with `CONTAINERS=1`; `EVENTS` is allowed (verified on docker-2). `POST` stays off; Foyer never writes. docker-1 should use a proxy too rather than the raw socket.

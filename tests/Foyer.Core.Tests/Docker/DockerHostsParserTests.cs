@@ -18,11 +18,11 @@ public sealed class DockerHostsParserTests
             ("FOYER_DOCKERHOSTS_DOCKER1_NAME", "docker-1"),
             ("FOYER_DOCKERHOSTS_DOCKER1_URI", "unix:///var/run/docker.sock"),
             ("FOYER_DOCKERHOSTS_DOCKER2_NAME", "docker-2"),
-            ("FOYER_DOCKERHOSTS_DOCKER2_URI", "http://172.16.78.22:2375"));
+            ("FOYER_DOCKERHOSTS_DOCKER2_URI", "http://192.0.2.22:2375"));
 
         hosts.ShouldBe([
             new("DOCKER1", "docker-1", new Uri("unix:///var/run/docker.sock")),
-            new("DOCKER2", "docker-2", new Uri("http://172.16.78.22:2375")),
+            new("DOCKER2", "docker-2", new Uri("http://192.0.2.22:2375")),
         ]);
     }
 
