@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Foyer.Api;
@@ -51,9 +50,7 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-var version = typeof(Program).Assembly
-    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
-StartupLog.Starting(app.Logger, version, settings.Hosts.Count);
+StartupLog.Starting(app.Logger, FoyerVersion.Current, settings.Hosts.Count);
 
 await using (var scope = app.Services.CreateAsyncScope())
 {

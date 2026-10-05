@@ -15,6 +15,7 @@ import { PhoneEditHint } from './features/edit-mode/EditHint.tsx'
 import { SelectionBar } from './features/edit-mode/SelectionBar.tsx'
 import { stillPresent } from './features/edit-mode/selection.ts'
 import { EmptyState } from './features/empty-state/EmptyState.tsx'
+import { Footer } from './features/footer/Footer.tsx'
 import { ImportModal } from './features/import/ImportModal.tsx'
 import { FoyerSpotlight } from './features/spotlight/FoyerSpotlight.tsx'
 import { TopBar } from './features/top-bar/TopBar.tsx'
@@ -210,6 +211,7 @@ export default function App() {
           ) : (
             <Board categories={categories} />
           )}
+          {!editing && dashboard.isSuccess && <Footer />}
         </div>
       </AppShell.Main>
 

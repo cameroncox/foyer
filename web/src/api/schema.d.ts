@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Instance settings from FOYER_* variables that the page uses: the title and the web search */
+        /** Instance settings the page uses: the title and web search from FOYER_* variables, and the running version */
         get: operations["GetSettings"];
         put?: never;
         post?: never;
@@ -385,6 +385,7 @@ export interface components {
         SettingsResponse: {
             title: string;
             searchUrl: string;
+            version: string;
         };
         SseItemOfstring: {
             data?: null | string;

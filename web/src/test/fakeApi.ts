@@ -45,7 +45,7 @@ export function stubApi(dashboard: () => Dashboard, routes: Record<string, Handl
       }
 
       return route === 'GET /api/settings'
-        ? json({ title: 'Foyer', searchUrl: 'https://duckduckgo.com/?q=' })
+        ? json({ title: 'Foyer', searchUrl: 'https://duckduckgo.com/?q=', version: '1.0.3' })
         : new Response(null, { status: 204 })
     }),
   )

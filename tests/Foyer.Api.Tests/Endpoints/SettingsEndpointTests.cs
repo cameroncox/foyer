@@ -42,6 +42,25 @@ public sealed class SettingsEndpointTests
     }
 
     [Fact]
+    public async Task Version_IsTheRunningBuilds()
+    {
+        await using var app = new FoyerApiFactory();
+        using var client = app.CreateClient();
+
+        var version = (await (await client.GetAsync("/api/settings")).ReadAsync<SettingsResponse>()).Version;
+
+        version.ShouldBe(FoyerVersion.Current);
+        version.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [Theory]
+    [InlineData("1.0.3", "1.0.3")]
+    [InlineData("0.0.0-dev+5aee4d5", "0.0.0-dev+5aee4d5")]
+    [InlineData("1.0.0+02e057bf976782d6f884e8f28353b6cbdc4945cb", "1.0.0+02e057b")]
+    public void Version_ShortensACommitHashTo7Characters(string informational, string shown) =>
+        FoyerVersion.Shorten(informational).ShouldBe(shown);
+
+    [Fact]
     public async Task Manifest_IsNamedAfterFoyerTitle()
     {
         await using var app = new FoyerApiFactory(settings: new Dictionary<string, string> { ["FOYER_TITLE"] = "Casa de Cox" });
