@@ -9,7 +9,7 @@ One container: a .NET 10 minimal API that also serves the React app.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/main-dark.png">
-  <img alt="Foyer's main page: bookmarks in Media, Home, Infrastructure and Development categories, Docker ones with green or red status dots" src="docs/screenshots/main-light.png">
+  <img alt="Foyer's main page on the cameron profile: bookmarks in Media, Home, Infrastructure and Development categories, Docker ones with green or red status dots, and a shared badge on Immich" src="docs/screenshots/main-light.png">
 </picture>
 
 ## Layout
