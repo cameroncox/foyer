@@ -1,5 +1,6 @@
 using Foyer.Api.Contracts;
 using Foyer.Core.Entities;
+using Foyer.Core.Profiles;
 using Foyer.Core.Services;
 
 namespace Foyer.Api.Endpoints;
@@ -19,7 +20,8 @@ internal static class BookmarkEndpoints
                         request.Icon,
                         new CategoryRef(request.CategoryId, request.NewCategoryName),
                         request.Tags,
-                        request.IsShared ?? false),
+                        request.IsShared ?? false,
+                        ShareChoiceFrom(request.ShareWith)),
                     ct);
                 return TypedResults.Created($"/api/bookmarks/{created.Id}", BookmarkResponse.From(created));
             })
@@ -38,7 +40,8 @@ internal static class BookmarkEndpoints
                         request.Name,
                         request.Url,
                         request.Icon,
-                        request.IsShared),
+                        request.IsShared,
+                        ShareChoiceFrom(request.ShareWith)),
                     ct);
                 return TypedResults.Ok(BookmarkResponse.From(updated));
             })
@@ -89,6 +92,15 @@ internal static class BookmarkEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        app.MapGet("/api/share-targets", async (ProfileService profiles, ProfileContext context, CancellationToken ct) =>
+                TypedResults.Ok((await profiles.ShareTargetsAsync(ct)).Select(p => ShareTargetResponse.From(p, context.Caller)).ToList()))
+            .WithTags("Bookmarks")
+            .WithName("GetShareTargets")
+            .WithSummary("The profiles a bookmark on the current profile can be shared with: people, your own, everyone's, then Default for its editors");
+
         return app;
     }
+
+    private static ShareChoice? ShareChoiceFrom(ShareWithRequest? request) =>
+        request is null ? null : new ShareChoice(request.Everyone, request.ProfileIds ?? []);
 }

@@ -14,6 +14,7 @@ namespace Foyer.Api.Contracts;
 /// <param name="CanEdit">Whether the caller can change it: their own, in a profile they can edit.</param>
 /// <param name="SharedBy">For another profile's shared bookmark, the user who owns it, if that profile has one.</param>
 /// <param name="SharedFrom">For another profile's shared bookmark, the profile it's from.</param>
+/// <param name="SharedWith">For the caller's own shared bookmark, who it goes to.</param>
 public sealed record BookmarkResponse(
     int Id,
     BookmarkSource Source,
@@ -29,7 +30,8 @@ public sealed record BookmarkResponse(
     bool IsShared,
     bool CanEdit,
     string? SharedBy,
-    string? SharedFrom)
+    string? SharedFrom,
+    SharedWithResponse? SharedWith)
 {
     /// <summary>The caller's own bookmark, just saved.</summary>
     public static BookmarkResponse From(Bookmark b) => From(b, canEdit: true, owner: null);
@@ -64,5 +66,14 @@ public sealed record BookmarkResponse(
             b.IsShared,
             canEdit,
             owner?.OwnerUser,
-            owner?.Name);
+            owner?.Name,
+            owner is null && b.IsShared
+                ? new SharedWithResponse(
+                    b.ShareWithEveryone,
+                    b.ShareTargets
+                        .Where(t => t.Profile is not null)
+                        .Select(t => new SharedWithProfile(t.ProfileId, t.Profile!.Name))
+                        .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                        .ToList())
+                : null);
 }

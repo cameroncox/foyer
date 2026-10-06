@@ -2,7 +2,8 @@ import type { Bookmark } from '../../api/client.ts'
 
 /**
  * Who a shared card is from, for its icon's tooltip: "Shared by cameron" or "Shared from vendor"
- * for another profile's, "Shared with every profile" for the page's own; null when not shared.
+ * for another profile's; for the page's own, who it's shared with ("Shared with everyone",
+ * "Shared with alex and kitchen"); null when not shared.
  */
 export function sharedLabel(bookmark: Bookmark): string | null {
   if (!bookmark.isShared) {
@@ -17,7 +18,24 @@ export function sharedLabel(bookmark: Bookmark): string | null {
     return `Shared from ${bookmark.sharedFrom}`
   }
 
-  return 'Shared with every profile'
+  return sharedWithLabel(bookmark)
+}
+
+/** The owner's view: "Shared with everyone", "Shared with alex and kitchen", "…, kitchen and 2 more". */
+function sharedWithLabel(bookmark: Bookmark): string {
+  const to = bookmark.sharedWith
+  if (!to || to.everyone) {
+    return 'Shared with everyone'
+  }
+
+  const names = to.profiles.map((p) => p.name)
+  if (names.length <= 2) {
+    return `Shared with ${names.join(' and ')}`
+  }
+
+  return names.length === 3
+    ? `Shared with ${names[0]}, ${names[1]} and ${names[2]}`
+    : `Shared with ${names[0]}, ${names[1]} and ${names.length - 2} more`
 }
 
 /** A Docker bookmark this profile shows from Default (Show Docker bookmarks) without it being shared. */

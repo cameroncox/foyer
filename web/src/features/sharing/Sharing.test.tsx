@@ -19,6 +19,7 @@ function me(current: Profile, extra: Partial<Me> = {}): Me {
     current,
     canEditDefault: home.canEdit,
     profiles: [home, personal],
+    canShareWithEveryone: home.canEdit,
     handoverCount: 0,
     ...extra,
   }
@@ -39,12 +40,31 @@ function personalPage(): Dashboard {
         }),
       ]),
       category('Household', [
-        bookmark('Grocery list', { isShared: true }),
+        bookmark('Grocery list', {
+          isShared: true,
+          sharedWith: { everyone: false, profiles: [{ id: 7, name: 'alex' }] },
+        }),
         fromDefault('Family photos', { sharedBy: 'alex', sharedFrom: 'alex' }),
       ]),
       category('Uncategorized', [bookmark('Wiki')], true),
     ],
   })
+}
+
+/** What /api/share-targets offers cameron. */
+const targets = () => [
+  { id: 7, name: 'alex', kind: 'person' as const },
+  { id: 8, name: 'kitchen', kind: 'ownerless' as const },
+]
+
+/** Picks a profile in the Share with list. */
+async function pickProfile(name: string) {
+  // Its option list is labelled the same, so find the input itself.
+  const input = screen
+    .getAllByLabelText('Profiles to share with')
+    .find((el) => el.tagName === 'INPUT')!
+  await userEvent.click(input)
+  await userEvent.click(await screen.findByRole('option', { name }))
 }
 
 /** Gives each bookmark its category's id, as the API does. */
@@ -66,9 +86,7 @@ describe('Sharing', () => {
     const photos = screen.getByText('Family photos').closest('a')!
     expect(within(photos).getByRole('img', { name: 'Shared by alex' })).toBeInTheDocument()
     const grocery = screen.getByText('Grocery list').closest('a')!
-    expect(
-      within(grocery).getByRole('img', { name: 'Shared with every profile' }),
-    ).toBeInTheDocument()
+    expect(within(grocery).getByRole('img', { name: 'Shared with alex' })).toBeInTheDocument()
     expect(
       within(screen.getByText('Wiki').closest('a')!).queryByRole('img', { name: /Shared/ }),
     ).toBeNull()
@@ -103,8 +121,11 @@ describe('Sharing', () => {
     expect(screen.getByRole('checkbox', { name: 'Select Grocery list' })).toBeEnabled()
   })
 
-  it('shares a new bookmark from the Add form', async () => {
-    const api = stubApi(personalPage, { 'GET /api/me': () => me(personal) })
+  it('shares a new bookmark with chosen profiles from the Add form', async () => {
+    const api = stubApi(personalPage, {
+      'GET /api/me': () => me(personal),
+      'GET /api/share-targets': targets,
+    })
     renderApp()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Add bookmark' }))
@@ -113,14 +134,50 @@ describe('Sharing', () => {
     expect(screen.getByText('Only this profile shows it.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('switch', { name: /Shared/ }))
     expect(
-      screen.getByText(/Every profile sees it, read-only, in a category named Uncategorized/),
+      screen.getByText(
+        /The profiles you pick see it, read-only, in a category named Uncategorized/,
+      ),
     ).toBeInTheDocument()
+    // cameron isn't a Default editor here, so Everyone is out of reach.
+    expect(screen.getByRole('radio', { name: 'Everyone' })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add bookmark' }))
+    expect(
+      await screen.findByText('Pick at least one profile, or turn sharing off.'),
+    ).toBeInTheDocument()
+    expect(api.called('POST /api/bookmarks')).toHaveLength(0)
+
+    await pickProfile('kitchen')
     await userEvent.click(screen.getByRole('button', { name: 'Add bookmark' }))
 
     await waitFor(() => expect(api.called('POST /api/bookmarks')).toHaveLength(1))
     expect(api.called('POST /api/bookmarks')[0].body).toMatchObject({
       name: 'Recipes',
       isShared: true,
+      shareWith: { everyone: false, profileIds: [8] },
+    })
+  })
+
+  it('asks before taking a profile away', async () => {
+    const api = stubApi(personalPage, {
+      'GET /api/me': () => me(personal),
+      'GET /api/share-targets': targets,
+    })
+    renderApp()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit page' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Grocery list' }))
+    await pickProfile('kitchen')
+    // Picking alex again takes them off.
+    await userEvent.click(await screen.findByRole('option', { name: 'alex' }))
+    expect(screen.getByText(/Stop sharing “Grocery list” with alex\?/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Stop sharing' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(api.calls.some((c) => c.method === 'PUT')).toBe(true))
+    expect(api.calls.find((c) => c.method === 'PUT')!.body).toMatchObject({
+      isShared: true,
+      shareWith: { everyone: false, profileIds: [8] },
     })
   })
 
@@ -168,12 +225,14 @@ describe('Sharing', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Edit page' }))
     await userEvent.click(screen.getByRole('button', { name: 'Edit category and tags of Sonarr' }))
     await userEvent.click(screen.getByRole('switch', { name: /Shared/ }))
-    expect(screen.getByText(/with its status dot/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('radio', { name: 'Everyone' }))
+    expect(screen.getByText(/Every profile sees it.*with its status dot/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(api.calls.some((c) => c.method === 'PUT')).toBe(true))
     expect(api.calls.find((c) => c.method === 'PUT')!.body).toMatchObject({
       isShared: true,
+      shareWith: { everyone: true, profileIds: [] },
       name: null,
     })
 
@@ -317,7 +376,15 @@ describe('sharing helpers', () => {
     expect(sharedLabel(bookmark('a', { isShared: true, sharedFrom: 'vendor' }))).toBe(
       'Shared from vendor',
     )
-    expect(sharedLabel(bookmark('a', { isShared: true }))).toBe('Shared with every profile')
+    expect(sharedLabel(bookmark('a', { isShared: true }))).toBe('Shared with everyone')
+    const to = (...names: string[]) =>
+      bookmark('a', {
+        isShared: true,
+        sharedWith: { everyone: false, profiles: names.map((name, id) => ({ id, name })) },
+      })
+    expect(sharedLabel(to('alex', 'kitchen'))).toBe('Shared with alex and kitchen')
+    expect(sharedLabel(to('alex', 'kitchen', 'work'))).toBe('Shared with alex, kitchen and work')
+    expect(sharedLabel(to('a', 'b', 'c', 'd'))).toBe('Shared with a, b and 2 more')
     expect(sharedLabel(bookmark('a'))).toBeNull()
   })
 

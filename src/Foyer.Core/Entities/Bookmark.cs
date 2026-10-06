@@ -9,8 +9,17 @@ public sealed class Bookmark
     /// <summary>The owning profile; always Default for Docker bookmarks.</summary>
     public int ProfileId { get; set; }
 
-    /// <summary>Shown, read-only, in every other profile.</summary>
+    /// <summary>
+    /// Shown, read-only, in other profiles: every one with <see cref="ShareWithEveryone"/>,
+    /// otherwise those in <see cref="ShareTargets"/>.
+    /// </summary>
     public bool IsShared { get; set; }
+
+    /// <summary>With <see cref="IsShared"/>: every other profile, including ones made later.</summary>
+    public bool ShareWithEveryone { get; set; }
+
+    /// <summary>With <see cref="IsShared"/> but not <see cref="ShareWithEveryone"/>: the profiles it's shared with.</summary>
+    public List<ShareTarget> ShareTargets { get; } = [];
 
     /// <summary>For Docker bookmarks, the latest value from labels.</summary>
     public required string Name { get; set; }

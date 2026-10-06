@@ -58,6 +58,7 @@ export function bookmark(name: string, extra: Partial<Bookmark> = {}): Bookmark 
     canEdit: true,
     sharedBy: null,
     sharedFrom: null,
+    sharedWith: null,
     ...extra,
   }
 }
@@ -122,6 +123,7 @@ export function profilesOff(): Me {
     current: home,
     canEditDefault: true,
     profiles: [home],
+    canShareWithEveryone: true,
     handoverCount: 0,
   }
 }

@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/share-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The profiles a bookmark on the current profile can be shared with: people, your own, everyone's, then Default for its editors */
+        get: operations["GetShareTargets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -352,6 +369,7 @@ export interface components {
             canEdit: boolean;
             sharedBy: null | string;
             sharedFrom: null | string;
+            sharedWith: null | components["schemas"]["SharedWithResponse"];
         };
         /** @enum {unknown} */
         BookmarkSource: "manual" | "docker";
@@ -377,6 +395,7 @@ export interface components {
             newCategoryName: null | string;
             tags: null | string[];
             isShared?: null | boolean;
+            shareWith?: null | components["schemas"]["ShareWithRequest"];
         };
         DashboardCategoryResponse: {
             /** Format: int32 */
@@ -451,6 +470,7 @@ export interface components {
             current: components["schemas"]["ProfileResponse"];
             canEditDefault: boolean;
             profiles: components["schemas"]["ProfileResponse"][];
+            canShareWithEveryone: boolean;
             /** Format: int32 */
             handoverCount: number;
         };
@@ -492,6 +512,27 @@ export interface components {
             searchUrl: string;
             version: string;
         };
+        SharedWithProfile: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+        };
+        SharedWithResponse: {
+            everyone: boolean;
+            profiles: components["schemas"]["SharedWithProfile"][];
+        };
+        /** @enum {unknown} */
+        ShareTargetKind: "person" | "yours" | "ownerless" | "default";
+        ShareTargetResponse: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            kind: components["schemas"]["ShareTargetKind"];
+        };
+        ShareWithRequest: {
+            everyone: boolean;
+            profileIds?: null | number[];
+        };
         SseItemOfstring: {
             data?: null | string;
             eventType?: null | string;
@@ -507,6 +548,7 @@ export interface components {
             url: null | string;
             icon: null | string;
             isShared?: null | boolean;
+            shareWith?: null | components["schemas"]["ShareWithRequest"];
         };
         UpdateProfileRequest: {
             name?: null | string;
@@ -651,6 +693,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DashboardResponse"];
+                };
+            };
+        };
+    };
+    GetShareTargets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareTargetResponse"][];
                 };
             };
         };

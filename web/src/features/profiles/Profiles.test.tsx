@@ -37,6 +37,7 @@ function meFor(profiles: Profile[] = all, handover = { count: 0 }) {
       current,
       canEditDefault: false,
       profiles,
+      canShareWithEveryone: false,
       handoverCount: handover.count,
     }
     return me

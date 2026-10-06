@@ -18,6 +18,7 @@ internal static class ProfileEndpoints
                     ProfileResponse.From(context.Profile, options, caller),
                     ProfileResolver.CanEditDefault(options, caller),
                     listed.Select(p => ProfileResponse.From(p, options, caller)).ToList(),
+                    ProfileResolver.CanShareWithEveryone(options, caller),
                     await handover.OfferedCountAsync(ct)));
             })
             .WithName("GetMe")

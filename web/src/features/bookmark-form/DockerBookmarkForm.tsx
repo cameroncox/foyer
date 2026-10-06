@@ -6,6 +6,7 @@ import type { Bookmark, DashboardCategory } from '../../api/client.ts'
 import { useResetBookmark, useUpdateBookmark } from '../../api/mutations.ts'
 import { useCurrentProfile } from '../profiles/profileContext.ts'
 import { SharedField } from '../sharing/SharedField.tsx'
+import { initialShare, shareBody, shareError } from '../sharing/shareValue.ts'
 import { categoryFields, categoryName, NEW_CATEGORY } from './categoryChoice.ts'
 import { CategoryField } from './CategoryField.tsx'
 import classes from './DockerBookmarkForm.module.css'
@@ -29,7 +30,8 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
   const [newCategory, setNewCategory] = useState('')
   const [newCategoryError, setNewCategoryError] = useState<string>()
   const [tags, setTags] = useState(bookmark.tags)
-  const [isShared, setShared] = useState(bookmark.isShared)
+  const [share, setShare] = useState(() => initialShare(bookmark))
+  const [shareProblem, setShareProblem] = useState<string | null>(null)
   const sharing = useCurrentProfile()?.me.profilesEnabled ?? false
   const error = update.error ?? reset.error
 
@@ -37,6 +39,12 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
     event.preventDefault()
     if (category === NEW_CATEGORY && !newCategory.trim()) {
       setNewCategoryError('Name the new category')
+      return
+    }
+
+    const problem = sharing ? shareError(share) : null
+    setShareProblem(problem)
+    if (problem) {
       return
     }
 
@@ -50,7 +58,7 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
           url: null,
           icon: null,
           ...categoryFields(category, newCategory),
-          ...(sharing ? { isShared } : {}),
+          ...(sharing ? shareBody(share) : {}),
         },
       },
       { onSuccess: onDone },
@@ -106,9 +114,13 @@ export function DockerBookmarkForm({ categories, bookmark, onDone }: Props) {
         />
         <TagsField value={tags} onChange={setTags} hostTag={bookmark.hostTag} />
         <SharedField
-          checked={isShared}
-          onChange={setShared}
-          wasShared={bookmark.isShared}
+          value={share}
+          onChange={(next) => {
+            setShare(next)
+            setShareProblem(null)
+          }}
+          bookmark={bookmark}
+          error={shareProblem}
           name={bookmark.name}
           categoryName={categoryName(categories, category, newCategory)}
           docker

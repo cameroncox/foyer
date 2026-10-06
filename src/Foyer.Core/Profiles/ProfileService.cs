@@ -36,6 +36,28 @@ public sealed class ProfileService(
     }
 
     /// <summary>
+    /// The profiles a bookmark on the current profile can be shared with
+    /// (<see cref="ProfileResolver.CanShareWith"/>): other users' personal profiles, the
+    /// caller's own, ownerless ones, then Default; by name within each.
+    /// </summary>
+    public async Task<IReadOnlyList<Profile>> ShareTargetsAsync(CancellationToken ct = default)
+    {
+        var profiles = await db.Profiles.AsNoTracking().ToListAsync(ct);
+        return profiles
+            .Where(p => ProfileResolver.CanShareWith(options, context.Caller, context.Profile, p))
+            .OrderBy(p => ShareTargetGroup(p, context.Caller))
+            .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>Where a share target sorts: 0 people, 1 the caller's own, 2 ownerless, 3 Default.</summary>
+    public static int ShareTargetGroup(Profile profile, Caller caller) =>
+        profile.IsSystem ? 3
+        : profile.OwnerUser is null ? 2
+        : string.Equals(profile.OwnerUser, caller.User, StringComparison.OrdinalIgnoreCase) ? 1
+        : 0;
+
+    /// <summary>
     /// <paramref name="user"/>'s personal profile, made now if they have none: named as the header
     /// was sent, at its slug (with -2, -3, … if that's taken), with an empty Uncategorized.
     /// </summary>
@@ -143,7 +165,10 @@ public sealed class ProfileService(
         return profile;
     }
 
-    /// <summary>Deletes a profile with its bookmarks and categories.</summary>
+    /// <summary>
+    /// Deletes a profile with its bookmarks and categories. It drops out of every audience it was
+    /// in; a bookmark shared with it alone is no longer shared.
+    /// </summary>
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
         var profile = await FindVisibleAsync(id, ct);
@@ -160,6 +185,9 @@ public sealed class ProfileService(
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.Bookmarks.Where(b => b.ProfileId == profile.Id).ExecuteDeleteAsync(ct);
         await db.Profiles.Where(p => p.Id == profile.Id).ExecuteDeleteAsync(ct);
+        await db.Bookmarks
+            .Where(b => b.IsShared && !b.ShareWithEveryone && !b.ShareTargets.Any())
+            .ExecuteUpdateAsync(s => s.SetProperty(b => b.IsShared, false), ct);
         await transaction.CommitAsync(ct);
         notifier.BookmarksChanged();
     }

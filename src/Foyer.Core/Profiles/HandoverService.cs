@@ -79,6 +79,10 @@ public sealed class HandoverService(
             .ToListAsync(ct);
         db.SharedPlacements.RemoveRange(placedInTarget);
 
+        // The new owner can't be in its own audience; Default, the old owner, joins it.
+        var targets = await db.ShareTargets.Where(t => ids.Contains(t.BookmarkId)).ToListAsync(ct);
+        db.ShareTargets.RemoveRange(targets.Where(t => t.ProfileId == target.Id));
+
         foreach (var (bookmark, from, fromSortOrder, to) in moves)
         {
             bookmark.ProfileId = target.Id;
@@ -87,6 +91,11 @@ public sealed class HandoverService(
             bookmark.SortOrder = await lookup.NextSortOrderAsync(to, ct);
             if (bookmark.IsShared)
             {
+                if (!bookmark.ShareWithEveryone)
+                {
+                    db.ShareTargets.Add(new ShareTarget { BookmarkId = bookmark.Id, ProfileId = Profile.DefaultId });
+                }
+
                 // Default still shows it, now as someone else's, in the slot it had.
                 db.SharedPlacements.Add(new SharedPlacement
                 {

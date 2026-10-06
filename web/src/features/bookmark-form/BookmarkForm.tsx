@@ -6,6 +6,7 @@ import type { Bookmark, DashboardCategory } from '../../api/client.ts'
 import { useCreateBookmark, useDeleteBookmark, useUpdateBookmark } from '../../api/mutations.ts'
 import { useCurrentProfile } from '../profiles/profileContext.ts'
 import { SharedField } from '../sharing/SharedField.tsx'
+import { initialShare, shareBody, shareError } from '../sharing/shareValue.ts'
 import { categoryFields, categoryName, NEW_CATEGORY, uncategorizedId } from './categoryChoice.ts'
 import { CategoryField } from './CategoryField.tsx'
 import { IconField } from './IconField.tsx'
@@ -55,13 +56,14 @@ export function BookmarkForm({
       url: bookmark?.url ?? initialUrl ?? '',
       tags: bookmark?.tags ?? [],
       icon: bookmark?.icon ?? '',
-      isShared: bookmark?.isShared ?? false,
+      share: initialShare(bookmark),
     },
     validate: {
       name: (v) => (v.trim() ? null : 'Name is required'),
       url: (v) => (isHttpUrl(v) ? null : 'Enter a full http:// or https:// address'),
       newCategory: (v, values) =>
         values.category === NEW_CATEGORY && !v.trim() ? 'Name the new category' : null,
+      share: (v) => (sharing ? shareError(v) : null),
     },
   })
 
@@ -76,7 +78,7 @@ export function BookmarkForm({
       icon: values.icon.trim() || null,
       tags: values.tags,
       ...categoryFields(values.category, values.newCategory),
-      ...(sharing ? { isShared: values.isShared } : {}),
+      ...(sharing ? shareBody(values.share) : {}),
     }
     if (bookmark) {
       update.mutate({ id: bookmark.id, body }, { onSuccess: onDone })
@@ -120,11 +122,12 @@ export function BookmarkForm({
           name={form.values.name}
         />
         <SharedField
-          checked={form.values.isShared}
-          onChange={(on) => form.setFieldValue('isShared', on)}
-          wasShared={bookmark?.isShared ?? false}
+          value={form.values.share}
+          onChange={(share) => form.setFieldValue('share', share)}
+          bookmark={bookmark}
           name={form.values.name.trim() || bookmark?.name || 'this bookmark'}
           categoryName={categoryName(categories, form.values.category, form.values.newCategory)}
+          error={form.errors.share as string | undefined}
         />
 
         {confirmDelete && bookmark ? (

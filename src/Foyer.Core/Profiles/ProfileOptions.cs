@@ -13,13 +13,18 @@ namespace Foyer.Core.Profiles;
 /// same, since some proxies (tinyauth) send cameron@example.com as cameron_example.com.
 /// </param>
 /// <param name="DefaultEditorGroups">FOYER_DEFAULT_REMOTE_GROUPS: groups whose members can edit Default.</param>
+/// <param name="EnableShareWithEveryone">
+/// FOYER_ENABLE_SHARE_WITH_EVERYONE: anyone can share a bookmark with everyone. Off, only Default
+/// editors can; anyone can still share with chosen profiles.
+/// </param>
 public sealed record ProfileOptions(
     bool Enabled,
     string UserHeader,
     string GroupsHeader,
     IReadOnlyList<IPNetwork> TrustedProxies,
     IReadOnlyList<string> DefaultEditorUsers,
-    IReadOnlyList<string> DefaultEditorGroups)
+    IReadOnlyList<string> DefaultEditorGroups,
+    bool EnableShareWithEveryone = false)
 {
     public const string EnabledKey = "FOYER_PROFILES";
     public const string UserHeaderKey = "FOYER_PROFILE_HEADER";
@@ -27,6 +32,7 @@ public sealed record ProfileOptions(
     public const string TrustedProxiesKey = "FOYER_TRUSTED_PROXIES";
     public const string DefaultEditorUsersKey = "FOYER_DEFAULT_REMOTE_USERS";
     public const string DefaultEditorGroupsKey = "FOYER_DEFAULT_REMOTE_GROUPS";
+    public const string EnableShareWithEveryoneKey = "FOYER_ENABLE_SHARE_WITH_EVERYONE";
 
     public static ProfileOptions Default { get; } = new(
         Enabled: true,
@@ -80,6 +86,18 @@ public sealed record ProfileOptions(
             else
             {
                 problems.Add($"{EnabledKey} '{enabled}' must be true or false.");
+            }
+        }
+
+        if (values.TryGetValue(EnableShareWithEveryoneKey, out var everyone))
+        {
+            if (bool.TryParse(everyone, out var open))
+            {
+                options = options with { EnableShareWithEveryone = open };
+            }
+            else
+            {
+                problems.Add($"{EnableShareWithEveryoneKey} '{everyone}' must be true or false.");
             }
         }
 

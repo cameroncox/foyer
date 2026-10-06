@@ -20,7 +20,8 @@ public sealed class SharingEndpointTests
     [Fact]
     public async Task ASharedBookmark_ShowsReadOnlyInOtherProfiles_WithItsOwner()
     {
-        await using var app = new FoyerApiFactory();
+        // cameron isn't a Default editor; this lets them share with everyone too.
+        await using var app = new FoyerApiFactory(settings: new Dictionary<string, string> { ["FOYER_ENABLE_SHARE_WITH_EVERYONE"] = "true" });
         using var home = app.CreateClient();
         await home.PostJsonAsync("/api/profiles", new ProfileNameRequest("vendor"));
         using var vendor = app.ClientAs(profile: "vendor");
@@ -137,5 +138,30 @@ public sealed class SharingEndpointTests
         }
 
         return "";
+    }
+
+    [Fact]
+    public async Task SharingWithChosenProfiles_ListsTargets_AndSaysWhoItsSharedWith()
+    {
+        await using var app = new FoyerApiFactory(settings: new Dictionary<string, string> { ["FOYER_DEFAULT_REMOTE_USERS"] = "cameron" });
+        using var cameron = app.ClientAs(user: "cameron");
+        using var alex = app.ClientAs(user: "alex");
+        await alex.GetAsync("/api/me");
+
+        var targets = await (await cameron.GetAsync("/api/share-targets")).ReadAsync<List<ShareTargetResponse>>();
+        targets.Select(x => (x.Name, x.Kind)).ShouldBe([("alex", ShareTargetKind.Person), ("Default", ShareTargetKind.Default)]);
+
+        var request = new CreateBookmarkRequest("Recipes", "https://recipes.example.com", null, null, null, [], true, new ShareWithRequest(false, [targets[0].Id]));
+        var recipes = await AddAsync(cameron, request);
+
+        recipes.SharedWith.ShouldNotBeNull().Everyone.ShouldBeFalse();
+        recipes.SharedWith.Profiles.ShouldHaveSingleItem().Name.ShouldBe("alex");
+        var alexsView = (await DashboardAsync(alex)).Categories.SelectMany(c => c.Bookmarks).ShouldHaveSingleItem();
+        alexsView.SharedBy.ShouldBe("cameron");
+        alexsView.SharedWith.ShouldBeNull();
+
+        var everyone = new CreateBookmarkRequest("Mine", "https://mine.example.com", null, null, null, [], true, new ShareWithRequest(true));
+        (await alex.PostJsonAsync("/api/bookmarks", everyone)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await (await alex.GetAsync("/api/me")).ReadAsync<MeResponse>()).CanShareWithEveryone.ShouldBeFalse();
     }
 }

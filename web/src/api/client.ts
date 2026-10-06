@@ -9,6 +9,7 @@ export type Bookmark = Schemas['BookmarkResponse']
 export type DockerStatus = Schemas['DockerStatus']
 export type Me = Schemas['MeResponse']
 export type Profile = Schemas['ProfileResponse']
+export type ShareTarget = Schemas['ShareTargetResponse']
 
 /** Names the profile a call acts on; the page sends it from its URL. */
 export const PROFILE_HEADER = 'X-Foyer-Profile'

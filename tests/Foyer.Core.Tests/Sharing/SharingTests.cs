@@ -29,9 +29,15 @@ public sealed class SharingTests
         return page;
     }
 
-    private static Task<Bookmark> ShareAsync(TestDb t, string name, int? categoryId = null) =>
+    private static Task<Bookmark> ShareAsync(TestDb t, string name, int? categoryId = null, params int[] with) =>
         t.Bookmarks.CreateManualAsync(new ManualBookmarkInput(
-            name, $"https://{name.ToLowerInvariant()}.example.com", null, new CategoryRef(categoryId), [], IsShared: true));
+            name,
+            $"https://{name.ToLowerInvariant()}.example.com",
+            null,
+            new CategoryRef(categoryId),
+            [],
+            IsShared: true,
+            with.Length > 0 ? new ShareChoice(false, with) : null));
 
     [Fact]
     public async Task Sharing_PlacesItInEveryOtherProfile_ByCategoryName()
@@ -250,7 +256,7 @@ public sealed class SharingTests
         var work = await t.Profiles().EnsurePersonalAsync("cameron");
         t.Profile.Use(alex, new Caller("alex", []), canEdit: true);
         var readLater = await t.AddCategoryAsync("Read Later");
-        await ShareAsync(t, "Article", readLater.Id);
+        await ShareAsync(t, "Article", readLater.Id, work.Id);
         t.Profile.Use(work, new Caller("cameron", []), canEdit: true);
         var workReadLater = (await t.Categories.ListAsync()).Single(c => c.Name == "Read Later");
 

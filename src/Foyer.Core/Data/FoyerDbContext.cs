@@ -15,6 +15,8 @@ public sealed class FoyerDbContext(DbContextOptions<FoyerDbContext> options) : D
 
     public DbSet<SharedPlacement> SharedPlacements => Set<SharedPlacement>();
 
+    public DbSet<ShareTarget> ShareTargets => Set<ShareTarget>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FoyerDbContext).Assembly);
 }

@@ -104,7 +104,7 @@ public sealed class MigrationTests
         var notifier = new CountingNotifier();
 
         await new CategoryService(db, notifier, new ProfileContext(), new SharingService(db)).AddAsync("Tools");
-        var created = await new BookmarkService(db, notifier, new FixedTimeProvider(TestDb.Now), new ProfileContext(), new SharingService(db))
+        var created = await new BookmarkService(db, notifier, new FixedTimeProvider(TestDb.Now), new ProfileContext(), ProfileOptions.Default, new SharingService(db))
             .CreateManualAsync(new ManualBookmarkInput("NAS", "https://nas.example.com", null, new CategoryRef(3), []));
 
         created.ProfileId.ShouldBe(Profile.DefaultId);

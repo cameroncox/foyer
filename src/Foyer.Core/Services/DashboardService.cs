@@ -26,6 +26,8 @@ public sealed class DashboardService(FoyerDbContext db, ProfileContext profile, 
         var own = await db.Bookmarks
             .AsNoTracking()
             .Include(b => b.UserTags)
+            .Include(b => b.ShareTargets)
+            .ThenInclude(t => t.Profile)
             .Where(b => b.ProfileId == profile.ProfileId && b.IsPresent)
             .ToListAsync(ct);
 

@@ -11,6 +11,9 @@ export const queryKeys = {
   me: ['me'] as const,
   meFor: (profile: string | undefined) => ['me', profile ?? null] as const,
   settings: ['settings'] as const,
+  /** Every profile's share targets; profile changes refetch them. */
+  shareTargets: ['share-targets'] as const,
+  shareTargetsFor: (profile: string | undefined) => ['share-targets', profile ?? null] as const,
 }
 
 export function useDashboard() {
@@ -33,6 +36,17 @@ export function useMe(profile: string | undefined) {
       unwrap(await api.GET('/api/me', { signal, headers: profileHeaders(profile) })),
     placeholderData: keepPreviousData,
     retry: false,
+  })
+}
+
+/** The profiles a bookmark on this page can be shared with; asked for once the form needs them. */
+export function useShareTargets(enabled: boolean) {
+  const profile = useProfileSlug()
+  return useQuery({
+    queryKey: queryKeys.shareTargetsFor(profile),
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET('/api/share-targets', { signal, headers: profileHeaders(profile) })),
+    enabled,
   })
 }
 

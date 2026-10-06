@@ -136,10 +136,10 @@ Same rules. The edit sheet's Share with control uses the same choices, with a fu
 | PUT | `/api/profiles/{id}` | Also takes `showsDockerBookmarks`; 403 for someone who can't edit Default |
 | GET | `/api/me` | Each profile says whether it shows Docker bookmarks, and whether the caller can change that |
 | GET | `/api/share-targets` | New: the profiles the caller can share with from the current profile, with name and kind (`person`, `yours`, `ownerless`, `default`) |
-| POST, PUT | `/api/bookmarks…` | `isShared` is replaced by `share`: null (not shared), or `{ everyone: bool, profileIds: int[] }`. A profile id the caller can't share with is a 400, "You can't share with that profile", the same whether or not it exists. `everyone` from someone who can't choose it is a 403, unless the bookmark is already shared with everyone |
+| POST, PUT | `/api/bookmarks…` | `isShared` stays, joined by `shareWith`: `{ everyone: bool, profileIds: int[] }`. Left out, a newly shared bookmark goes to everyone (as in 1.1, so subject to the rule below) and an already shared one keeps its audience. A profile id the caller can't share with is a 400, "You can't share with that profile", the same whether or not it exists. `everyone` from someone who can't choose it is a 403, unless the bookmark is already shared with everyone |
 | GET | `/api/me` | Also says whether the caller can share with everyone |
 | GET | `/api/dashboard` | The owner's copy of a shared bookmark carries `sharedWith`: `everyone`, or the target profiles' names. Recipients see `sharedBy` and `sharedFrom` as in 1.1 |
-| GET | `/api/events` | `bookmarks-changed` for a shared bookmark goes to the owner and its audience, before and after the change, rather than to everyone |
+| GET | `/api/events` | Unchanged for now: `bookmarks-changed` for a shared bookmark still goes to every page, which refetches. Narrowing it to the audience is a later optimisation |
 
 ## Out of scope
 

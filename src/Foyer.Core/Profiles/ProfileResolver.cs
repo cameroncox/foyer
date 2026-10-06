@@ -106,6 +106,27 @@ public static class ProfileResolver
     }
 
     /// <summary>
+    /// Whether the caller can share a bookmark with everyone: a Default editor, or anyone with
+    /// FOYER_ENABLE_SHARE_WITH_EVERYONE=true.
+    /// </summary>
+    public static bool CanShareWithEveryone(ProfileOptions options, Caller caller) =>
+        options.EnableShareWithEveryone || CanEditDefault(options, caller);
+
+    /// <summary>
+    /// The profiles the caller can share a bookmark with from <paramref name="from"/>, among those
+    /// given: ownerless ones, Default if they edit it, their own, and other users' personal
+    /// profiles (never anyone else's other profiles).
+    /// </summary>
+    public static bool CanShareWith(ProfileOptions options, Caller caller, Profile from, Profile target) =>
+        options.Enabled
+        && target.Id != from.Id
+        && (target.IsSystem
+            ? CanEditDefault(options, caller)
+            : target.OwnerUser is null
+              || target.IsPersonal
+              || string.Equals(target.OwnerUser, caller.User, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
     /// Whether the caller can turn Show Docker bookmarks on or off for a profile they can see:
     /// a Default editor, on any profile but Default that they can edit.
     /// </summary>

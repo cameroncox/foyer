@@ -154,8 +154,11 @@ title (at the top of the menu on a phone); `/` reopens the one last picked on th
 - **Docker bookmarks on your own profile.** A Default editor can turn on **Show Docker
   bookmarks** in a profile's dialog (the pencil in the picker). Every container from Default
   then shows there too, new ones included, without being shared with anyone else.
-- **Shared bookmarks** show in every profile, read-only, in a category of the same name. Share
-  one with the Shared switch in its Add or Edit form; Docker bookmarks can be shared from Default.
+- **Shared bookmarks** show, read-only, in a category of the same name, in the profiles you pick
+  (someone's personal profile, your own others, everyone's, or Default if you edit it) or in
+  every profile. Share one with the Shared switch in its Add or Edit form; Docker bookmarks can
+  be shared from Default. Only Default editors can share with everyone, unless
+  `FOYER_ENABLE_SHARE_WITH_EVERYONE=true`.
 
 `FOYER_PROFILES=false` turns all of this off: every request uses Default, as in 1.0. Other
 profiles, and the bookmarks they share, are hidden until it's turned back on. See the
@@ -186,6 +189,7 @@ bookmark manager with manually added bookmarks only.
 | `FOYER_TRUSTED_PROXIES` | empty (any address) | IPs or CIDRs allowed to send those headers, comma-separated; others get a 403 |
 | `FOYER_DEFAULT_REMOTE_USERS` | empty | Users who can see and edit Default, comma-separated. `@` and `_` match each other, since Tinyauth sends `me@example.com` as `me_example.com` |
 | `FOYER_DEFAULT_REMOTE_GROUPS` | empty | Groups whose members can see and edit Default, comma-separated |
+| `FOYER_ENABLE_SHARE_WITH_EVERYONE` | `false` | `true` lets anyone share a bookmark with every profile; otherwise only Default editors can. Anyone can share with chosen profiles |
 
 With no Default editors listed, only requests without a user header can edit Default.
 

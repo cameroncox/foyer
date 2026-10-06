@@ -47,7 +47,7 @@ public sealed class TestDb : IAsyncDisposable
 
     public CategoryService Categories => new(Db, Notifier, Profile, Sharing);
 
-    public BookmarkService Bookmarks => new(Db, Notifier, new FixedTimeProvider(Now), Profile, Sharing);
+    public BookmarkService Bookmarks => new(Db, Notifier, new FixedTimeProvider(Now), Profile, Options, Sharing);
 
     public OrderingService Ordering => new(Db, Notifier, Profile, Options, Sharing);
 

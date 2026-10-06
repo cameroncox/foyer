@@ -21,6 +21,7 @@ function bookmark(name: string, extra: Partial<Bookmark> = {}): Bookmark {
     canEdit: true,
     sharedBy: null,
     sharedFrom: null,
+    sharedWith: null,
     ...extra,
   }
 }

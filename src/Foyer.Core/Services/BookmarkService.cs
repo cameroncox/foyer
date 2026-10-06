@@ -17,6 +17,7 @@ public sealed class BookmarkService(
     IChangeNotifier notifier,
     TimeProvider clock,
     ProfileContext profile,
+    ProfileOptions options,
     SharingService sharing)
 {
     public const int MaxNameLength = 200;
@@ -26,6 +27,8 @@ public sealed class BookmarkService(
         await db.Bookmarks
             .Include(b => b.UserTags)
             .Include(b => b.Category)
+            .Include(b => b.ShareTargets)
+            .ThenInclude(t => t.Profile)
             .SingleOrDefaultAsync(b => b.Id == id && b.ProfileId == profile.ProfileId, ct)
         ?? throw await sharing.NotYoursAsync(id, profile.ProfileId, ct);
 
@@ -47,16 +50,17 @@ public sealed class BookmarkService(
             Icon = NormalizeIcon(input.Icon),
             Category = category,
             SortOrder = await NextSortOrderAsync(category, ct),
-            IsShared = input.IsShared,
             CreatedAt = clock.GetUtcNow(),
         };
         SetUserTags(bookmark, tags);
+        await ApplyShareAsync(bookmark, input.IsShared, input.ShareWith, ct);
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         db.Bookmarks.Add(bookmark);
         await db.SaveChangesAsync(ct);
         await sharing.PlaceAsync([bookmark], replace: false, ct);
         await transaction.CommitAsync(ct);
+        await LoadTargetProfilesAsync(bookmark, ct);
         Notify(bookmark.IsShared);
         return bookmark;
     }
@@ -77,18 +81,17 @@ public sealed class BookmarkService(
             await ApplyManualEditAsync(bookmark, edit, ct);
         }
 
-        bookmark.IsShared = edit.IsShared ?? wasShared;
+        await ApplyShareAsync(bookmark, edit.IsShared ?? (edit.ShareWith is not null || wasShared), edit.ShareWith, ct);
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        if (wasShared && !bookmark.IsShared)
-        {
-            await sharing.UnplaceAsync(bookmark, ct);
-        }
 
-        // Newly shared, it goes everywhere; moved by its owner, it moves everywhere it shows.
+        // Out of the profiles that left its audience; into the ones that joined, and moved by its
+        // owner, it moves everywhere it shows.
+        await sharing.TrimAsync(bookmark, ct);
         await sharing.PlaceAsync([bookmark], replace: bookmark.CategoryId != oldCategoryId, ct);
         await transaction.CommitAsync(ct);
+        await LoadTargetProfilesAsync(bookmark, ct);
         Notify(wasShared || SharingService.ReachesOthers(bookmark));
         return bookmark;
     }
@@ -141,6 +144,77 @@ public sealed class BookmarkService(
         await db.SaveChangesAsync(ct);
         Notify(bookmarks.Any(b => b.IsShared));
         return bookmarks.Count;
+    }
+
+    /// <summary>
+    /// Sets who the bookmark is shared with, without saving. A choice it already has is kept
+    /// even if the caller couldn't make it now (they lost Default editor rights, say), so
+    /// narrowing always works; anything new must be theirs to make.
+    /// </summary>
+    private async Task ApplyShareAsync(Bookmark bookmark, bool isShared, ShareChoice? choice, CancellationToken ct)
+    {
+        var wasShared = bookmark.IsShared;
+        if (!isShared)
+        {
+            bookmark.IsShared = false;
+            bookmark.ShareWithEveryone = false;
+            bookmark.ShareTargets.Clear();
+            return;
+        }
+
+        bookmark.IsShared = true;
+        if (choice is null)
+        {
+            if (wasShared)
+            {
+                return;
+            }
+
+            choice = ShareChoice.WithEveryone;
+        }
+
+        if (choice.Everyone)
+        {
+            if (!(wasShared && bookmark.ShareWithEveryone) && !ProfileResolver.CanShareWithEveryone(options, profile.Caller))
+            {
+                throw new ForbiddenException("Only Default's editors can share a bookmark with everyone.");
+            }
+
+            bookmark.ShareWithEveryone = true;
+            bookmark.ShareTargets.Clear();
+            return;
+        }
+
+        var ids = choice.ProfileIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            throw new InvalidInputException("Pick at least one profile, or turn sharing off.");
+        }
+
+        var kept = bookmark.ShareTargets.Select(t => t.ProfileId).ToHashSet();
+        var candidates = await db.Profiles.AsNoTracking().Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
+        foreach (var id in ids.Where(id => !kept.Contains(id)))
+        {
+            if (!candidates.TryGetValue(id, out var target)
+                || !ProfileResolver.CanShareWith(options, profile.Caller, profile.Profile, target))
+            {
+                // The same whether or not it exists, so it never confirms someone's private profile.
+                throw new InvalidInputException("You can't share with that profile.");
+            }
+        }
+
+        bookmark.ShareWithEveryone = false;
+        bookmark.ShareTargets.RemoveAll(t => !ids.Contains(t.ProfileId));
+        bookmark.ShareTargets.AddRange(ids.Where(id => !kept.Contains(id)).Select(id => new ShareTarget { ProfileId = id }));
+    }
+
+    /// <summary>Fills in each target's profile, for the response's names.</summary>
+    private async Task LoadTargetProfilesAsync(Bookmark bookmark, CancellationToken ct)
+    {
+        foreach (var target in bookmark.ShareTargets.Where(t => t.Profile is null))
+        {
+            await db.Entry(target).Reference(t => t.Profile).LoadAsync(ct);
+        }
     }
 
     /// <summary>A shared bookmark's change shows in every profile; anything else only in this one.</summary>

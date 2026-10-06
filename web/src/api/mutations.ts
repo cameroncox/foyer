@@ -158,10 +158,14 @@ export function useImport() {
   })
 }
 
-/** Profile changes refetch /api/me, which lists them. */
+/** Profile changes refetch /api/me, which lists them, and the share targets, which name them. */
 function useInvalidateMe() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: queryKeys.me })
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.me }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.shareTargets }),
+    ])
 }
 
 export function useCreateProfile() {
@@ -184,6 +188,7 @@ export function useUpdateProfile() {
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.me }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.shareTargets }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboards }),
       ]),
   })
