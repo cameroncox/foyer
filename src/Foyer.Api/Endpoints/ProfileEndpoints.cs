@@ -16,7 +16,7 @@ internal static class ProfileEndpoints
                     options.Enabled,
                     caller.User,
                     ProfileResponse.From(context.Profile, options, caller),
-                    listed.Where(p => p.IsSystem).Select(p => ProfileResolver.CanEdit(options, caller, p)).Single(),
+                    ProfileResolver.CanEditDefault(options, caller),
                     listed.Select(p => ProfileResponse.From(p, options, caller)).ToList(),
                     await handover.OfferedCountAsync(ct)));
             })

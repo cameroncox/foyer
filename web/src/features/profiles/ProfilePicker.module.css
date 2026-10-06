@@ -17,14 +17,6 @@
   border-color: var(--mantine-primary-color-filled);
 }
 
-/* Default, for someone who can edit it: its changes reach every profile's Docker cards. */
-.target[data-default-editor] {
-  border-color: var(--mantine-color-yellow-outline);
-  background: var(--mantine-color-yellow-light);
-  color: var(--mantine-color-yellow-light-color);
-  font-weight: 600;
-}
-
 .name {
   min-width: 0;
   overflow: hidden;

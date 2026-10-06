@@ -50,19 +50,24 @@ public static class ProfileResolver
             : new Identification(new Caller(user, ProfileOptions.SplitList(facts.GroupsHeader)), null);
     }
 
-    /// <summary>Default, every ownerless profile, and the caller's own.</summary>
-    public static bool IsVisible(Caller caller, Profile profile) =>
+    /// <summary>
+    /// Every ownerless profile, the caller's own, and Default: for a user, only if they can edit
+    /// it, since its shared bookmarks reach their profiles anyway; without one, always, read-only
+    /// when editors are listed, as there's nothing else to show.
+    /// </summary>
+    public static bool IsVisible(ProfileOptions options, Caller caller, Profile profile) =>
         profile.IsSystem
-        || profile.OwnerUser is null
-        || string.Equals(profile.OwnerUser, caller.User, StringComparison.OrdinalIgnoreCase);
+            ? caller.User is null || CanEditDefault(options, caller)
+            : profile.OwnerUser is null
+              || string.Equals(profile.OwnerUser, caller.User, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The profile at <paramref name="slug"/> among those the caller can see, or with no slug the
     /// caller's personal profile (Default without a user). Null means 404, whether or not it exists.
     /// </summary>
-    public static Profile? Pick(Caller caller, string? slug, IEnumerable<Profile> candidates)
+    public static Profile? Pick(ProfileOptions options, Caller caller, string? slug, IEnumerable<Profile> candidates)
     {
-        var visible = candidates.Where(p => IsVisible(caller, p)).ToList();
+        var visible = candidates.Where(p => IsVisible(options, caller, p)).ToList();
         if (string.IsNullOrWhiteSpace(slug))
         {
             return caller.User is null
@@ -79,9 +84,13 @@ public static class ProfileResolver
     /// always; Default, per the editor lists: with none listed only header-less requests can,
     /// and listing any takes it away from them.
     /// </summary>
-    public static bool CanEdit(ProfileOptions options, Caller caller, Profile profile)
+    public static bool CanEdit(ProfileOptions options, Caller caller, Profile profile) =>
+        !profile.IsSystem || CanEditDefault(options, caller);
+
+    /// <summary>Whether the caller is a Default editor; everyone is with profiles off.</summary>
+    public static bool CanEditDefault(ProfileOptions options, Caller caller)
     {
-        if (!options.Enabled || !profile.IsSystem)
+        if (!options.Enabled)
         {
             return true;
         }

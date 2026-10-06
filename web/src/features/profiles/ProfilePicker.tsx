@@ -17,8 +17,7 @@ interface Props {
 /**
  * The current profile beside the instance name; open, it lists Default, the caller's profiles
  * and everyone's, each with a pencil to rename (and delete) it where allowed, then New profile.
- * Amber on Default for those who can edit it, since changes there reach every profile's Docker
- * cards. Nothing shows with profiles off.
+ * Nothing shows with profiles off.
  */
 export function ProfilePicker({ onDialog }: Props) {
   const current = useCurrentProfile()
@@ -77,11 +76,7 @@ export function ProfilePicker({ onDialog }: Props) {
   return (
     <Menu position="bottom-start" width={340} shadow="md" opened={opened} onChange={setOpened}>
       <Menu.Target>
-        <UnstyledButton
-          className={classes.target}
-          data-default-editor={(me.current.kind === 'default' && me.current.canEdit) || undefined}
-          aria-label={`Profile: ${me.current.name}`}
-        >
+        <UnstyledButton className={classes.target} aria-label={`Profile: ${me.current.name}`}>
           <ProfileIcon kind={me.current.kind} />
           <span className={classes.name}>{me.current.name}</span>
           <IconChevronDown size={16} aria-hidden="true" />

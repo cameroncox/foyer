@@ -83,18 +83,17 @@ public sealed class ProfileResolverTests
     [Fact]
     public void Pick_NoSlug_IsDefaultWithoutAUser_AndThePersonalProfileWithOne()
     {
-        ProfileResolver.Pick(Anonymous, null, All).ShouldBe(Default);
-        ProfileResolver.Pick(CameronCaller, "", All).ShouldBe(Cameron);
+        ProfileResolver.Pick(On, Anonymous, null, All).ShouldBe(Default);
+        ProfileResolver.Pick(On, CameronCaller, "", All).ShouldBe(Cameron);
     }
 
     [Theory]
-    [InlineData("default", 1)]
     [InlineData("VENDOR", 4)]
     [InlineData("work", 3)]
     [InlineData("Cameron-Casadecox-Org", 2)]
     public void Pick_FindsVisibleProfilesBySlug_IgnoringCase(string slug, int id)
     {
-        ProfileResolver.Pick(CameronCaller, slug, All)!.Id.ShouldBe(id);
+        ProfileResolver.Pick(On, CameronCaller, slug, All)!.Id.ShouldBe(id);
     }
 
     [Theory]
@@ -102,14 +101,24 @@ public sealed class ProfileResolverTests
     [InlineData("nope")]
     public void Pick_SomeoneElsesProfile_IsAsGoodAsMissing(string slug)
     {
-        ProfileResolver.Pick(CameronCaller, slug, All).ShouldBeNull();
+        ProfileResolver.Pick(On, CameronCaller, slug, All).ShouldBeNull();
+    }
+
+    [Fact]
+    public void Pick_Default_ForAUser_OnlyWhenTheyCanEditIt()
+    {
+        var editors = On with { DefaultEditorUsers = ["cameron@casadecox.org"] };
+
+        ProfileResolver.Pick(editors, CameronCaller, "default", All).ShouldBe(Default);
+        ProfileResolver.Pick(On, CameronCaller, "default", All).ShouldBeNull();
+        ProfileResolver.Pick(editors, Anonymous, "default", All).ShouldBe(Default);
     }
 
     [Fact]
     public void Pick_WithoutAUser_SeesOnlyDefaultAndOwnerless()
     {
-        ProfileResolver.Pick(Anonymous, "vendor", All).ShouldBe(Vendor);
-        ProfileResolver.Pick(Anonymous, "work", All).ShouldBeNull();
+        ProfileResolver.Pick(On, Anonymous, "vendor", All).ShouldBe(Vendor);
+        ProfileResolver.Pick(On, Anonymous, "work", All).ShouldBeNull();
     }
 
     [Fact]

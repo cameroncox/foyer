@@ -181,6 +181,22 @@ describe('Sharing', () => {
     expect(window.location.pathname).toBe('/cameron')
   })
 
+  it('keeps Default’s banner closed on this device once dismissed', async () => {
+    window.history.replaceState(null, '', '/default')
+    const home = defaultProfile({ id: 1, canEdit: true })
+    stubApi(personalPage, { 'GET /api/me': () => me(home) })
+    const { unmount } = renderApp()
+
+    const banner = await screen.findByRole('note')
+    await userEvent.click(within(banner).getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByRole('note')).toBeNull()
+    unmount()
+
+    renderApp()
+    await screen.findByRole('button', { name: 'Profile: Default' })
+    expect(screen.queryByText('You’re editing Default.')).toBeNull()
+  })
+
   it('offers no adding or editing on a read-only profile', async () => {
     window.history.replaceState(null, '', '/default')
     stubApi(

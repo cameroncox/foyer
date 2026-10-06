@@ -50,25 +50,33 @@ public sealed class ProfileEndpointTests
         me.Current.Slug.ShouldBe("cameron-casadecox-org");
         me.Current.CanEdit.ShouldBeTrue();
         me.CanEditDefault.ShouldBeFalse();
-        me.Profiles.Select(p => p.Kind).ShouldBe([ProfileKind.Default, ProfileKind.Personal]);
+        me.Profiles.Select(p => p.Kind).ShouldBe([ProfileKind.Personal]);
 
         var dashboard = await (await client.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>();
         dashboard.Categories.ShouldHaveSingleItem().Bookmarks.ShouldBeEmpty();
     }
 
     [Fact]
-    public async Task ProfileHeader_PicksAVisibleProfile()
+    public async Task Default_IsThereForItsEditors_AndHeaderlessRequests_Only()
     {
-        await using var app = App();
+        await using var app = App(("FOYER_DEFAULT_REMOTE_USERS", Cameron));
         await app.SeedDockerAsync("docker-1", TestApi.Labeled("sonarr", "Media"));
-        using var client = app.ClientAs(user: Cameron, profile: "Default");
+        using var cameron = app.ClientAs(user: Cameron, profile: "Default");
+        using var alex = app.ClientAs(user: "alex", profile: "default");
+        using var anonymous = app.ClientAs(profile: "default");
 
-        var me = await MeAsync(client);
-        var dashboard = await (await client.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>();
-
+        var me = await MeAsync(cameron);
+        var dashboard = await (await cameron.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>();
         me.Current.Kind.ShouldBe(ProfileKind.Default);
-        me.Current.CanEdit.ShouldBeFalse();
+        me.Current.CanEdit.ShouldBeTrue();
         dashboard.Categories[0].Bookmarks.ShouldHaveSingleItem().Name.ShouldBe("sonarr");
+
+        (await alex.GetAsync("/api/dashboard")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        using var alexHome = app.ClientAs(user: "alex");
+        (await MeAsync(alexHome)).Profiles.ShouldNotContain(p => p.Kind == ProfileKind.Default);
+
+        // Without a user there's nothing else to show, so Default stays, read-only.
+        (await MeAsync(anonymous)).Current.CanEdit.ShouldBeFalse();
     }
 
     [Fact]
@@ -125,11 +133,11 @@ public sealed class ProfileEndpointTests
 
     [Theory]
     [InlineData(null, null, null, HttpStatusCode.Created)]
-    [InlineData(Cameron, null, null, HttpStatusCode.Forbidden)]
+    [InlineData(Cameron, null, null, HttpStatusCode.NotFound)]
     [InlineData(null, null, "FOYER_DEFAULT_REMOTE_USERS=alex", HttpStatusCode.Forbidden)]
     [InlineData(Cameron, null, "FOYER_DEFAULT_REMOTE_USERS=CAMERON@casadecox.org", HttpStatusCode.Created)]
     [InlineData("cameron_casadecox.org", null, "FOYER_DEFAULT_REMOTE_USERS=cameron@casadecox.org", HttpStatusCode.Created)]
-    [InlineData(Cameron, "admins, family", "FOYER_DEFAULT_REMOTE_USERS=alex", HttpStatusCode.Forbidden)]
+    [InlineData(Cameron, "admins, family", "FOYER_DEFAULT_REMOTE_USERS=alex", HttpStatusCode.NotFound)]
     [InlineData(Cameron, "admins, family", "FOYER_DEFAULT_REMOTE_GROUPS=family", HttpStatusCode.Created)]
     public async Task WritesToDefault_FollowTheEditorRules(string? user, string? groups, string? editors, HttpStatusCode expected)
     {
@@ -139,8 +147,10 @@ public sealed class ProfileEndpointTests
 
         var response = await client.PostJsonAsync("/api/categories", new CategoryNameRequest("Media"));
 
+        // A user who can't edit Default doesn't see it either: 404, not 403.
         response.StatusCode.ShouldBe(expected);
-        (await MeAsync(client)).CanEditDefault.ShouldBe(expected == HttpStatusCode.Created);
+        using var home = app.ClientAs(user: user, groups: groups);
+        (await MeAsync(home)).CanEditDefault.ShouldBe(expected == HttpStatusCode.Created);
     }
 
     [Fact]
@@ -164,7 +174,7 @@ public sealed class ProfileEndpointTests
         (await atWork.GetAsync("/api/dashboard")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
         (await client.DeleteAsync($"/api/profiles/{created.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await MeAsync(client)).Profiles.Select(p => p.Kind).ShouldBe([ProfileKind.Default, ProfileKind.Personal]);
+        (await MeAsync(client)).Profiles.Select(p => p.Kind).ShouldBe([ProfileKind.Personal]);
     }
 
     [Fact]
@@ -177,7 +187,7 @@ public sealed class ProfileEndpointTests
 
         using var cameron = app.ClientAs(user: Cameron, profile: "vendor");
         (await cameron.PostJsonAsync("/api/categories", new CategoryNameRequest("Links"))).StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await MeAsync(cameron)).Profiles.Select(p => p.Slug).ShouldBe(["default", "cameron-casadecox-org", "vendor"]);
+        (await MeAsync(cameron)).Profiles.Select(p => p.Slug).ShouldBe(["cameron-casadecox-org", "vendor"]);
     }
 
     [Fact]
@@ -199,7 +209,7 @@ public sealed class ProfileEndpointTests
     [Fact]
     public async Task Default_CantBeRenamedOrDeleted_NorAPersonalProfileDeleted()
     {
-        await using var app = App();
+        await using var app = App(("FOYER_DEFAULT_REMOTE_USERS", Cameron));
         using var client = app.ClientAs(user: Cameron);
         var me = await MeAsync(client);
 
@@ -223,7 +233,7 @@ public sealed class ProfileEndpointTests
         var again = await MeAsync(client);
         again.Current.Id.ShouldBe(me.Current.Id);
         again.Current.Name.ShouldBe("cameron");
-        again.Profiles.Count.ShouldBe(2);
+        again.Profiles.ShouldHaveSingleItem();
     }
 
     [Fact]

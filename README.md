@@ -142,8 +142,9 @@ title (at the top of the menu on a phone); `/` reopens the one last picked on th
   them all.
 - **Behind one** (Tinyauth, or anything that sends `Remote-User`), each user also gets a
   personal profile, made the first time they visit, and can make more that only they see.
-  Default is read-only for them unless they're listed in `FOYER_DEFAULT_REMOTE_USERS` or
-  `FOYER_DEFAULT_REMOTE_GROUPS`. Set `FOYER_TRUSTED_PROXIES` to the proxy's address once Foyer
+  Default is hidden from them unless they're listed in `FOYER_DEFAULT_REMOTE_USERS` or
+  `FOYER_DEFAULT_REMOTE_GROUPS`, which lets them edit it; its shared bookmarks reach everyone's
+  profiles either way. Set `FOYER_TRUSTED_PROXIES` to the proxy's address once Foyer
   can be reached any other way, or anyone can claim to be any user.
 - **Moving in.** When profiles are first used behind a proxy and Default still holds the
   bookmarks you made without them, the first Default editor to open their personal profile is
@@ -180,8 +181,8 @@ bookmark manager with manually added bookmarks only.
 | `FOYER_PROFILE_HEADER` | `Remote-User` | Header the auth proxy names the user in |
 | `FOYER_GROUPS_HEADER` | `Remote-Groups` | Header listing the user's groups, comma-separated |
 | `FOYER_TRUSTED_PROXIES` | empty (any address) | IPs or CIDRs allowed to send those headers, comma-separated; others get a 403 |
-| `FOYER_DEFAULT_REMOTE_USERS` | empty | Users who can edit Default, comma-separated. `@` and `_` match each other, since Tinyauth sends `me@example.com` as `me_example.com` |
-| `FOYER_DEFAULT_REMOTE_GROUPS` | empty | Groups whose members can edit Default, comma-separated |
+| `FOYER_DEFAULT_REMOTE_USERS` | empty | Users who can see and edit Default, comma-separated. `@` and `_` match each other, since Tinyauth sends `me@example.com` as `me_example.com` |
+| `FOYER_DEFAULT_REMOTE_GROUPS` | empty | Groups whose members can see and edit Default, comma-separated |
 
 With no Default editors listed, only requests without a user header can edit Default.
 

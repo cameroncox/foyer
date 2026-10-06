@@ -16,7 +16,10 @@ public sealed class ProfileService(
     TimeProvider clock,
     SharingService sharing)
 {
-    /// <summary>The profiles <paramref name="caller"/> can pick: Default, their personal and other profiles, then ownerless ones.</summary>
+    /// <summary>
+    /// The profiles <paramref name="caller"/> can pick: Default (when <see cref="ProfileResolver.IsVisible"/>
+    /// allows), their personal and other profiles, then ownerless ones.
+    /// </summary>
     public async Task<IReadOnlyList<Profile>> VisibleAsync(Caller caller, CancellationToken ct = default)
     {
         // OwnerUser uses NOCASE collation, so == here is case-insensitive in SQLite.
@@ -26,6 +29,7 @@ public sealed class ProfileService(
             .ToListAsync(ct);
 
         return profiles
+            .Where(p => ProfileResolver.IsVisible(options, caller, p))
             .OrderBy(p => p.IsSystem ? 0 : p.IsPersonal ? 1 : p.OwnerUser is not null ? 2 : 3)
             .ThenBy(p => p.Slug, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -150,7 +154,7 @@ public sealed class ProfileService(
     {
         EnsureEnabled();
         var profile = await db.Profiles.FindAsync([id], ct);
-        return profile is null || !ProfileResolver.IsVisible(context.Caller, profile)
+        return profile is null || !ProfileResolver.IsVisible(options, context.Caller, profile)
             ? throw new NotFoundException($"Profile {id} not found.")
             : profile;
     }

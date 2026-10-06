@@ -122,7 +122,7 @@ public sealed class HandoverService(
     private bool IsForCaller() =>
         options.Enabled
         && context.Caller.User is not null
-        && ProfileResolver.CanEdit(options, context.Caller, Seed.Default);
+        && ProfileResolver.CanEditDefault(options, context.Caller);
 
     private async Task EnsureOfferedAsync(CancellationToken ct)
     {

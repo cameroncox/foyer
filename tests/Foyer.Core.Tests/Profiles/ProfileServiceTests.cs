@@ -101,6 +101,7 @@ public sealed class ProfileServiceTests
     public async Task Default_CantBeRenamedOrDeleted_NorAPersonalProfileDeleted()
     {
         await using var t = await TestDb.CreateAsync();
+        t.Options = ProfileOptions.Default with { DefaultEditorUsers = [Cameron.User!] };
         var personal = await t.Profiles().EnsurePersonalAsync(Cameron.User!);
         t.Profile.Use(personal, Cameron, canEdit: true);
 
@@ -182,10 +183,15 @@ public sealed class ProfileServiceTests
         t.Profile.Use(await t.Profiles().EnsurePersonalAsync(Cameron.User!), Cameron, canEdit: true);
         await t.Profiles().CreateAsync("work");
 
-        (await t.Profiles().VisibleAsync(Cameron)).Select(p => p.Slug)
+        var editors = ProfileOptions.Default with { DefaultEditorUsers = [Cameron.User!] };
+        (await t.Profiles(editors).VisibleAsync(Cameron)).Select(p => p.Slug)
             .ShouldBe(["default", "cameron-casadecox-org", "work", "kitchen", "vendor"]);
-        (await t.Profiles().VisibleAsync(Caller.Anonymous)).Select(p => p.Slug)
+        (await t.Profiles(editors).VisibleAsync(Caller.Anonymous)).Select(p => p.Slug)
             .ShouldBe(["default", "kitchen", "vendor"]);
+
+        // Default is left out for a user who can't edit it; they get its shared bookmarks anyway.
+        (await t.Profiles().VisibleAsync(Cameron)).Select(p => p.Slug)
+            .ShouldBe(["cameron-casadecox-org", "work", "kitchen", "vendor"]);
     }
 
     private static Profile Default() => new() { Id = Profile.DefaultId, Name = Profile.DefaultName, Slug = Profile.DefaultSlug, IsSystem = true };

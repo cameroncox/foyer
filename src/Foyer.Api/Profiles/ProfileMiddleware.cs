@@ -6,7 +6,7 @@ namespace Foyer.Api.Profiles;
 /// <summary>
 /// Resolves the caller and the profile once per /api request into <see cref="ProfileContext"/>,
 /// or ends the request: 403 for a bad or untrusted user header, 404 for a profile the caller
-/// can't see (whether or not it exists). A user seen for the first time gets a personal profile.
+/// can't see (whether or not it exists; Default included, for a user who can't edit it). A user seen for the first time gets a personal profile.
 /// </summary>
 internal sealed partial class ProfileMiddleware(RequestDelegate next, ProfileOptions options, ILogger<ProfileMiddleware> logger)
 {
@@ -48,7 +48,7 @@ internal sealed partial class ProfileMiddleware(RequestDelegate next, ProfileOpt
         }
 
         var slug = Header(http, ProfileHeader) ?? http.Request.Query[ProfileQuery].FirstOrDefault();
-        var profile = ProfileResolver.Pick(caller, slug, await profiles.VisibleAsync(caller, http.RequestAborted))
+        var profile = ProfileResolver.Pick(options, caller, slug, await profiles.VisibleAsync(caller, http.RequestAborted))
             ?? throw new NotFoundException($"There's no profile '{slug}'.");
 
         context.Use(profile, caller, ProfileResolver.CanEdit(options, caller, profile));
@@ -71,6 +71,6 @@ internal sealed partial class ProfileMiddleware(RequestDelegate next, ProfileOpt
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Requests are arriving with {Header}, but no Default editors are listed, so nobody behind the proxy can edit Default. Set {UsersKey} or {GroupsKey}")]
+        Message = "Requests are arriving with {Header}, but no Default editors are listed, so nobody behind the proxy can see or edit Default. Set {UsersKey} or {GroupsKey}")]
     private static partial void NobodyCanEditDefault(ILogger logger, string header, string usersKey, string groupsKey);
 }
