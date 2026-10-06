@@ -37,6 +37,12 @@
   margin-left: auto;
 }
 
+.bannerActions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
 /* The read-only panel's details. */
 .details {
   display: grid;

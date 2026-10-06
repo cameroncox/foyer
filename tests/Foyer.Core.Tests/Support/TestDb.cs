@@ -58,6 +58,9 @@ public sealed class TestDb : IAsyncDisposable
     public ProfileService Profiles(ProfileOptions? options = null) =>
         new(Db, Profile, options ?? Options, Notifier, new FixedTimeProvider(Now), Sharing);
 
+    public HandoverService Handover() =>
+        new(Db, Profile, Options, Notifier, new FixedTimeProvider(Now), Profiles());
+
     /// <summary>One sync pass for a host, as the Docker sync service runs it.</summary>
     public async Task<bool> SyncAsync(string host, params ContainerInfo[] containers)
     {

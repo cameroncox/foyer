@@ -120,6 +120,7 @@ export function profilesOff(): Me {
     current: home,
     canEditDefault: true,
     profiles: [home],
+    handoverCount: 0,
   }
 }
 

@@ -19,6 +19,7 @@ function me(current: Profile, extra: Partial<Me> = {}): Me {
     current,
     canEditDefault: home.canEdit,
     profiles: [home, personal],
+    handoverCount: 0,
     ...extra,
   }
 }
@@ -220,6 +221,60 @@ describe('Sharing', () => {
     await userEvent.click(within(drawer).getByRole('button', { name: 'OK' }))
     await userEvent.click(within(drawer).getByRole('button', { name: 'Delete Media' }))
     expect(within(drawer).getByText(/moves to Uncategorized/)).toBeInTheDocument()
+  })
+})
+
+describe('Handover', () => {
+  it('offers Default’s bookmarks on the personal profile, and moves them', async () => {
+    let offered = 3
+    const api = stubApi(personalPage, {
+      'GET /api/me': () => me(personal, { handoverCount: offered }),
+      'POST /api/me/handover': () => {
+        offered = 0
+        return { moved: 3 }
+      },
+    })
+    renderApp()
+
+    expect(
+      await screen.findByText('Default has 3 bookmarks from before profiles.'),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Move them here' }))
+
+    expect(await screen.findByText('Moved 3 bookmarks to cameron')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText(/from before profiles/)).toBeNull())
+    expect(api.called('POST /api/me/handover')).toHaveLength(1)
+  })
+
+  it('leaves them in Default when asked', async () => {
+    let offered = 1
+    const api = stubApi(personalPage, {
+      'GET /api/me': () => me(personal, { handoverCount: offered }),
+      'DELETE /api/me/handover': () => {
+        offered = 0
+        return new Response(null, { status: 204 })
+      },
+    })
+    renderApp()
+
+    expect(
+      await screen.findByText('Default has 1 bookmark from before profiles.'),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Leave them in Default' }))
+
+    await waitFor(() => expect(screen.queryByText(/from before profiles/)).toBeNull())
+    expect(api.called('DELETE /api/me/handover')).toHaveLength(1)
+    expect(api.called('POST /api/me/handover')).toHaveLength(0)
+  })
+
+  it('makes no offer away from the personal profile', async () => {
+    window.history.replaceState(null, '', '/default')
+    const home = defaultProfile({ id: 1, canEdit: true })
+    stubApi(personalPage, { 'GET /api/me': () => me(home, { handoverCount: 3 }) })
+    renderApp()
+
+    await screen.findByText('You’re editing Default.')
+    expect(screen.queryByText(/from before profiles/)).toBeNull()
   })
 })
 

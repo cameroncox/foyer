@@ -195,6 +195,30 @@ export function useDeleteProfile() {
   })
 }
 
+/** Moves Default's manual bookmarks to the caller's personal profile, once. */
+export function useAcceptHandover() {
+  const queryClient = useQueryClient()
+  const headers = useProfileHeaders()
+  return useMutation({
+    mutationFn: async () => unwrap(await api.POST('/api/me/handover', { headers })),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.me }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboards }),
+      ]),
+  })
+}
+
+/** Leaves Default's bookmarks where they are, and stops the offer. */
+export function useDeclineHandover() {
+  const onSettled = useInvalidateMe()
+  const headers = useProfileHeaders()
+  return useMutation({
+    mutationFn: async () => unwrap(await api.DELETE('/api/me/handover', { headers })),
+    onSettled,
+  })
+}
+
 async function applyOptimistic(
   queryClient: ReturnType<typeof useQueryClient>,
   profile: string | undefined,

@@ -276,6 +276,44 @@ public sealed class ProfileEndpointTests
             }
         }
     }
+
+    [Fact]
+    public async Task TurningProfilesOn_OffersDefaultsBookmarksToAnEditor_Once()
+    {
+        var dataDir = FoyerApiFactory.NewDataDir();
+        try
+        {
+            await using (var before = new FoyerApiFactory(settings: new Dictionary<string, string> { ["FOYER_PROFILES"] = "false" }, dataDir: dataDir))
+            {
+                using var client = before.CreateClient();
+                await client.PostJsonAsync("/api/bookmarks", new CreateBookmarkRequest("Wiki", "https://wiki.example.com", null, null, null, [], false));
+                await before.SeedDockerAsync("docker-1", TestApi.Labeled("sonarr"));
+            }
+
+            await using var after = new FoyerApiFactory(
+                settings: new Dictionary<string, string> { ["FOYER_DEFAULT_REMOTE_USERS"] = "cameron@example.com" },
+                dataDir: dataDir);
+            using var cameron = after.ClientAs(user: "cameron_example.com");
+            using var alex = after.ClientAs(user: "alex");
+
+            (await MeAsync(cameron)).HandoverCount.ShouldBe(1);
+            (await MeAsync(alex)).HandoverCount.ShouldBe(0);
+            (await alex.PostAsync("/api/me/handover", null)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+            var moved = await (await cameron.PostAsync("/api/me/handover", null)).ReadAsync<HandoverResponse>();
+
+            moved.Moved.ShouldBe(1);
+            var mine = await (await cameron.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>();
+            mine.Categories.ShouldHaveSingleItem().Bookmarks.ShouldHaveSingleItem().Name.ShouldBe("Wiki");
+            (await MeAsync(cameron)).HandoverCount.ShouldBe(0);
+            (await cameron.DeleteAsync("/api/me/handover")).StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Directory.Delete(dataDir, recursive: true);
+        }
+    }
 }
 
 internal sealed class EmptyUserHeaderFilter : IStartupFilter

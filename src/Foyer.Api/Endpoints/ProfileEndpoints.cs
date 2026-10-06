@@ -7,7 +7,7 @@ internal static class ProfileEndpoints
 {
     public static IEndpointRouteBuilder MapProfiles(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/me", async (ProfileContext context, ProfileService profiles, ProfileOptions options, CancellationToken ct) =>
+        app.MapGet("/api/me", async (ProfileContext context, ProfileService profiles, HandoverService handover, ProfileOptions options, CancellationToken ct) =>
             {
                 var caller = context.Caller;
                 var visible = await profiles.VisibleAsync(caller, ct);
@@ -17,11 +17,31 @@ internal static class ProfileEndpoints
                     caller.User,
                     ProfileResponse.From(context.Profile, options, caller),
                     listed.Where(p => p.IsSystem).Select(p => ProfileResolver.CanEdit(options, caller, p)).Single(),
-                    listed.Select(p => ProfileResponse.From(p, options, caller)).ToList()));
+                    listed.Select(p => ProfileResponse.From(p, options, caller)).ToList(),
+                    await handover.OfferedCountAsync(ct)));
             })
             .WithName("GetMe")
             .WithTags("Profiles")
             .WithSummary("The current profile, the profiles this caller can pick, and whether it can edit Default");
+
+        app.MapPost("/api/me/handover", async (HandoverService handover, CancellationToken ct) =>
+                TypedResults.Ok(new HandoverResponse(await handover.AcceptAsync(ct))))
+            .WithName("AcceptHandover")
+            .WithTags("Profiles")
+            .WithSummary("Move Default's manual bookmarks to the caller's personal profile, once; Docker bookmarks stay")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        app.MapDelete("/api/me/handover", async (HandoverService handover, CancellationToken ct) =>
+            {
+                await handover.DeclineAsync(ct);
+                return TypedResults.NoContent();
+            })
+            .WithName("DeclineHandover")
+            .WithTags("Profiles")
+            .WithSummary("Leave Default's bookmarks where they are, and stop offering to move them")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         var group = app.MapGroup("/api/profiles").WithTags("Profiles");
 

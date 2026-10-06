@@ -13,16 +13,20 @@ namespace Foyer.Api.Tests.Support;
 
 /// <summary>
 /// Runs the API against a throwaway data directory, with no Docker hosts, plus any FOYER_*
-/// <paramref name="settings"/>.
+/// <paramref name="settings"/>. Given a <paramref name="dataDir"/>, it runs there and leaves it
+/// behind, so a test can restart Foyer over the same data.
 /// </summary>
 public sealed class FoyerApiFactory(
     Action<IServiceCollection>? configure = null,
-    IReadOnlyDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
+    IReadOnlyDictionary<string, string>? settings = null,
+    string? dataDir = null) : WebApplicationFactory<Program>
 {
     /// <summary>A request header the test server turns into the connection's address, so trusted-proxy checks need no real proxy.</summary>
     public const string RemoteAddressHeader = "X-Test-Remote-Address";
 
-    private readonly string _dataDir = Path.Combine(Path.GetTempPath(), "foyer-tests", Guid.NewGuid().ToString("n"));
+    private readonly string _dataDir = dataDir ?? NewDataDir();
+
+    public static string NewDataDir() => Path.Combine(Path.GetTempPath(), "foyer-tests", Guid.NewGuid().ToString("n"));
 
     public string DataDir => _dataDir;
 
@@ -85,7 +89,7 @@ public sealed class FoyerApiFactory(
     {
         await base.DisposeAsync();
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_dataDir))
+        if (dataDir is null && Directory.Exists(_dataDir))
         {
             Directory.Delete(_dataDir, recursive: true);
         }

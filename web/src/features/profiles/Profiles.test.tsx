@@ -20,7 +20,7 @@ const vendor = profile('vendor', { id: 4, kind: 'ownerless' })
 const all = [home, personal, work, vendor]
 
 /** /api/me for cameron, resolving X-Foyer-Profile like the server; unknown slugs are 404. */
-function meFor(profiles: Profile[] = all) {
+function meFor(profiles: Profile[] = all, handover = { count: 0 }) {
   const asked: (string | null)[] = []
   const handler = (call: ApiCall) => {
     asked.push(call.profile)
@@ -37,6 +37,7 @@ function meFor(profiles: Profile[] = all) {
       current,
       canEditDefault: false,
       profiles,
+      handoverCount: handover.count,
     }
     return me
   }

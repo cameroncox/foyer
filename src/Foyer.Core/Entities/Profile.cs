@@ -28,4 +28,10 @@ public sealed class Profile
     public bool IsPersonal { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+    /// On Default only: when an editor moved its manual bookmarks to their profile or chose to
+    /// leave them, so the offer is made once. Null until then, and on every other profile.
+    /// </summary>
+    public DateTimeOffset? HandoverSettledAt { get; set; }
 }

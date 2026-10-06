@@ -5,9 +5,14 @@ namespace Foyer.Api.Contracts;
 /// <param name="Current">The profile this request resolved to.</param>
 /// <param name="CanEditDefault">Whether the caller is a Default editor.</param>
 /// <param name="Profiles">What the picker lists: Default, the caller's profiles, then ownerless ones.</param>
+/// <param name="HandoverCount">
+/// Manual bookmarks in Default the caller is offered to move to their personal profile, once,
+/// after profiles were turned on; 0 when there's no offer for them.
+/// </param>
 public sealed record MeResponse(
     bool ProfilesEnabled,
     string? User,
     ProfileResponse Current,
     bool CanEditDefault,
-    IReadOnlyList<ProfileResponse> Profiles);
+    IReadOnlyList<ProfileResponse> Profiles,
+    int HandoverCount);

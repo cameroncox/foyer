@@ -38,6 +38,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/handover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Default's manual bookmarks to the caller's personal profile, once; Docker bookmarks stay */
+        post: operations["AcceptHandover"];
+        /** Leave Default's bookmarks where they are, and stop offering to move them */
+        delete: operations["DeclineHandover"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dashboard": {
         parameters: {
             query?: never;
@@ -389,6 +407,10 @@ export interface components {
         };
         /** @enum {unknown} */
         DockerStatus: "running" | "warning" | "stopped" | null;
+        HandoverResponse: {
+            /** Format: int32 */
+            moved: number;
+        };
         ImportPreview: {
             sections: components["schemas"]["ImportPreviewSection"][];
             /** Format: int32 */
@@ -429,6 +451,8 @@ export interface components {
             current: components["schemas"]["ProfileResponse"];
             canEditDefault: boolean;
             profiles: components["schemas"]["ProfileResponse"][];
+            /** Format: int32 */
+            handoverCount: number;
         };
         ProblemDetails: {
             type?: null | string;
@@ -527,6 +551,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    AcceptHandover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HandoverResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeclineHandover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

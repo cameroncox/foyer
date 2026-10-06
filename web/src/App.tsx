@@ -21,6 +21,7 @@ import { FoyerSpotlight } from './features/spotlight/FoyerSpotlight.tsx'
 import { TopBar } from './features/top-bar/TopBar.tsx'
 import { useCanEdit } from './features/profiles/profileContext.ts'
 import { DefaultBanner } from './features/sharing/DefaultBanner.tsx'
+import { HandoverBanner } from './features/sharing/HandoverBanner.tsx'
 import { useLiveUpdates } from './hooks/useLiveUpdates.ts'
 import { usePhone } from './hooks/usePhone.ts'
 import { useDocumentTitle } from './hooks/useTitle.ts'
@@ -169,6 +170,7 @@ export default function App() {
       <AppShell.Main>
         <div className={classes.main}>
           <DefaultBanner />
+          <HandoverBanner />
           {dashboard.isPending ? (
             <Center py="xl">
               <Loader aria-label="Loading bookmarks" />

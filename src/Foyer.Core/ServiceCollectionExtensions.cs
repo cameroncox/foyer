@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(profiles);
         services.AddScoped<ProfileContext>();
         services.AddScoped<ProfileService>();
+        services.AddScoped<HandoverService>();
         services.AddScoped<SharingService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<BookmarkService>();

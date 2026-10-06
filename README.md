@@ -145,6 +145,11 @@ title (at the top of the menu on a phone); `/` reopens the one last picked on th
   Default is read-only for them unless they're listed in `FOYER_DEFAULT_REMOTE_USERS` or
   `FOYER_DEFAULT_REMOTE_GROUPS`. Set `FOYER_TRUSTED_PROXIES` to the proxy's address once Foyer
   can be reached any other way, or anyone can claim to be any user.
+- **Moving in.** When profiles are first used behind a proxy and Default still holds the
+  bookmarks you made without them, the first Default editor to open their personal profile is
+  offered them, once: **Move them here** takes Default's manual bookmarks (into categories of
+  the same name), or **Leave them in Default**. Docker bookmarks stay in Default either way, and
+  shared ones still show there.
 - **Shared bookmarks** show in every profile, read-only, in a category of the same name. Share
   one with the Shared switch in its Add or Edit form; Docker bookmarks can be shared from Default.
 
