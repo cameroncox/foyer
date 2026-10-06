@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_SEARCH_URL, engineName, isBang, supportsBangs, webSearchUrl } from './webSearch.ts'
+import {
+  addressUrl,
+  DEFAULT_SEARCH_URL,
+  engineName,
+  isBang,
+  supportsBangs,
+  webSearchUrl,
+} from './webSearch.ts'
 
 describe('web search', () => {
   it('spots a bang only at the start, followed by its name', () => {
@@ -28,5 +35,39 @@ describe('web search', () => {
   it('treats bangs as special only on DuckDuckGo', () => {
     expect(supportsBangs(DEFAULT_SEARCH_URL)).toBe(true)
     expect(supportsBangs('https://www.google.com/search?q=%s')).toBe(false)
+  })
+})
+
+describe('addressUrl', () => {
+  it('takes a domain to https, keeping a port and path', () => {
+    expect(addressUrl('google.com')).toBe('https://google.com')
+    expect(addressUrl(' jellyfin.lan/web ')).toBe('https://jellyfin.lan/web')
+    expect(addressUrl('foyer.example.org:8443')).toBe('https://foyer.example.org:8443')
+  })
+
+  it('keeps an http(s) URL as typed', () => {
+    expect(addressUrl('http://router.lan')).toBe('http://router.lan/')
+    expect(addressUrl('https://example.com/a?b=c')).toBe('https://example.com/a?b=c')
+  })
+
+  it('takes an IPv4 address or localhost to http', () => {
+    expect(addressUrl('10.0.10.5:8080')).toBe('http://10.0.10.5:8080')
+    expect(addressUrl('localhost:5173')).toBe('http://localhost:5173')
+  })
+
+  it('leaves words, versions and spaced queries to the search', () => {
+    for (const query of [
+      'google',
+      'v1.2',
+      '3.14',
+      'plex 2',
+      'c# standard',
+      '!g foo',
+      'a@b.com',
+      '999.1.1.1',
+      '',
+    ]) {
+      expect(addressUrl(query), query).toBeNull()
+    }
   })
 })

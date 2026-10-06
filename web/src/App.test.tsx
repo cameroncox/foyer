@@ -210,6 +210,49 @@ describe('spotlight', () => {
     expect(open).toHaveBeenCalledWith('https://www.google.com/search?q=!g%20zzz')
   })
 
+  it('offers to go to an address, after the web search', async () => {
+    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
+    const box = await openSpotlight()
+
+    await userEvent.type(box, 'example.com')
+    await userEvent.click(screen.getByRole('button', { name: /Go to example\.com/ }))
+    expect(open).toHaveBeenCalledWith('https://example.com')
+
+    await userEvent.keyboard(' ')
+    const again = await screen.findByRole('textbox', { name: 'Jump to a bookmark' })
+    await userEvent.clear(again)
+    await userEvent.type(again, 'radarr')
+    expect(screen.queryByRole('button', { name: /Go to/ })).toBeNull()
+  })
+
+  it('opens a row by its number after Tab, and types digits otherwise', async () => {
+    const open = vi.spyOn(navigation, 'open').mockImplementation(() => {})
+    const box = await openSpotlight()
+
+    await userEvent.type(box, 'rad2')
+    expect(box).toHaveValue('rad2')
+    expect(open).not.toHaveBeenCalled()
+
+    await userEvent.type(box, '{Backspace}{Tab}a1')
+    expect(box).toHaveValue('rada1')
+    expect(open).not.toHaveBeenCalled()
+
+    await userEvent.type(box, '{Backspace}{Backspace}{Tab}2')
+    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=rad')
+  })
+
+  it('numbers the first nine rows across groups', async () => {
+    const box = await openSpotlight()
+
+    await userEvent.type(box, 'rad')
+    expect(
+      within(screen.getByRole('button', { name: /Radarr/ })).getByText('1'),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('button', { name: /Search DuckDuckGo/ })).getByText('2'),
+    ).toBeInTheDocument()
+  })
+
   it('stays shut while editing', async () => {
     stubDashboard(page)
     renderApp()

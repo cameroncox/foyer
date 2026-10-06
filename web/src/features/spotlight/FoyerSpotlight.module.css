@@ -31,6 +31,24 @@
   color: var(--foyer-muted);
 }
 
+/* A facet row's count with its number beside it. */
+.right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* A row's number: faint while typing, plain once Tab starts picking. */
+.number {
+  min-width: 20px;
+  text-align: center;
+  opacity: 0.45;
+}
+
+.number[data-picking] {
+  opacity: 1;
+}
+
 .footer {
   display: flex;
   align-items: center;

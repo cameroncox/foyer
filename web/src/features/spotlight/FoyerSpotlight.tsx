@@ -8,6 +8,7 @@ import {
   IconSearch,
   IconUsers,
   IconWorldSearch,
+  IconWorldWww,
   IconX,
 } from '@tabler/icons-react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
@@ -28,7 +29,7 @@ import {
   spotlightHits,
 } from './scope.ts'
 import { useSearchUrl } from './useSearchUrl.ts'
-import { engineName, isBang, supportsBangs, webSearchUrl } from './webSearch.ts'
+import { addressUrl, engineName, isBang, supportsBangs, webSearchUrl } from './webSearch.ts'
 
 /** Highlights the action at `index` (-1 for none), the way the arrow keys do. */
 function select(store: SpotlightStore, index: number) {
@@ -39,7 +40,16 @@ function select(store: SpotlightStore, index: number) {
   store.updateState((state) => ({ ...state, selected: action ? index : -1 }))
 }
 
+/** Clicks the action at `index`, as a digit does while picking. */
+function trigger(store: SpotlightStore, index: number) {
+  const list = document.getElementById(store.getState().listId)
+  list?.querySelectorAll<HTMLElement>('[data-action]')[index]?.click()
+}
+
 const MAX_HITS = 50
+
+/** Rows that get a number for picking: 1 to 9. */
+const NUMBERED = 9
 
 const FACET_ICONS: Record<ScopeKind, ReactNode> = {
   host: <IconBrandDocker size={18} stroke={1.75} />,
@@ -62,12 +72,16 @@ interface Props {
  * Space, ⌘K or / (or the top bar's search button) opens a jump-to box. Empty, it offers Docker hosts, tags, categories and Shared to narrow
  * by; typing searches bookmarks (and those filters), with a web search (FOYER_SEARCH_URL) last.
  * Enter opens the highlighted row. On DuckDuckGo, a query starting with a bang ("!g …") is only
- * a web search. On a phone it fills the screen, with an X to close it, and stands in for search.
+ * a web search; a query that looks like an address ("google.com") can also be opened directly.
+ * The first nine rows are numbered: Tab (or an arrow key) starts picking, and then a digit opens
+ * that row, while any other key goes back to typing, so digits can still be searched for.
+ * On a phone it fills the screen, with an X to close it, and stands in for search.
  */
 export function FoyerSpotlight({ spotlight: [store, actions], categories, enabled, onAdd }: Props) {
   const phone = usePhone()
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState<Scope | null>(null)
+  const [picking, setPicking] = useState(false)
   const searchUrl = useSearchUrl()
 
   const all = useMemo(() => facets(categories), [categories])
@@ -81,6 +95,29 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
   const bang = web && supportsBangs(searchUrl) && isBang(query)
   const filters = scope || browsing || bang ? [] : matchingFacets(all, query)
   const shownHits = bang ? [] : hits
+  const address = web && !bang ? addressUrl(query) : null
+
+  const adding = onAdd !== undefined && !bang && shownHits.length === 0
+
+  // Every row in list order, across groups, so each can show its number.
+  const facetKey = (facet: Facet) => `${facet.kind}:${facet.value}`
+  const rows = browsing
+    ? [...all.hosts, ...all.tags, ...all.categories, ...all.shared].map(facetKey)
+    : [
+        ...shownHits.map(({ bookmark }) => `bookmark:${bookmark.id}`),
+        ...filters.map(facetKey),
+        ...(web ? ['web'] : []),
+        ...(address ? ['address'] : []),
+        ...(adding ? ['add'] : []),
+      ]
+  const number = (key: string) => {
+    const n = rows.indexOf(key) + 1
+    return !phone && n > 0 && n <= NUMBERED ? (
+      <Kbd size="xs" className={classes.number} data-picking={picking || undefined}>
+        {n}
+      </Kbd>
+    ) : null
+  }
 
   // Typing already highlights the first row (Mantine does that on each query change); picking or
   // clearing a filter swaps the list without one, so do the same there.
@@ -93,10 +130,15 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
 
   const facetAction = (facet: Facet) => (
     <Spotlight.Action
-      key={`${facet.kind}:${facet.value}`}
+      key={facetKey(facet)}
       label={scopeLabel(facet)}
       leftSection={FACET_ICONS[facet.kind]}
-      rightSection={<span className={classes.count}>{facet.count}</span>}
+      rightSection={
+        <span className={classes.right}>
+          <span className={classes.count}>{facet.count}</span>
+          {number(facetKey(facet))}
+        </span>
+      }
       closeSpotlightOnTrigger={false}
       onClick={() => narrow(facet)}
     />
@@ -111,11 +153,17 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
     <Spotlight.Root
       store={store}
       query={query}
-      onQueryChange={setQuery}
+      onQueryChange={(value) => {
+        setQuery(value)
+        setPicking(false)
+      }}
       shortcut={enabled ? ['space', 'mod + K', '/'] : null}
       // Space presses a focused button; leave it be.
       tagsToIgnore={['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON']}
-      onSpotlightClose={() => setScope(null)}
+      onSpotlightClose={() => {
+        setScope(null)
+        setPicking(false)
+      }}
       scrollable
       fullScreen={phone}
       // Full screen, the list takes whatever the search box (and filter line) leave.
@@ -140,6 +188,26 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
           if (e.key === 'Backspace' && scope && query === '') {
             e.preventDefault()
             setScope(null)
+            return
+          }
+
+          if (phone) {
+            return
+          }
+
+          const plain = !e.altKey && !e.ctrlKey && !e.metaKey
+          if (e.key === 'Tab' && plain) {
+            // Tab picks rather than leaving the box; Shift+Tab goes back to typing.
+            e.preventDefault()
+            setPicking(!e.shiftKey)
+            if (!e.shiftKey && store.getState().selected < 0) {
+              select(store, 0)
+            }
+          } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            setPicking(true)
+          } else if (picking && plain && /^[1-9]$/.test(e.key)) {
+            e.preventDefault()
+            trigger(store, Number(e.key) - 1)
           }
         }}
       />
@@ -177,6 +245,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
                         compact
                       />
                     }
+                    rightSection={number(`bookmark:${bookmark.id}`)}
                     dimmedSections={false}
                     highlightQuery
                     onClick={() => navigation.open(bookmark.url)}
@@ -190,16 +259,26 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
                 <Spotlight.Action
                   label={`Search ${engineName(searchUrl)} for “${query.trim()}”`}
                   leftSection={<IconWorldSearch size={18} stroke={1.75} />}
+                  rightSection={number('web')}
                   onClick={() => navigation.open(webSearchUrl(searchUrl, query))}
                 />
+                {address && (
+                  <Spotlight.Action
+                    label={`Go to ${address.replace(/^https?:\/\//, '').replace(/\/$/, '')}`}
+                    leftSection={<IconWorldWww size={18} stroke={1.75} />}
+                    rightSection={number('address')}
+                    onClick={() => navigation.open(address)}
+                  />
+                )}
               </Spotlight.ActionsGroup>
             )}
             {/* After the web search, so Enter on a miss still searches the web. */}
-            {onAdd && !bang && shownHits.length === 0 && (
+            {onAdd && adding && (
               <Spotlight.ActionsGroup label="Add">
                 <Spotlight.Action
                   label={`Add “${query.trim()}” as a bookmark`}
                   leftSection={<IconPlus size={18} stroke={1.75} />}
+                  rightSection={number('add')}
                   onClick={() => onAdd(query.trim())}
                 />
               </Spotlight.ActionsGroup>
@@ -218,7 +297,16 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
         <Spotlight.Footer className={classes.footer}>
           <Kbd size="xs">↑</Kbd>
           <Kbd size="xs">↓</Kbd> move · <Kbd size="xs">Enter</Kbd>{' '}
-          {browsing ? 'filter' : bang ? 'search' : 'open'}
+          {browsing ? 'filter' : bang ? 'search' : 'open'} ·{' '}
+          {picking ? (
+            <>
+              <Kbd size="xs">1</Kbd>–<Kbd size="xs">9</Kbd> pick
+            </>
+          ) : (
+            <>
+              <Kbd size="xs">Tab</Kbd> pick by number
+            </>
+          )}
           {scope && (
             <>
               {' '}
