@@ -5,6 +5,10 @@ import type { Bookmark } from '../../api/client.ts'
  * for another profile's, "Shared with every profile" for the page's own; null when not shared.
  */
 export function sharedLabel(bookmark: Bookmark): string | null {
+  if (!bookmark.isShared) {
+    return null
+  }
+
   if (bookmark.sharedBy) {
     return `Shared by ${bookmark.sharedBy}`
   }
@@ -13,7 +17,16 @@ export function sharedLabel(bookmark: Bookmark): string | null {
     return `Shared from ${bookmark.sharedFrom}`
   }
 
-  return bookmark.isShared ? 'Shared with every profile' : null
+  return 'Shared with every profile'
+}
+
+/** A Docker bookmark this profile shows from Default (Show Docker bookmarks) without it being shared. */
+export const isShownDocker = (bookmark: Bookmark) =>
+  !bookmark.canEdit && !bookmark.isShared && bookmark.docker != null
+
+/** Where a read-only card comes from: its share, or Default's Docker hosts. */
+export function sourceLabel(bookmark: Bookmark): string | null {
+  return isShownDocker(bookmark) ? 'From Default’s Docker hosts' : sharedLabel(bookmark)
 }
 
 /** Who can change another profile's shared bookmark, for read-only notes. */

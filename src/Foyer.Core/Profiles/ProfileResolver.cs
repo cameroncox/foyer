@@ -105,6 +105,24 @@ public static class ProfileResolver
                 || options.DefaultEditorGroups.Intersect(caller.Groups, StringComparer.OrdinalIgnoreCase).Any());
     }
 
+    /// <summary>
+    /// Whether the caller can turn Show Docker bookmarks on or off for a profile they can see:
+    /// a Default editor, on any profile but Default that they can edit.
+    /// </summary>
+    public static bool CanShowDocker(ProfileOptions options, Caller caller, Profile profile) =>
+        options.Enabled && !profile.IsSystem && CanEdit(options, caller, profile) && CanEditDefault(options, caller);
+
+    /// <summary>
+    /// Whether <paramref name="profile"/> shows Docker bookmarks to the caller: it's turned on, and
+    /// the profile is ownerless or the caller (its owner, the only one who sees it) can still edit
+    /// Default. Losing editor rights hides them without turning the setting off.
+    /// </summary>
+    public static bool ShowsDocker(ProfileOptions options, Caller caller, Profile profile) =>
+        options.Enabled
+        && profile.ShowsDockerBookmarks
+        && !profile.IsSystem
+        && (profile.OwnerUser is null || CanEditDefault(options, caller));
+
     /// <summary>Whether the caller can rename a profile they can see: any but Default, whose URL Foyer reserves.</summary>
     public static bool CanRename(ProfileOptions options, Profile profile) =>
         options.Enabled && !profile.IsSystem;

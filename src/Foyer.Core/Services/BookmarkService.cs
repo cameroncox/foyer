@@ -81,18 +81,15 @@ public sealed class BookmarkService(
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        if (bookmark.IsShared)
+        if (wasShared && !bookmark.IsShared)
         {
-            // Newly shared, it goes everywhere; moved by its owner, it moves everywhere.
-            await sharing.PlaceAsync([bookmark], replace: wasShared && bookmark.CategoryId != oldCategoryId, ct);
-        }
-        else if (wasShared)
-        {
-            await sharing.UnplaceAsync(bookmark.Id, ct);
+            await sharing.UnplaceAsync(bookmark, ct);
         }
 
+        // Newly shared, it goes everywhere; moved by its owner, it moves everywhere it shows.
+        await sharing.PlaceAsync([bookmark], replace: bookmark.CategoryId != oldCategoryId, ct);
         await transaction.CommitAsync(ct);
-        Notify(bookmark.IsShared || wasShared);
+        Notify(wasShared || SharingService.ReachesOthers(bookmark));
         return bookmark;
     }
 

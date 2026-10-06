@@ -151,6 +151,9 @@ title (at the top of the menu on a phone); `/` reopens the one last picked on th
   offered them, once: **Move them here** takes Default's manual bookmarks (into categories of
   the same name), or **Leave them in Default**. Docker bookmarks stay in Default either way, and
   shared ones still show there.
+- **Docker bookmarks on your own profile.** A Default editor can turn on **Show Docker
+  bookmarks** in a profile's dialog (the pencil in the picker). Every container from Default
+  then shows there too, new ones included, without being shared with anyone else.
 - **Shared bookmarks** show in every profile, read-only, in a category of the same name. Share
   one with the Shared switch in its Add or Edit form; Docker bookmarks can be shared from Default.
 

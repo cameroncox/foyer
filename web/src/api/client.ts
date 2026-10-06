@@ -49,6 +49,7 @@ export function unwrap<T>(result: { data?: T; error?: unknown; response: Respons
 
 export type CreateBookmarkRequest = Schemas['CreateBookmarkRequest']
 export type UpdateBookmarkRequest = Schemas['UpdateBookmarkRequest']
+export type UpdateProfileRequest = Schemas['UpdateProfileRequest']
 export type ReorderBookmarksRequest = Schemas['ReorderBookmarksRequest']
 export type ImportPreview = Schemas['ImportPreview']
 export type ImportPreviewFolder = Schemas['ImportPreviewFolder']

@@ -115,8 +115,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Rename a profile, which moves it to the new name's URL; Default answers 403 */
-        put: operations["RenameProfile"];
+        /** Rename a profile (which moves it to the new name's URL; Default answers 403), or turn Show Docker bookmarks on or off (Default editors only) */
+        put: operations["UpdateProfile"];
         post?: never;
         /** Delete a profile with its bookmarks and categories; Default and personal profiles answer 403 */
         delete: operations["DeleteProfile"];
@@ -476,6 +476,8 @@ export interface components {
             canEdit: boolean;
             canRename: boolean;
             canDelete: boolean;
+            showsDockerBookmarks: boolean;
+            canShowDockerBookmarks: boolean;
         };
         ReorderBookmarksRequest: {
             /** Format: int32 */
@@ -505,6 +507,10 @@ export interface components {
             url: null | string;
             icon: null | string;
             isShared?: null | boolean;
+        };
+        UpdateProfileRequest: {
+            name?: null | string;
+            showsDockerBookmarks?: null | boolean;
         };
     };
     responses: never;
@@ -711,7 +717,7 @@ export interface operations {
             };
         };
     };
-    RenameProfile: {
+    UpdateProfile: {
         parameters: {
             query?: never;
             header?: never;
@@ -722,7 +728,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProfileNameRequest"];
+                "application/json": components["schemas"]["UpdateProfileRequest"];
             };
         };
         responses: {

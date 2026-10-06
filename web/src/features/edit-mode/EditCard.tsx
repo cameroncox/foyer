@@ -10,7 +10,7 @@ import { BookmarkIcon } from '../../components/BookmarkIcon.tsx'
 import { TagChip } from '../../components/TagChip.tsx'
 import { usePhone } from '../../hooks/usePhone.ts'
 import { SharedMark } from '../sharing/SharedMark.tsx'
-import { isReadOnly, sharedLabel } from '../sharing/shared.ts'
+import { isReadOnly, sourceLabel } from '../sharing/shared.ts'
 import classes from './EditCard.module.css'
 import { isSelectable, notSelectableReason } from './selection.ts'
 
@@ -68,7 +68,7 @@ export function EditCard({ bookmark, editing, onEdit, selection }: Props) {
       <div className={classes.text}>
         <span className={classes.name}>{bookmark.name}</span>
         {readOnly ? (
-          <span className={classes.url}>{sharedLabel(bookmark)}</span>
+          <span className={classes.url}>{sourceLabel(bookmark)}</span>
         ) : (
           <span className={classes.meta}>
             {bookmark.hostTag ? (

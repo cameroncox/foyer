@@ -30,9 +30,10 @@ public sealed class DockerBookmarkStore(
     }
 
     /// <summary>
-    /// Applies a plan. Returns false (and notifies no one) when there was nothing to do. Shared
-    /// bookmarks that labels move are placed again in other profiles, and their changes reach every
-    /// page; the rest only show in Default.
+    /// Applies a plan. Returns false (and notifies no one) when there was nothing to do. Bookmarks
+    /// that labels move are placed again in the other profiles that show them, new containers are
+    /// placed in the profiles showing Docker bookmarks. Pages beyond Default hear about it when a
+    /// touched bookmark is shared or some profile shows Docker bookmarks.
     /// </summary>
     public async Task<bool> ApplyAsync(ReconcilePlan plan, CancellationToken ct = default)
     {
@@ -49,14 +50,13 @@ public sealed class DockerBookmarkStore(
             .Where(b => b.Source == BookmarkSource.Docker && b.DockerHost == plan.Host && touchedIds.Contains(b.Id))
             .ToDictionaryAsync(b => b.Id, ct);
 
-        var movedShared = new List<Bookmark>();
+        var moved = new List<Bookmark>();
         foreach (var update in plan.Updates)
         {
             if (touched.TryGetValue(update.Id, out var bookmark)
-                && await ApplyUpdateAsync(bookmark, update, categories, ct)
-                && bookmark.IsShared)
+                && await ApplyUpdateAsync(bookmark, update, categories, ct))
             {
-                movedShared.Add(bookmark);
+                moved.Add(bookmark);
             }
         }
 
@@ -69,10 +69,11 @@ public sealed class DockerBookmarkStore(
             }
         }
 
+        var created = new List<Bookmark>();
         foreach (var create in plan.Creates)
         {
             var category = await categories.GetOrCreateAsync(create.Labels.Category, ct);
-            db.Bookmarks.Add(new Bookmark
+            var bookmark = new Bookmark
             {
                 Source = BookmarkSource.Docker,
                 ProfileId = Profile.DefaultId,
@@ -88,14 +89,19 @@ public sealed class DockerBookmarkStore(
                 LabelCategory = create.Labels.Category,
                 LabelTags = [.. create.Labels.Tags],
                 CreatedAt = clock.GetUtcNow(),
-            });
+            };
+            db.Bookmarks.Add(bookmark);
+            created.Add(bookmark);
         }
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        await sharing.PlaceAsync(movedShared, replace: true, ct);
+        await sharing.PlaceAsync(moved, replace: true, ct);
+        await sharing.PlaceAsync(created, replace: false, ct);
         await transaction.CommitAsync(ct);
-        notifier.BookmarksChanged(touched.Values.Any(b => b.IsShared) ? null : Profile.DefaultId);
+
+        var reachesOthers = touched.Values.Any(b => b.IsShared) || await db.Profiles.AnyAsync(p => p.ShowsDockerBookmarks, ct);
+        notifier.BookmarksChanged(reachesOthers ? null : Profile.DefaultId);
         return true;
     }
 

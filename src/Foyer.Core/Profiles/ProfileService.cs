@@ -108,6 +108,41 @@ public sealed class ProfileService(
         return profile;
     }
 
+    /// <summary>
+    /// Turns Show Docker bookmarks on or off for a profile: on, Default's Docker bookmarks are
+    /// placed there; off, they're taken out, except those shared with everyone. Only a Default
+    /// editor can, on a profile they can edit other than Default.
+    /// </summary>
+    public async Task<Profile> SetShowsDockerAsync(int id, bool shows, CancellationToken ct = default)
+    {
+        var profile = await FindVisibleAsync(id, ct);
+        if (!ProfileResolver.CanShowDocker(options, context.Caller, profile))
+        {
+            throw new ForbiddenException("Only an editor of Default can show its Docker bookmarks on a profile.");
+        }
+
+        if (profile.ShowsDockerBookmarks == shows)
+        {
+            return profile;
+        }
+
+        profile.ShowsDockerBookmarks = shows;
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.SaveChangesAsync(ct);
+        if (shows)
+        {
+            await sharing.ShowDockerInAsync(profile.Id, ct);
+        }
+        else
+        {
+            await sharing.HideDockerInAsync(profile.Id, ct);
+        }
+
+        await transaction.CommitAsync(ct);
+        notifier.BookmarksChanged(profile.Id);
+        return profile;
+    }
+
     /// <summary>Deletes a profile with its bookmarks and categories.</summary>
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {

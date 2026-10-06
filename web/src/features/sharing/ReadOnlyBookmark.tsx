@@ -1,12 +1,12 @@
 import { Anchor, Button, Group, Stack, Text, Title } from '@mantine/core'
-import { IconLock, IconUsers } from '@tabler/icons-react'
+import { IconBrandDocker, IconLock, IconUsers } from '@tabler/icons-react'
 
 import type { Bookmark } from '../../api/client.ts'
 import { BookmarkIcon } from '../../components/BookmarkIcon.tsx'
 import { TagChip } from '../../components/TagChip.tsx'
 import { usePhone } from '../../hooks/usePhone.ts'
 import { statusLabel } from '../board/status.ts'
-import { ownerName, sharedLabel } from './shared.ts'
+import { isShownDocker, ownerName, sourceLabel } from './shared.ts'
 import classes from './Sharing.module.css'
 
 interface Props {
@@ -21,6 +21,7 @@ interface Props {
  */
 export function ReadOnlyBookmark({ bookmark, categoryName, onDone }: Props) {
   const phone = usePhone()
+  const fromDocker = isShownDocker(bookmark)
   const chips = [
     ...(bookmark.hostTag ? [{ tag: bookmark.hostTag, host: true }] : []),
     ...bookmark.tags.map((tag) => ({ tag, host: false })),
@@ -39,8 +40,12 @@ export function ReadOnlyBookmark({ bookmark, categoryName, onDone }: Props) {
             c="var(--mantine-primary-color-filled)"
             style={{ display: 'flex', alignItems: 'center', gap: 5 }}
           >
-            <IconUsers size={14} aria-hidden="true" />
-            {sharedLabel(bookmark)}
+            {fromDocker ? (
+              <IconBrandDocker size={14} aria-hidden="true" />
+            ) : (
+              <IconUsers size={14} aria-hidden="true" />
+            )}
+            {sourceLabel(bookmark)}
           </Text>
         </Stack>
       </Group>
@@ -77,8 +82,8 @@ export function ReadOnlyBookmark({ bookmark, categoryName, onDone }: Props) {
       <Text size="sm" c="dimmed" style={{ display: 'flex', gap: 8 }}>
         <IconLock size={15} aria-hidden="true" style={{ flex: 'none', marginTop: 2 }} />
         <span>
-          Only {ownerName(bookmark)} can change this. Drag its {phone ? 'grip' : 'handle'} to
-          reorder it within {categoryName}.
+          {fromDocker ? 'Change it in Default.' : `Only ${ownerName(bookmark)} can change this.`}{' '}
+          Drag its {phone ? 'grip' : 'handle'} to reorder it within {categoryName}.
         </span>
       </Text>
 

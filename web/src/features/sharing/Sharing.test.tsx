@@ -294,6 +294,21 @@ describe('Handover', () => {
   })
 })
 
+describe('Docker bookmarks shown from Default', () => {
+  it('labels them as from Default’s Docker hosts, with no shared badge', async () => {
+    const shown = dockerBookmark('Sonarr', 'running', { canEdit: false, sharedFrom: 'Default' })
+    stubApi(() => ({ categories: [category('Media', [shown])] }), {
+      'GET /api/me': () => me(personal),
+    })
+    renderApp()
+
+    await screen.findByText('Sonarr')
+    expect(screen.queryByLabelText(/Shared/)).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Edit page' }))
+    expect(await screen.findByText('From Default’s Docker hosts')).toBeInTheDocument()
+  })
+})
+
 describe('sharing helpers', () => {
   it('labels shared bookmarks by who they’re from', () => {
     expect(

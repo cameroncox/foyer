@@ -24,6 +24,8 @@ public enum ProfileKind
 /// <param name="CanEdit">Whether the caller can change its bookmarks and categories.</param>
 /// <param name="CanRename">Whether the caller can rename it: any profile they see but Default.</param>
 /// <param name="CanDelete">Whether the caller can delete it: not Default or a personal profile.</param>
+/// <param name="ShowsDockerBookmarks">Whether Show Docker bookmarks is turned on for it.</param>
+/// <param name="CanShowDockerBookmarks">Whether the caller can turn it on or off: a Default editor, on a profile they can edit.</param>
 public sealed record ProfileResponse(
     int Id,
     string Name,
@@ -31,7 +33,9 @@ public sealed record ProfileResponse(
     ProfileKind Kind,
     bool CanEdit,
     bool CanRename,
-    bool CanDelete)
+    bool CanDelete,
+    bool ShowsDockerBookmarks,
+    bool CanShowDockerBookmarks)
 {
     public static ProfileResponse From(Profile profile, ProfileOptions options, Caller caller) => new(
         profile.Id,
@@ -43,5 +47,7 @@ public sealed record ProfileResponse(
             : ProfileKind.Owned,
         ProfileResolver.CanEdit(options, caller, profile),
         ProfileResolver.CanRename(options, profile),
-        ProfileResolver.CanDelete(options, profile));
+        ProfileResolver.CanDelete(options, profile),
+        profile.ShowsDockerBookmarks,
+        ProfileResolver.CanShowDocker(options, caller, profile));
 }

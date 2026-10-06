@@ -140,10 +140,10 @@ public sealed class OrderingService(
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        var movedShared = incoming.Where(b => b.IsShared).ToList();
-        await sharing.PlaceAsync(movedShared, replace: true, ct);
+        var movedElsewhere = incoming.Where(SharingService.ReachesOthers).ToList();
+        await sharing.PlaceAsync(movedElsewhere, replace: true, ct);
         await transaction.CommitAsync(ct);
-        notifier.BookmarksChanged(movedShared.Count > 0 ? null : profile.ProfileId);
+        notifier.BookmarksChanged(movedElsewhere.Count > 0 ? null : profile.ProfileId);
     }
 
     /// <summary>
@@ -156,15 +156,16 @@ public sealed class OrderingService(
         var own = await db.Bookmarks.Where(b => b.CategoryId == categoryId).ToListAsync(ct);
         var placements = await db.SharedPlacements.Where(p => p.CategoryId == categoryId).ToListAsync(ct);
         var placedIds = placements.Select(p => p.BookmarkId).ToList();
-        var present = await db.Bookmarks
+        var showsDocker = ProfileResolver.ShowsDocker(options, profile.Caller, profile.Profile);
+        var shown = await db.Bookmarks
             .Where(b => placedIds.Contains(b.Id))
-            .ToDictionaryAsync(b => b.Id, b => b.IsPresent, ct);
+            .ToDictionaryAsync(b => b.Id, b => b.IsPresent && (b.IsShared || showsDocker), ct);
 
         return own.Select(Slot.Own)
             .Concat(placements.Select(p => new Slot(
                 p.BookmarkId,
                 p.SortOrder,
-                options.Enabled && present.GetValueOrDefault(p.BookmarkId),
+                options.Enabled && shown.GetValueOrDefault(p.BookmarkId),
                 IsOwn: false,
                 order => p.SortOrder = order)))
             .OrderBy(s => s.SortOrder)

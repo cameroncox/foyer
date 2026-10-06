@@ -169,7 +169,7 @@ public sealed class ProfileEndpointTests
         (await atWork.PostJsonAsync("/api/bookmarks", new CreateBookmarkRequest("Wiki", "https://wiki.example.com", null, null, null, [])))
             .StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        var renamed = await (await client.PutJsonAsync($"/api/profiles/{created.Id}", new ProfileNameRequest("office"))).ReadAsync<ProfileResponse>();
+        var renamed = await (await client.PutJsonAsync($"/api/profiles/{created.Id}", new UpdateProfileRequest("office"))).ReadAsync<ProfileResponse>();
         renamed.Slug.ShouldBe("office");
         (await atWork.GetAsync("/api/dashboard")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
@@ -215,7 +215,7 @@ public sealed class ProfileEndpointTests
 
         me.Current.CanRename.ShouldBeTrue();
         me.Current.CanDelete.ShouldBeFalse();
-        (await client.PutJsonAsync("/api/profiles/1", new ProfileNameRequest("home"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await client.PutJsonAsync("/api/profiles/1", new UpdateProfileRequest("home"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await client.DeleteAsync($"/api/profiles/{me.Current.Id}")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
@@ -226,7 +226,7 @@ public sealed class ProfileEndpointTests
         using var client = app.ClientAs(user: Cameron);
         var me = await MeAsync(client);
 
-        var renamed = await (await client.PutJsonAsync($"/api/profiles/{me.Current.Id}", new ProfileNameRequest("cameron"))).ReadAsync<ProfileResponse>();
+        var renamed = await (await client.PutJsonAsync($"/api/profiles/{me.Current.Id}", new UpdateProfileRequest("cameron"))).ReadAsync<ProfileResponse>();
 
         renamed.Slug.ShouldBe("cameron");
         renamed.Kind.ShouldBe(ProfileKind.Personal);
@@ -324,6 +324,36 @@ public sealed class ProfileEndpointTests
             Directory.Delete(dataDir, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task ShowDockerBookmarks_IsForDefaultEditors_OnTheirOwnProfiles()
+    {
+        await using var app = App(("FOYER_DEFAULT_REMOTE_USERS", Cameron));
+        await app.SeedDockerAsync("docker-1", TestApi.Labeled("sonarr", "Media"));
+        using var cameron = app.ClientAs(user: Cameron);
+        using var alex = app.ClientAs(user: "alex");
+        var mine = (await MeAsync(cameron)).Current;
+        var alexs = (await MeAsync(alex)).Current;
+
+        mine.CanShowDockerBookmarks.ShouldBeTrue();
+        alexs.CanShowDockerBookmarks.ShouldBeFalse();
+        (await alex.PutJsonAsync($"/api/profiles/{alexs.Id}", new UpdateProfileRequest(ShowsDockerBookmarks: true)))
+            .StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var updated = await (await cameron.PutJsonAsync($"/api/profiles/{mine.Id}", new UpdateProfileRequest(ShowsDockerBookmarks: true)))
+            .ReadAsync<ProfileResponse>();
+
+        updated.ShowsDockerBookmarks.ShouldBeTrue();
+        updated.Name.ShouldBe(Cameron);
+        var shown = (await (await cameron.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>())
+            .Categories.Single(c => c.Name == "Media").Bookmarks.ShouldHaveSingleItem();
+        shown.Name.ShouldBe("sonarr");
+        shown.CanEdit.ShouldBeFalse();
+        shown.IsShared.ShouldBeFalse();
+        (await (await alex.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>()).Categories
+            .SelectMany(c => c.Bookmarks).ShouldBeEmpty();
+    }
+
 }
 
 internal sealed class EmptyUserHeaderFilter : IStartupFilter

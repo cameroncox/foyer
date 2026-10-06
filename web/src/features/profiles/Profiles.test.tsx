@@ -289,6 +289,39 @@ describe('Profiles', () => {
     expect(window.location.pathname).toBe('/work')
   })
 
+  it('turns Show Docker bookmarks on for a Default editor’s own profile', async () => {
+    const mine = { ...personal, canShowDockerBookmarks: true }
+    const api = stubApi(page, {
+      'GET /api/me': meFor([home, mine, work, vendor]).handler,
+      'PUT /api/profiles/2': () => ({ ...mine, showsDockerBookmarks: true }),
+    })
+    renderApp()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Profile: cameron_example.com' }),
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Rename cameron_example.com' }))
+    expect(screen.getByText(/Only you see them/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('switch', { name: /Show Docker bookmarks/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(api.called('PUT /api/profiles/2')).toHaveLength(1))
+    // The header-style name is left alone, so it isn't checked or sent.
+    expect(api.called('PUT /api/profiles/2')[0].body).toEqual({ showsDockerBookmarks: true })
+  })
+
+  it('offers no Show Docker bookmarks switch to someone who can’t edit Default', async () => {
+    stubApi(page, { 'GET /api/me': meFor().handler })
+    renderApp()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Profile: cameron_example.com' }),
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Rename cameron_example.com' }))
+    expect(await screen.findByLabelText('Name')).toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: /Show Docker bookmarks/ })).toBeNull()
+  })
+
   it('shows no picker with profiles off', async () => {
     stubApi(page)
     renderApp()

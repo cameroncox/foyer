@@ -9,9 +9,10 @@ public sealed class DashboardService(FoyerDbContext db, ProfileContext profile, 
 {
     /// <summary>
     /// The current profile's categories in drawer order (Uncategorized last), each with its present
-    /// bookmarks in order: its own, and other profiles' shared ones placed there (not while profiles
-    /// are off). A shared bookmark comes back with this profile's category and position, not its
-    /// owner's. Empty categories are included for the drawer; the page hides them.
+    /// bookmarks in order: its own, other profiles' shared ones placed there, and Default's Docker
+    /// bookmarks if the profile shows them (neither while profiles are off). A placed bookmark comes
+    /// back with this profile's category and position, not its owner's. Empty categories are
+    /// included for the drawer; the page hides them.
     /// </summary>
     public async Task<IReadOnlyList<DashboardCategory>> GetAsync(CancellationToken ct = default)
     {
@@ -37,10 +38,11 @@ public sealed class DashboardService(FoyerDbContext db, ProfileContext profile, 
                 .Where(p => p.ProfileId == profile.ProfileId)
                 .ToDictionaryAsync(p => p.BookmarkId, ct);
             var placedIds = placements.Keys.ToList();
+            var showsDocker = ProfileResolver.ShowsDocker(options, profile.Caller, profile.Profile);
             shared = await db.Bookmarks
                 .AsNoTracking()
                 .Include(b => b.UserTags)
-                .Where(b => placedIds.Contains(b.Id) && b.IsPresent)
+                .Where(b => placedIds.Contains(b.Id) && b.IsPresent && (b.IsShared || showsDocker))
                 .ToListAsync(ct);
 
             // Untracked copies, so this profile's placement can stand in for the owner's.

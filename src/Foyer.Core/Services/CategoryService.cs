@@ -59,14 +59,16 @@ public sealed class CategoryService(FoyerDbContext db, IChangeNotifier notifier,
         category.Name = name;
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        var shared = await db.Bookmarks.Where(b => b.CategoryId == id && b.IsShared).ToListAsync(ct);
+        var reaching = await db.Bookmarks
+            .Where(b => b.CategoryId == id && (b.IsShared || b.Source == BookmarkSource.Docker))
+            .ToListAsync(ct);
         if (!string.Equals(renamedFrom, name, StringComparison.OrdinalIgnoreCase))
         {
-            await sharing.PlaceAsync(shared, replace: true, ct);
+            await sharing.PlaceAsync(reaching, replace: true, ct);
         }
 
         await transaction.CommitAsync(ct);
-        notifier.BookmarksChanged(shared.Count > 0 ? null : profile.ProfileId);
+        notifier.BookmarksChanged(reaching.Count > 0 ? null : profile.ProfileId);
         return category;
     }
 
@@ -125,7 +127,7 @@ public sealed class CategoryService(FoyerDbContext db, IChangeNotifier notifier,
         await db.SaveChangesAsync(ct);
         await sharing.PlaceAsync(moving, replace: true, ct);
         await transaction.CommitAsync(ct);
-        notifier.BookmarksChanged(moving.Any(b => b.IsShared) ? null : profile.ProfileId);
+        notifier.BookmarksChanged(moving.Any(SharingService.ReachesOthers) ? null : profile.ProfileId);
     }
 
     /// <summary>

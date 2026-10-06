@@ -30,6 +30,12 @@ public sealed class Profile
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
+    /// Show Docker bookmarks: every Docker bookmark from Default is placed here too, read-only, as
+    /// if shared with this profile alone. Honoured only while <see cref="Profiles.ProfileResolver.ShowsDocker"/> says so.
+    /// </summary>
+    public bool ShowsDockerBookmarks { get; set; }
+
+    /// <summary>
     /// On Default only: when an editor moved its manual bookmarks to their profile or chose to
     /// leave them, so the offer is made once. Null until then, and on every other profile.
     /// </summary>

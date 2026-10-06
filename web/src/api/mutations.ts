@@ -6,6 +6,7 @@ import type {
   Dashboard,
   ReorderBookmarksRequest,
   UpdateBookmarkRequest,
+  UpdateProfileRequest,
 } from './client.ts'
 import { api, profileHeaders, unwrap } from './client.ts'
 import { queryKeys } from './queries.ts'
@@ -173,15 +174,18 @@ export function useCreateProfile() {
   })
 }
 
-export function useRenameProfile() {
-  const onSuccess = useInvalidateMe()
+/** Renames a profile, or turns Show Docker bookmarks on or off; either changes what pages show. */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient()
   const headers = useProfileHeaders()
   return useMutation({
-    mutationFn: async ({ id, name }: { id: number; name: string }) =>
-      unwrap(
-        await api.PUT('/api/profiles/{id}', { params: { path: { id } }, body: { name }, headers }),
-      ),
-    onSuccess,
+    mutationFn: async ({ id, body }: { id: number; body: UpdateProfileRequest }) =>
+      unwrap(await api.PUT('/api/profiles/{id}', { params: { path: { id } }, body, headers })),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.me }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboards }),
+      ]),
   })
 }
 

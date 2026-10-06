@@ -98,6 +98,8 @@ export function profile(name: string, extra: Partial<Profile> = {}): Profile {
     canEdit: true,
     canRename: true,
     canDelete: true,
+    showsDockerBookmarks: false,
+    canShowDockerBookmarks: false,
     ...extra,
   }
 }

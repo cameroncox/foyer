@@ -1,10 +1,10 @@
-import { Button, Group, Modal, Stack, Text, TextInput } from '@mantine/core'
+import { Button, Group, Modal, Stack, Switch, Text, TextInput } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { notifications } from '@mantine/notifications'
 import { useNavigate } from 'react-router'
 
 import type { Profile } from '../../api/client.ts'
-import { useCreateProfile, useDeleteProfile, useRenameProfile } from '../../api/mutations.ts'
+import { useCreateProfile, useDeleteProfile, useUpdateProfile } from '../../api/mutations.ts'
 import { useCurrentProfile } from './profileContext.ts'
 import { forgetProfile, loadRememberedProfile, rememberProfile } from './rememberedProfile.ts'
 import { usePickProfile } from './usePickProfile.ts'
@@ -22,7 +22,8 @@ interface Props {
 
 /**
  * New profile, Rename and Delete, opened from the picker or the phone menu. Delete is reached
- * from Rename, for profiles that can be deleted.
+ * from Rename, for profiles that can be deleted; Rename also holds Show Docker bookmarks, for
+ * Default editors.
  */
 export function ProfileDialogs({ dialog, onDialog }: Props) {
   const onClose = () => onDialog(null)
@@ -125,16 +126,39 @@ function RenameProfileModal({
   onDelete: () => void
 }) {
   const current = useCurrentProfile()
-  const rename = useRenameProfile()
+  const rename = useUpdateProfile()
   const navigate = useNavigate()
-  const form = useForm({ initialValues: { name: profile.name }, validate: { name: validateName } })
+  const form = useForm({
+    initialValues: { name: profile.name, showsDocker: profile.showsDockerBookmarks },
+    // A personal profile keeps the header value (cameron_example.com) until it's renamed, so
+    // only a changed name has to follow the rules.
+    validate: { name: (value) => (value.trim() === profile.name ? null : validateName(value)) },
+  })
+  const dockerSwitch = profile.canShowDockerBookmarks
 
   return (
-    <Modal opened onClose={onClose} title={`Rename ${profile.name}`} centered>
+    <Modal
+      opened
+      onClose={onClose}
+      title={`${dockerSwitch ? 'Edit' : 'Rename'} ${profile.name}`}
+      centered
+    >
       <form
-        onSubmit={form.onSubmit(({ name }) =>
+        onSubmit={form.onSubmit(({ name, showsDocker }) => {
+          // Each only when it changed, so a plain rename stays a rename.
+          const body = {
+            ...(name.trim() !== profile.name ? { name: name.trim() } : {}),
+            ...(dockerSwitch && showsDocker !== profile.showsDockerBookmarks
+              ? { showsDockerBookmarks: showsDocker }
+              : {}),
+          }
+          if (Object.keys(body).length === 0) {
+            onClose()
+            return
+          }
+
           rename.mutate(
-            { id: profile.id, name: name.trim() },
+            { id: profile.id, body },
             {
               onSuccess: (renamed) => {
                 onClose()
@@ -148,8 +172,8 @@ function RenameProfileModal({
                 }
               },
             },
-          ),
-        )}
+          )
+        })}
       >
         <Stack gap="md">
           <TextInput
@@ -159,6 +183,17 @@ function RenameProfileModal({
             {...form.getInputProps('name')}
             error={form.errors.name ?? rename.error?.message}
           />
+          {dockerSwitch && (
+            <Switch
+              label="Show Docker bookmarks"
+              description={
+                profile.kind === 'ownerless'
+                  ? `Every container from Default, including new ones. Everyone who opens ${profile.name} will see them.`
+                  : 'Every container from Default, including new ones. Only you see them.'
+              }
+              {...form.getInputProps('showsDocker', { type: 'checkbox' })}
+            />
+          )}
           <Group justify="flex-end">
             {profile.canDelete && (
               <Button variant="subtle" color="red" mr="auto" onClick={onDelete}>

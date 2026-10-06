@@ -55,10 +55,21 @@ internal static class ProfileEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-        group.MapPut("/{id:int}", async (int id, ProfileNameRequest request, ProfileContext context, ProfileService profiles, ProfileOptions options, CancellationToken ct) =>
-                TypedResults.Ok(ProfileResponse.From(await profiles.RenameAsync(id, request.Name, ct), options, context.Caller)))
-            .WithName("RenameProfile")
-            .WithSummary("Rename a profile, which moves it to the new name's URL; Default answers 403")
+        group.MapPut("/{id:int}", async (int id, UpdateProfileRequest request, ProfileContext context, ProfileService profiles, ProfileOptions options, CancellationToken ct) =>
+            {
+                var profile = request.Name is null ? null : await profiles.RenameAsync(id, request.Name, ct);
+                if (request.ShowsDockerBookmarks is { } shows)
+                {
+                    profile = await profiles.SetShowsDockerAsync(id, shows, ct);
+                }
+
+                return profile is null
+                    ? Results.Problem("Nothing to change.", statusCode: StatusCodes.Status400BadRequest)
+                    : TypedResults.Ok(ProfileResponse.From(profile, options, context.Caller));
+            })
+            .WithName("UpdateProfile")
+            .WithSummary("Rename a profile (which moves it to the new name's URL; Default answers 403), or turn Show Docker bookmarks on or off (Default editors only)")
+            .Produces<ProfileResponse>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
