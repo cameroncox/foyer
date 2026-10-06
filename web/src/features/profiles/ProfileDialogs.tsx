@@ -243,9 +243,18 @@ function DeleteProfileModal({ profile, onClose }: { profile: Profile; onClose: (
     <Modal opened onClose={onClose} title={`Delete ${profile.name}?`} centered>
       <Stack gap="md">
         <Text size="sm">
-          Its bookmarks and categories are deleted too
-          {profile.kind === 'ownerless' ? ', for everyone who uses it' : ''}. This can’t be undone.
+          Deleting {profile.name} also deletes every category and bookmark in it
+          {profile.kind === 'ownerless' ? ', for everyone who uses it' : ''}.
         </Text>
+        {profile.sharedCount > 0 && (
+          <Text size="sm">
+            {profile.name} shares{' '}
+            {profile.sharedCount === 1 ? '1 bookmark' : `${profile.sharedCount} bookmarks`} with
+            other profiles. {profile.sharedCount === 1 ? 'It stops' : 'They stop'} showing there
+            too.
+          </Text>
+        )}
+        <Text size="sm">This can’t be undone.</Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={onClose}>
             Cancel

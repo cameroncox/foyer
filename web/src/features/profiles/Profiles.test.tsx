@@ -15,7 +15,7 @@ const personal = profile('cameron_example.com', {
   kind: 'personal',
   canDelete: false,
 })
-const work = profile('work', { id: 3 })
+const work = profile('work', { id: 3, sharedCount: 2 })
 const vendor = profile('vendor', { id: 4, kind: 'ownerless' })
 const all = [home, personal, work, vendor]
 
@@ -238,6 +238,9 @@ describe('Profiles', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Profile: work' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Rename work' }))
     await userEvent.click(screen.getByRole('button', { name: 'Delete profile…' }))
+    expect(
+      screen.getByText('work shares 2 bookmarks with other profiles. They stop showing there too.'),
+    ).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Delete profile' }))
 
     expect(

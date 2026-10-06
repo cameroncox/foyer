@@ -101,6 +101,7 @@ export function profile(name: string, extra: Partial<Profile> = {}): Profile {
     canDelete: true,
     showsDockerBookmarks: false,
     canShowDockerBookmarks: false,
+    sharedCount: 0,
     ...extra,
   }
 }

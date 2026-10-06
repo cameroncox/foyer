@@ -35,6 +35,14 @@ public sealed class ProfileService(
             .ToList();
     }
 
+    /// <summary>How many bookmarks each of <paramref name="profileIds"/> shares with other profiles; missing means none.</summary>
+    public async Task<IReadOnlyDictionary<int, int>> SharedCountsAsync(IReadOnlyCollection<int> profileIds, CancellationToken ct = default) =>
+        await db.Bookmarks
+            .Where(b => b.IsShared && profileIds.Contains(b.ProfileId))
+            .GroupBy(b => b.ProfileId)
+            .Select(g => new { ProfileId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.ProfileId, x => x.Count, ct);
+
     /// <summary>
     /// The profiles a bookmark on the current profile can be shared with
     /// (<see cref="ProfileResolver.CanShareWith"/>): other users' personal profiles, the

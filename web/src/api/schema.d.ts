@@ -498,6 +498,8 @@ export interface components {
             canDelete: boolean;
             showsDockerBookmarks: boolean;
             canShowDockerBookmarks: boolean;
+            /** Format: int32 */
+            sharedCount: number;
         };
         ReorderBookmarksRequest: {
             /** Format: int32 */

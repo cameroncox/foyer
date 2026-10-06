@@ -12,12 +12,13 @@ internal static class ProfileEndpoints
                 var caller = context.Caller;
                 var visible = await profiles.VisibleAsync(caller, ct);
                 var listed = options.Enabled ? visible : visible.Where(p => p.IsSystem).ToList();
+                var shared = await profiles.SharedCountsAsync(listed.Select(p => p.Id).ToList(), ct);
                 return TypedResults.Ok(new MeResponse(
                     options.Enabled,
                     caller.User,
-                    ProfileResponse.From(context.Profile, options, caller),
+                    ProfileResponse.From(context.Profile, options, caller, shared.GetValueOrDefault(context.Profile.Id)),
                     ProfileResolver.CanEditDefault(options, caller),
-                    listed.Select(p => ProfileResponse.From(p, options, caller)).ToList(),
+                    listed.Select(p => ProfileResponse.From(p, options, caller, shared.GetValueOrDefault(p.Id))).ToList(),
                     ProfileResolver.CanShareWithEveryone(options, caller),
                     await handover.OfferedCountAsync(ct)));
             })

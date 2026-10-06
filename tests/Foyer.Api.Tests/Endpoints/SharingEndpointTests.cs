@@ -160,6 +160,9 @@ public sealed class SharingEndpointTests
         alexsView.SharedBy.ShouldBe("cameron");
         alexsView.SharedWith.ShouldBeNull();
 
+        (await (await cameron.GetAsync("/api/me")).ReadAsync<MeResponse>()).Current.SharedCount.ShouldBe(1);
+        (await (await alex.GetAsync("/api/me")).ReadAsync<MeResponse>()).Current.SharedCount.ShouldBe(0);
+
         var everyone = new CreateBookmarkRequest("Mine", "https://mine.example.com", null, null, null, [], true, new ShareWithRequest(true));
         (await alex.PostJsonAsync("/api/bookmarks", everyone)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await (await alex.GetAsync("/api/me")).ReadAsync<MeResponse>()).CanShareWithEveryone.ShouldBeFalse();
