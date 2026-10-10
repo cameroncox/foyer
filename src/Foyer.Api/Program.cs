@@ -67,8 +67,21 @@ app.UseWhen(http => http.Request.Path.StartsWithSegments("/api"), api => api.Use
 
 app.MapOpenApi();
 
+// The app shell is revalidated on every load, so an expired auth-proxy session sends the browser
+// to sign in instead of starting a page whose API calls all bounce.
+var staticFiles = new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        if (context.File.Name == "index.html")
+        {
+            context.Context.Response.Headers.CacheControl = "no-cache";
+        }
+    },
+};
+
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(staticFiles);
 
 app.MapSettings();
 app.MapManifest();
@@ -85,7 +98,7 @@ app.MapGet("/healthz", () => Results.Ok("ok"))
 
 // Unknown /api routes are 404s, not the app shell.
 app.MapFallback("/api/{**path}", () => Results.NotFound());
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html", staticFiles);
 
 await app.RunAsync();
 return 0;

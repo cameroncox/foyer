@@ -19,13 +19,46 @@ export function profileHeaders(profile: string | undefined): Record<string, stri
   return profile ? { [PROFILE_HEADER]: profile } : {}
 }
 
+const SIGN_IN_RELOAD_KEY = 'foyer.signInReload'
+
+/**
+ * The API never redirects, so a redirect means an auth proxy wants a sign-in. fetch can't follow
+ * it to the proxy's login page, but a reload can. A second redirect within a minute of that
+ * reload is an error instead, so a misbehaving proxy can't loop the page.
+ */
+function signInAgain(): Promise<never> {
+  let last = 0
+  try {
+    last = Number(sessionStorage.getItem(SIGN_IN_RELOAD_KEY)) || 0
+  } catch {
+    // Without storage there's no loop guard; reload anyway.
+  }
+
+  if (Date.now() - last < 60_000) {
+    return Promise.reject(new Error('Your sign-in has expired. Reload the page to sign in again.'))
+  }
+
+  try {
+    sessionStorage.setItem(SIGN_IN_RELOAD_KEY, String(Date.now()))
+  } catch {
+    // As above.
+  }
+
+  globalThis.location.reload()
+  // The page is going away; never settle, so nothing flashes an error first.
+  return new Promise(() => {})
+}
+
 /**
  * Typed client for Foyer's API, on the page's own origin. fetch is looked up per call so tests
  * can stub it.
  */
 export const api = createClient<paths>({
   baseUrl: globalThis.location?.origin ?? '',
-  fetch: (request) => globalThis.fetch(request),
+  fetch: async (request) => {
+    const response = await globalThis.fetch(new Request(request, { redirect: 'manual' }))
+    return response.type === 'opaqueredirect' ? signInAgain() : response
+  },
 })
 
 /** Thrown for any non-2xx answer, carrying the problem details' text when there is one. */
