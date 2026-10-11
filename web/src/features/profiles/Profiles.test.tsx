@@ -342,3 +342,51 @@ describe('bookmarkletHref', () => {
     )
   })
 })
+
+describe('Switching profiles from the keyboard', () => {
+  const box = () => screen.findByRole('textbox', { name: 'Jump to a bookmark' })
+
+  it('opens the spotlight on P with only the other profiles, and switches on Enter', async () => {
+    stubApi(page, { 'GET /api/me': meFor().handler })
+    renderApp()
+    await screen.findByRole('button', { name: 'Profile: cameron_example.com' })
+
+    await userEvent.keyboard('p')
+    expect(await box()).toHaveAttribute('placeholder', 'Switch to a profile')
+    expect(screen.getByRole('button', { name: /^Default/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^cameron_example\.com/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Wiki/ })).toBeNull()
+
+    await userEvent.type(await box(), 'ven{Enter}')
+    expect(await screen.findByRole('button', { name: 'Profile: vendor' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/vendor')
+  })
+
+  it('picks a profile by its number straight away', async () => {
+    stubApi(page, { 'GET /api/me': meFor().handler })
+    renderApp()
+    await screen.findByRole('button', { name: 'Profile: cameron_example.com' })
+
+    // Default, work, vendor: work is 2.
+    await userEvent.keyboard('p')
+    await box()
+    await userEvent.keyboard('2')
+
+    expect(await screen.findByRole('button', { name: 'Profile: work' })).toBeInTheDocument()
+  })
+
+  it('offers matching profiles in the ordinary spotlight, after the web search', async () => {
+    stubApi(page, { 'GET /api/me': meFor().handler })
+    renderApp()
+    await screen.findByText('Wiki')
+
+    await userEvent.keyboard(' ')
+    await userEvent.type(await box(), 'work')
+
+    const buttons = screen.getAllByRole('button').map((b) => b.textContent ?? '')
+    const web = buttons.findIndex((t) => t.includes('Search DuckDuckGo'))
+    const switching = buttons.findIndex((t) => t.includes('Switch to work'))
+    expect(web).toBeGreaterThanOrEqual(0)
+    expect(switching).toBeGreaterThan(web)
+  })
+})

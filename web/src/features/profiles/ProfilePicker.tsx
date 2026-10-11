@@ -76,7 +76,11 @@ export function ProfilePicker({ onDialog }: Props) {
   return (
     <Menu position="bottom-start" width={340} shadow="md" opened={opened} onChange={setOpened}>
       <Menu.Target>
-        <UnstyledButton className={classes.target} aria-label={`Profile: ${me.current.name}`}>
+        <UnstyledButton
+          className={classes.target}
+          aria-label={`Profile: ${me.current.name}`}
+          title="Switch profile (P)"
+        >
           <ProfileIcon kind={me.current.kind} />
           <span className={classes.name}>{me.current.name}</span>
           <IconChevronDown size={16} aria-hidden="true" />

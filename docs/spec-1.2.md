@@ -32,6 +32,14 @@ Added after 1.2.0. Default is just the default: nothing on it nags its editors, 
 - **Where they land:** in the category with the same name, made where missing in the source's order, Uncategorized to Uncategorized, after what's already there. Categories the move empties are removed from the source.
 - **Sharing:** a shared bookmark keeps its audience, less the profile it moved to. One shared only with that profile is no longer shared. One shared with everyone now shows in the profile it left too, in the slot it had.
 
+## Switching profiles from the keyboard
+
+Added after 1.2.0, with profiles on, on desktop.
+
+- **P** (outside edit mode, forms and text boxes) opens the spotlight on the other profiles alone, placeholder "Switch to a profile". Typing narrows them by name or slug; Enter switches to the highlighted one. It starts in picking mode, so 1–9 switches at once. Backspace in the empty box goes back to the full spotlight.
+- **In the ordinary spotlight,** the other profiles are a **Profiles** group: last when nothing is typed, and matching ones as "Switch to work" after the web search while typing, so Enter on a miss still searches the web.
+- The picker's tooltip says "Switch profile (P)". P does nothing with only one profile to see.
+
 ## Docker bookmarks on your own profile
 
 A profile setting, **Show Docker bookmarks**, puts every Docker bookmark from Default on that profile. Containers that appear later show up there too, with nothing shared.

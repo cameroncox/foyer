@@ -1,4 +1,5 @@
 import { CloseButton, Kbd } from '@mantine/core'
+import { useHotkeys } from '@mantine/hooks'
 import { type createSpotlight, Spotlight, type SpotlightStore } from '@mantine/spotlight'
 import {
   IconBrandDocker,
@@ -13,11 +14,14 @@ import {
 } from '@tabler/icons-react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 
-import type { DashboardCategory } from '../../api/client.ts'
+import type { DashboardCategory, Profile } from '../../api/client.ts'
 import { BookmarkIcon } from '../../components/BookmarkIcon.tsx'
 import { usePhone } from '../../hooks/usePhone.ts'
 import { navigation } from '../../navigation.ts'
 import { statusLabel } from '../board/status.ts'
+import { useCurrentProfile } from '../profiles/profileContext.ts'
+import { ProfileIcon } from '../profiles/ProfileIcon.tsx'
+import { usePickProfile } from '../profiles/usePickProfile.ts'
 import classes from './FoyerSpotlight.module.css'
 import {
   type Facet,
@@ -48,6 +52,14 @@ function trigger(store: SpotlightStore, index: number) {
 
 const MAX_HITS = 50
 
+/** Profiles whose name or slug contains `query`, ignoring case. */
+function matchingProfiles(profiles: readonly Profile[], query: string) {
+  const needle = query.trim().toLowerCase()
+  return profiles.filter(
+    (p) => p.name.toLowerCase().includes(needle) || p.slug.toLowerCase().includes(needle),
+  )
+}
+
 /** Rows that get a number for picking: 1 to 9. */
 const NUMBERED = 9
 
@@ -75,6 +87,7 @@ interface Props {
  * a web search; a query that looks like an address ("google.com") can also be opened directly.
  * The first nine rows are numbered: Tab (or an arrow key) starts picking, and then a digit opens
  * that row, while any other key goes back to typing, so digits can still be searched for.
+ * With profiles on, the other profiles are rows too, and P opens it on them alone, picking.
  * On a phone it fills the screen, with an X to close it, and stands in for search.
  */
 export function FoyerSpotlight({ spotlight: [store, actions], categories, enabled, onAdd }: Props) {
@@ -82,32 +95,69 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState<Scope | null>(null)
   const [picking, setPicking] = useState(false)
+  // Opened with P: only profiles, to switch to.
+  const [profilesOnly, setProfilesOnly] = useState(false)
   const searchUrl = useSearchUrl()
+  const current = useCurrentProfile()
+  const pick = usePickProfile()
+  const otherProfiles = useMemo(() => {
+    const me = current?.me
+    return me?.profilesEnabled ? me.profiles.filter((p) => p.id !== me.current.id) : []
+  }, [current])
+
+  useHotkeys(
+    enabled && !phone && otherProfiles.length > 0
+      ? [
+          [
+            'p',
+            () => {
+              setScope(null)
+              setProfilesOnly(true)
+              setPicking(true)
+              actions.open()
+            },
+          ],
+        ]
+      : [],
+  )
 
   const all = useMemo(() => facets(categories), [categories])
   const hits = useMemo(
     () => spotlightHits(categories, scope, query).slice(0, MAX_HITS),
     [categories, scope, query],
   )
-  const browsing = !scope && query.trim() === ''
+  const browsing = !profilesOnly && !scope && query.trim() === ''
   // A filter is a search of the bookmarks, so the web stays out of it.
-  const web = !scope && !browsing
+  const web = !profilesOnly && !scope && !browsing
   const bang = web && supportsBangs(searchUrl) && isBang(query)
-  const filters = scope || browsing || bang ? [] : matchingFacets(all, query)
-  const shownHits = bang ? [] : hits
+  const filters = profilesOnly || scope || browsing || bang ? [] : matchingFacets(all, query)
+  const shownHits = profilesOnly || bang ? [] : hits
   const address = web && !bang ? addressUrl(query) : null
+  const profiles =
+    profilesOnly || web
+      ? bang
+        ? []
+        : matchingProfiles(otherProfiles, query)
+      : browsing
+        ? otherProfiles
+        : []
 
-  const adding = onAdd !== undefined && !bang && shownHits.length === 0
+  const adding = onAdd !== undefined && !profilesOnly && !bang && shownHits.length === 0
 
   // Every row in list order, across groups, so each can show its number.
   const facetKey = (facet: Facet) => `${facet.kind}:${facet.value}`
+  const profileKey = (profile: Profile) => `profile:${profile.id}`
   const rows = browsing
-    ? [...all.hosts, ...all.tags, ...all.categories, ...all.shared].map(facetKey)
+    ? [
+        ...[...all.hosts, ...all.tags, ...all.categories, ...all.shared].map(facetKey),
+        ...profiles.map(profileKey),
+      ]
     : [
         ...shownHits.map(({ bookmark }) => `bookmark:${bookmark.id}`),
         ...filters.map(facetKey),
         ...(web ? ['web'] : []),
         ...(address ? ['address'] : []),
+        ...profiles.map(profileKey),
         ...(adding ? ['add'] : []),
       ]
   const number = (key: string) => {
@@ -121,7 +171,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
 
   // Typing already highlights the first row (Mantine does that on each query change); picking or
   // clearing a filter swaps the list without one, so do the same there.
-  useEffect(() => select(store, scope ? 0 : -1), [store, scope])
+  useEffect(() => select(store, scope || profilesOnly ? 0 : -1), [store, scope, profilesOnly])
 
   const narrow = (facet: Facet) => {
     setScope({ kind: facet.kind, value: facet.value })
@@ -149,6 +199,21 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
       <Spotlight.ActionsGroup label={label}>{list.map(facetAction)}</Spotlight.ActionsGroup>
     )
 
+  const profileGroup = profiles.length > 0 && (
+    <Spotlight.ActionsGroup label="Profiles">
+      {profiles.map((profile) => (
+        <Spotlight.Action
+          key={profile.id}
+          label={profilesOnly ? profile.name : `Switch to ${profile.name}`}
+          leftSection={<ProfileIcon kind={profile.kind} />}
+          rightSection={number(profileKey(profile))}
+          highlightQuery={profilesOnly}
+          onClick={() => pick(profile.slug)}
+        />
+      ))}
+    </Spotlight.ActionsGroup>
+  )
+
   return (
     <Spotlight.Root
       store={store}
@@ -162,6 +227,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
       tagsToIgnore={['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON']}
       onSpotlightClose={() => {
         setScope(null)
+        setProfilesOnly(false)
         setPicking(false)
       }}
       scrollable
@@ -171,7 +237,13 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
       classNames={{ action: classes.action }}
     >
       <Spotlight.Search
-        placeholder={scope ? `Search in ${scopeLabel(scope)}` : 'Jump to a bookmark'}
+        placeholder={
+          profilesOnly
+            ? 'Switch to a profile'
+            : scope
+              ? `Search in ${scopeLabel(scope)}`
+              : 'Jump to a bookmark'
+        }
         aria-label="Jump to a bookmark"
         leftSection={<IconSearch size={20} stroke={1.75} />}
         rightSection={
@@ -185,9 +257,11 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
           )
         }
         onKeyDown={(e) => {
-          if (e.key === 'Backspace' && scope && query === '') {
+          if (e.key === 'Backspace' && (scope || profilesOnly) && query === '') {
             e.preventDefault()
             setScope(null)
+            setProfilesOnly(false)
+            setPicking(false)
             return
           }
 
@@ -222,12 +296,15 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
         </div>
       )}
       <Spotlight.ActionsList>
-        {browsing ? (
+        {profilesOnly ? (
+          profileGroup || <Spotlight.Empty>No profile matches “{query.trim()}”</Spotlight.Empty>
+        ) : browsing ? (
           <>
             {facetGroup('Docker hosts', all.hosts)}
             {facetGroup('Tags', all.tags)}
             {facetGroup('Categories', all.categories)}
             {facetGroup('Sharing', all.shared)}
+            {profileGroup}
           </>
         ) : (
           <>
@@ -272,7 +349,8 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
                 )}
               </Spotlight.ActionsGroup>
             )}
-            {/* After the web search, so Enter on a miss still searches the web. */}
+            {/* Profiles and Add after the web search, so Enter on a miss still searches the web. */}
+            {profileGroup}
             {onAdd && adding && (
               <Spotlight.ActionsGroup label="Add">
                 <Spotlight.Action
@@ -285,10 +363,10 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
             )}
           </>
         )}
-        {!browsing && !web && hits.length === 0 && filters.length === 0 && (
+        {!profilesOnly && !browsing && !web && hits.length === 0 && filters.length === 0 && (
           <Spotlight.Empty>Nothing matches “{query.trim()}”</Spotlight.Empty>
         )}
-        {browsing && all.categories.length === 0 && (
+        {browsing && all.categories.length === 0 && profiles.length === 0 && (
           <Spotlight.Empty>No bookmarks yet</Spotlight.Empty>
         )}
       </Spotlight.ActionsList>
@@ -297,7 +375,7 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
         <Spotlight.Footer className={classes.footer}>
           <Kbd size="xs">↑</Kbd>
           <Kbd size="xs">↓</Kbd> move · <Kbd size="xs">Enter</Kbd>{' '}
-          {browsing ? 'filter' : bang ? 'search' : 'open'} ·{' '}
+          {profilesOnly ? 'switch' : browsing ? 'filter' : bang ? 'search' : 'open'} ·{' '}
           {picking ? (
             <>
               <Kbd size="xs">1</Kbd>–<Kbd size="xs">9</Kbd> pick
@@ -307,10 +385,10 @@ export function FoyerSpotlight({ spotlight: [store, actions], categories, enable
               <Kbd size="xs">Tab</Kbd> pick by number
             </>
           )}
-          {scope && (
+          {(scope || profilesOnly) && (
             <>
               {' '}
-              · <Kbd size="xs">⌫</Kbd> clear filter
+              · <Kbd size="xs">⌫</Kbd> {profilesOnly ? 'all' : 'clear filter'}
             </>
           )}{' '}
           · <Kbd size="xs">Esc</Kbd> close
