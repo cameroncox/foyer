@@ -146,11 +146,9 @@ title (at the top of the menu on a phone); `/` reopens the one last picked on th
   `FOYER_DEFAULT_REMOTE_GROUPS`, which lets them edit it; its shared bookmarks reach everyone's
   profiles either way. Set `FOYER_TRUSTED_PROXIES` to the proxy's address once Foyer
   can be reached any other way, or anyone can claim to be any user.
-- **Moving in.** When profiles are first used behind a proxy and Default still holds the
-  bookmarks you made without them, the first Default editor to open their personal profile is
-  offered them, once: **Move them here** takes Default's manual bookmarks (into categories of
-  the same name), or **Leave them in Default**. Docker bookmarks stay in Default either way, and
-  shared ones still show there.
+- **Moving bookmarks.** Select manual bookmarks in edit mode and pick **Move to** to send them
+  to another profile you can edit, or a new one. They land in categories of the same name;
+  Docker bookmarks stay in Default.
 - **Docker bookmarks on your own profile.** A Default editor can turn on **Show Docker
   bookmarks** in a profile's dialog (the pencil in the picker). Every container from Default
   then shows there too, new ones included, without being shared with anyone else.
