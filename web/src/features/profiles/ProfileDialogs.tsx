@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router'
 import type { Profile } from '../../api/client.ts'
 import { useCreateProfile, useDeleteProfile, useUpdateProfile } from '../../api/mutations.ts'
 import { useCurrentProfile } from './profileContext.ts'
+import { validateName } from './profileName.ts'
 import { forgetProfile, loadRememberedProfile, rememberProfile } from './rememberedProfile.ts'
 import { usePickProfile } from './usePickProfile.ts'
 
@@ -43,18 +44,6 @@ export function ProfileDialogs({ dialog, onDialog }: Props) {
       )}
     </>
   )
-}
-
-/** Letters, digits and hyphens, as the server checks. */
-const NAME = /^[A-Za-z0-9-]+$/
-
-function validateName(value: string) {
-  const name = value.trim()
-  if (!name) {
-    return 'Give it a name.'
-  }
-
-  return NAME.test(name) ? null : 'Use letters, digits and hyphens only.'
 }
 
 function NewProfileModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {

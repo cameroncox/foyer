@@ -2,6 +2,7 @@ import { Button, Group, Popover, Text } from '@mantine/core'
 import { IconSquareCheck, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 
+import { MoveMenu, type MoveTarget } from './MoveMenu.tsx'
 import classes from './SelectionBar.module.css'
 
 interface Props {
@@ -10,13 +11,24 @@ interface Props {
   count: number
   deleting: boolean
   onDelete: () => void
+  moving: boolean
+  onMove: (target: MoveTarget) => void
 }
 
 /**
- * Edit mode's bar above the cards: Select, or while selecting the count, Cancel and Delete
- * (confirmed first). Sticks under the top bar so Delete stays in reach on a long page.
+ * Edit mode's bar above the cards: Select, or while selecting the count, Cancel, Move to (with
+ * profiles on) and Delete (confirmed first). Sticks under the top bar so they stay in reach on
+ * a long page.
  */
-export function SelectionBar({ selecting, onSelectingChange, count, deleting, onDelete }: Props) {
+export function SelectionBar({
+  selecting,
+  onSelectingChange,
+  count,
+  deleting,
+  onDelete,
+  moving,
+  onMove,
+}: Props) {
   const [confirming, setConfirming] = useState(false)
   const noun = count === 1 ? 'bookmark' : 'bookmarks'
 
@@ -38,11 +50,12 @@ export function SelectionBar({ selecting, onSelectingChange, count, deleting, on
   return (
     <div className={classes.bar} data-selecting>
       <Text size="sm" fw={500} className={classes.count} role="status">
-        {count === 0 ? 'Pick bookmarks to delete' : `${count} selected`}
+        {count === 0 ? 'Pick bookmarks' : `${count} selected`}
       </Text>
       <Button variant="default" size="xs" onClick={() => onSelectingChange(false)}>
         Cancel
       </Button>
+      <MoveMenu count={count} moving={moving} onMove={onMove} />
       <Popover
         opened={confirming}
         onChange={setConfirming}

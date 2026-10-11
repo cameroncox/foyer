@@ -288,41 +288,29 @@ public sealed class ProfileEndpointTests
     }
 
     [Fact]
-    public async Task TurningProfilesOn_OffersDefaultsBookmarksToAnEditor_Once()
+    public async Task MovingBookmarks_TakesThemToAProfileTheCallerCanEdit_ButNotDockerOnes()
     {
-        var dataDir = FoyerApiFactory.NewDataDir();
-        try
-        {
-            await using (var before = new FoyerApiFactory(settings: new Dictionary<string, string> { ["FOYER_PROFILES"] = "false" }, dataDir: dataDir))
-            {
-                using var client = before.CreateClient();
-                await client.PostJsonAsync("/api/bookmarks", new CreateBookmarkRequest("Wiki", "https://wiki.example.com", null, null, null, [], false));
-                await before.SeedDockerAsync("docker-1", TestApi.Labeled("sonarr"));
-            }
+        await using var app = App(("FOYER_DEFAULT_REMOTE_USERS", Cameron));
+        var sonarr = (await app.SeedDockerAsync("docker-1", TestApi.Labeled("sonarr")))[0];
+        using var atDefault = app.ClientAs(user: Cameron, profile: "default");
+        using var home = app.ClientAs(user: Cameron);
+        using var alex = app.ClientAs(user: "alex");
+        var wiki = await (await atDefault.PostJsonAsync("/api/bookmarks", new CreateBookmarkRequest("Wiki", "https://wiki.example.com", null, null, null, [], false)))
+            .ReadAsync<BookmarkResponse>();
+        var personal = (await MeAsync(home)).Current.Id;
+        var alexs = (await MeAsync(alex)).Current.Id;
 
-            await using var after = new FoyerApiFactory(
-                settings: new Dictionary<string, string> { ["FOYER_DEFAULT_REMOTE_USERS"] = "cameron@example.com" },
-                dataDir: dataDir);
-            using var cameron = after.ClientAs(user: "cameron_example.com");
-            using var alex = after.ClientAs(user: "alex");
+        (await atDefault.PostJsonAsync("/api/bookmarks/move", new MoveBookmarksRequest([wiki.Id], alexs)))
+            .StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await atDefault.PostJsonAsync("/api/bookmarks/move", new MoveBookmarksRequest([wiki.Id, sonarr], personal)))
+            .StatusCode.ShouldBe(HttpStatusCode.Conflict);
 
-            (await MeAsync(cameron)).HandoverCount.ShouldBe(1);
-            (await MeAsync(alex)).HandoverCount.ShouldBe(0);
-            (await alex.PostAsync("/api/me/handover", null)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        var moved = await (await atDefault.PostJsonAsync("/api/bookmarks/move", new MoveBookmarksRequest([wiki.Id], personal)))
+            .ReadAsync<MoveBookmarksResponse>();
 
-            var moved = await (await cameron.PostAsync("/api/me/handover", null)).ReadAsync<HandoverResponse>();
-
-            moved.Moved.ShouldBe(1);
-            var mine = await (await cameron.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>();
-            mine.Categories.ShouldHaveSingleItem().Bookmarks.ShouldHaveSingleItem().Name.ShouldBe("Wiki");
-            (await MeAsync(cameron)).HandoverCount.ShouldBe(0);
-            (await cameron.DeleteAsync("/api/me/handover")).StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        }
-        finally
-        {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            Directory.Delete(dataDir, recursive: true);
-        }
+        moved.Moved.ShouldBe(1);
+        var mine = await (await home.GetAsync("/api/dashboard")).ReadAsync<DashboardResponse>();
+        mine.Categories.SelectMany(c => c.Bookmarks).ShouldHaveSingleItem().Name.ShouldBe("Wiki");
     }
 
     [Fact]

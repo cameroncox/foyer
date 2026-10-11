@@ -36,8 +36,8 @@ public sealed class Profile
     public bool ShowsDockerBookmarks { get; set; }
 
     /// <summary>
-    /// On Default only: when an editor moved its manual bookmarks to their profile or chose to
-    /// leave them, so the offer is made once. Null until then, and on every other profile.
+    /// Unused since 1.2.1, when moving bookmarks between profiles replaced 1.2.0's one-time offer
+    /// of Default's bookmarks. Kept so dropping it doesn't mean rebuilding Profiles in SQLite.
     /// </summary>
     public DateTimeOffset? HandoverSettledAt { get; set; }
 }

@@ -58,7 +58,6 @@ LogProfileMode(app.Logger, settings.Profiles);
 await using (var scope = app.Services.CreateAsyncScope())
 {
     await scope.ServiceProvider.GetRequiredService<FoyerDbContext>().Database.MigrateAsync();
-    await scope.ServiceProvider.GetRequiredService<HandoverService>().SettleIfNothingToOfferAsync();
 }
 
 app.UseExceptionHandler();

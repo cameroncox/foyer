@@ -70,6 +70,14 @@ internal static class BookmarkEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        group.MapPost("/move", async (MoveBookmarksRequest request, BookmarkService bookmarks, CancellationToken ct) =>
+                TypedResults.Ok(new MoveBookmarksResponse(await bookmarks.MoveManyAsync(request.BookmarkIds, request.ProfileId, ct))))
+            .WithName("MoveBookmarks")
+            .WithSummary("Move several manual bookmarks to another profile the caller can edit, into categories of the same name; any Docker bookmark among them answers 409 and nothing moves")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         group.MapPost("/{id:int}/reset", async (int id, DockerBookmarkStore docker, BookmarkService bookmarks, CancellationToken ct) =>
             {
                 await docker.ResetToLabelsAsync(id, ct);

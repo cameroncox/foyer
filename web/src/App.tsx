@@ -4,13 +4,19 @@ import { createSpotlight } from '@mantine/spotlight'
 import { type ComponentProps, useMemo, useState } from 'react'
 
 import type { Bookmark } from './api/client.ts'
-import { useDeleteBookmarks, useReorderBookmarks, useReorderCategories } from './api/mutations.ts'
+import {
+  useDeleteBookmarks,
+  useMoveBookmarks,
+  useReorderBookmarks,
+  useReorderCategories,
+} from './api/mutations.ts'
 import { useDashboard } from './api/queries.ts'
 import classes from './App.module.css'
 import { Board } from './features/board/Board.tsx'
 import { FormPanel, type Panel } from './features/bookmark-form/FormPanel.tsx'
 import { CategoryDrawer } from './features/edit-mode/CategoryDrawer.tsx'
 import { EditBoard } from './features/edit-mode/EditBoard.tsx'
+import type { MoveTarget } from './features/edit-mode/MoveMenu.tsx'
 import { PhoneEditHint } from './features/edit-mode/EditHint.tsx'
 import { SelectionBar } from './features/edit-mode/SelectionBar.tsx'
 import { stillPresent } from './features/edit-mode/selection.ts'
@@ -20,8 +26,6 @@ import { ImportModal } from './features/import/ImportModal.tsx'
 import { FoyerSpotlight } from './features/spotlight/FoyerSpotlight.tsx'
 import { TopBar } from './features/top-bar/TopBar.tsx'
 import { useCanEdit } from './features/profiles/profileContext.ts'
-import { DefaultBanner } from './features/sharing/DefaultBanner.tsx'
-import { HandoverBanner } from './features/sharing/HandoverBanner.tsx'
 import { useLiveUpdates } from './hooks/useLiveUpdates.ts'
 import { usePhone } from './hooks/usePhone.ts'
 import { useDocumentTitle } from './hooks/useTitle.ts'
@@ -35,6 +39,7 @@ export default function App() {
   const reorderBookmarks = useReorderBookmarks()
   const reorderCategories = useReorderCategories()
   const deleteBookmarks = useDeleteBookmarks()
+  const moveBookmarks = useMoveBookmarks()
   const [editing, setEditing] = useState(false)
   const [panel, setPanel] = useState<Panel>(null)
   const [importing, setImporting] = useState(false)
@@ -105,6 +110,22 @@ export default function App() {
     })
   }
 
+  const moveSelected = (target: MoveTarget) => {
+    const count = selected.size
+    moveBookmarks.mutate(
+      { bookmarkIds: [...selected], profileId: target.id },
+      {
+        onSuccess: ({ moved }) => {
+          setSelectingMode(false)
+          notifications.show({
+            message: `Moved ${moved} ${moved === 1 ? 'bookmark' : 'bookmarks'} to ${target.name}`,
+          })
+        },
+        onError: failed(`Couldn’t move ${count === 1 ? 'the bookmark' : 'the bookmarks'}`),
+      },
+    )
+  }
+
   const setEditMode = (on: boolean) => {
     setEditing(on)
     setPanel(null)
@@ -169,8 +190,6 @@ export default function App() {
 
       <AppShell.Main>
         <div className={classes.main}>
-          <DefaultBanner />
-          <HandoverBanner />
           {dashboard.isPending ? (
             <Center py="xl">
               <Loader aria-label="Loading bookmarks" />
@@ -198,6 +217,8 @@ export default function App() {
                 count={selected.size}
                 deleting={deleteBookmarks.isPending}
                 onDelete={deleteSelected}
+                moving={moveBookmarks.isPending}
+                onMove={moveSelected}
               />
               <EditBoard
                 dashboard={dashboard.data}

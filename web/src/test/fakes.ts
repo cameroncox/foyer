@@ -125,7 +125,6 @@ export function profilesOff(): Me {
     canEditDefault: true,
     profiles: [home],
     canShareWithEveryone: true,
-    handoverCount: 0,
   }
 }
 

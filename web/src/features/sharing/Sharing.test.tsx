@@ -20,7 +20,6 @@ function me(current: Profile, extra: Partial<Me> = {}): Me {
     canEditDefault: home.canEdit,
     profiles: [home, personal],
     canShareWithEveryone: home.canEdit,
-    handoverCount: 0,
     ...extra,
   }
 }
@@ -211,7 +210,7 @@ describe('Sharing', () => {
     expect(screen.queryByRole('switch', { name: /Shared/ })).toBeNull()
   })
 
-  it('lets Default’s editors share Docker bookmarks, under a banner', async () => {
+  it('lets Default’s editors share Docker bookmarks', async () => {
     window.history.replaceState(null, '', '/default')
     const home = defaultProfile({ id: 1, canEdit: true })
     const api = stubApi(
@@ -220,9 +219,7 @@ describe('Sharing', () => {
     )
     renderApp()
 
-    const banner = await screen.findByRole('note')
-    expect(banner).toHaveTextContent('You’re editing Default.')
-    await userEvent.click(screen.getByRole('button', { name: 'Edit page' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit page' }))
     await userEvent.click(screen.getByRole('button', { name: 'Edit category and tags of Sonarr' }))
     await userEvent.click(screen.getByRole('switch', { name: /Shared/ }))
     await userEvent.click(screen.getByRole('radio', { name: 'Everyone' }))
@@ -235,25 +232,6 @@ describe('Sharing', () => {
       shareWith: { everyone: true, profileIds: [] },
       name: null,
     })
-
-    await userEvent.click(within(banner).getByRole('button', { name: 'Back to cameron' }))
-    expect(window.location.pathname).toBe('/cameron')
-  })
-
-  it('keeps Default’s banner closed on this device once dismissed', async () => {
-    window.history.replaceState(null, '', '/default')
-    const home = defaultProfile({ id: 1, canEdit: true })
-    stubApi(personalPage, { 'GET /api/me': () => me(home) })
-    const { unmount } = renderApp()
-
-    const banner = await screen.findByRole('note')
-    await userEvent.click(within(banner).getByRole('button', { name: 'Dismiss' }))
-    expect(screen.queryByRole('note')).toBeNull()
-    unmount()
-
-    renderApp()
-    await screen.findByRole('button', { name: 'Profile: Default' })
-    expect(screen.queryByText('You’re editing Default.')).toBeNull()
   })
 
   it('offers no adding or editing on a read-only profile', async () => {
@@ -273,7 +251,6 @@ describe('Sharing', () => {
     await screen.findByText('Jellyfin')
     expect(screen.queryByRole('button', { name: 'Add bookmark' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Edit page' })).toBeNull()
-    expect(screen.queryByRole('note')).toBeNull()
   })
 
   it('explains why a category holding someone else’s shares can’t be deleted', async () => {
@@ -296,60 +273,6 @@ describe('Sharing', () => {
     await userEvent.click(within(drawer).getByRole('button', { name: 'OK' }))
     await userEvent.click(within(drawer).getByRole('button', { name: 'Delete Media' }))
     expect(within(drawer).getByText(/moves to Uncategorized/)).toBeInTheDocument()
-  })
-})
-
-describe('Handover', () => {
-  it('offers Default’s bookmarks on the personal profile, and moves them', async () => {
-    let offered = 3
-    const api = stubApi(personalPage, {
-      'GET /api/me': () => me(personal, { handoverCount: offered }),
-      'POST /api/me/handover': () => {
-        offered = 0
-        return { moved: 3 }
-      },
-    })
-    renderApp()
-
-    expect(
-      await screen.findByText('Default has 3 bookmarks from before profiles.'),
-    ).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Move them here' }))
-
-    expect(await screen.findByText('Moved 3 bookmarks to cameron')).toBeInTheDocument()
-    await waitFor(() => expect(screen.queryByText(/from before profiles/)).toBeNull())
-    expect(api.called('POST /api/me/handover')).toHaveLength(1)
-  })
-
-  it('leaves them in Default when asked', async () => {
-    let offered = 1
-    const api = stubApi(personalPage, {
-      'GET /api/me': () => me(personal, { handoverCount: offered }),
-      'DELETE /api/me/handover': () => {
-        offered = 0
-        return new Response(null, { status: 204 })
-      },
-    })
-    renderApp()
-
-    expect(
-      await screen.findByText('Default has 1 bookmark from before profiles.'),
-    ).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Leave them in Default' }))
-
-    await waitFor(() => expect(screen.queryByText(/from before profiles/)).toBeNull())
-    expect(api.called('DELETE /api/me/handover')).toHaveLength(1)
-    expect(api.called('POST /api/me/handover')).toHaveLength(0)
-  })
-
-  it('makes no offer away from the personal profile', async () => {
-    window.history.replaceState(null, '', '/default')
-    const home = defaultProfile({ id: 1, canEdit: true })
-    stubApi(personalPage, { 'GET /api/me': () => me(home, { handoverCount: 3 }) })
-    renderApp()
-
-    await screen.findByText('You’re editing Default.')
-    expect(screen.queryByText(/from before profiles/)).toBeNull()
   })
 })
 

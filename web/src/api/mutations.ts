@@ -62,6 +62,21 @@ export function useDeleteBookmarks() {
   })
 }
 
+/** Moves bookmarks to another profile; its shared count may change, which /api/me reports. */
+export function useMoveBookmarks() {
+  const queryClient = useQueryClient()
+  const headers = useProfileHeaders()
+  return useMutation({
+    mutationFn: async (body: { bookmarkIds: number[]; profileId: number }) =>
+      unwrap(await api.POST('/api/bookmarks/move', { body, headers })),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.me }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboards }),
+      ]),
+  })
+}
+
 export function useResetBookmark() {
   const onSettled = useInvalidateDashboard()
   const headers = useProfileHeaders()
@@ -201,30 +216,6 @@ export function useDeleteProfile() {
     mutationFn: async (id: number) =>
       unwrap(await api.DELETE('/api/profiles/{id}', { params: { path: { id } }, headers })),
     onSuccess,
-  })
-}
-
-/** Moves Default's manual bookmarks to the caller's personal profile, once. */
-export function useAcceptHandover() {
-  const queryClient = useQueryClient()
-  const headers = useProfileHeaders()
-  return useMutation({
-    mutationFn: async () => unwrap(await api.POST('/api/me/handover', { headers })),
-    onSettled: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.me }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.dashboards }),
-      ]),
-  })
-}
-
-/** Leaves Default's bookmarks where they are, and stops the offer. */
-export function useDeclineHandover() {
-  const onSettled = useInvalidateMe()
-  const headers = useProfileHeaders()
-  return useMutation({
-    mutationFn: async () => unwrap(await api.DELETE('/api/me/handover', { headers })),
-    onSettled,
   })
 }
 

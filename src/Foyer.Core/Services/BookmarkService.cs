@@ -147,6 +147,106 @@ public sealed class BookmarkService(
     }
 
     /// <summary>
+    /// Moves several manual bookmarks to another profile the caller can edit, into categories of
+    /// the same name there (made in this profile's order where missing), after anything already
+    /// there. All or nothing like <see cref="DeleteManyAsync"/>: a Docker bookmark among them
+    /// refuses the lot, and ids that are gone or belong to another profile are skipped. Shared
+    /// ones keep their audience less the profile they moved to; one left with no one to share
+    /// with is unshared. Categories the move leaves empty are removed. Returns how many moved.
+    /// </summary>
+    public async Task<int> MoveManyAsync(IReadOnlyCollection<int> ids, int profileId, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            throw new InvalidInputException("Pick at least one bookmark to move.");
+        }
+
+        profile.EnsureCanEdit();
+        var target = await db.Profiles.AsNoTracking().SingleOrDefaultAsync(p => p.Id == profileId, ct);
+        if (target is null
+            || target.Id == profile.ProfileId
+            || !ProfileResolver.IsVisible(options, profile.Caller, target)
+            || !ProfileResolver.CanEdit(options, profile.Caller, target))
+        {
+            // The same whether or not it exists, so it never confirms someone's private profile.
+            throw new InvalidInputException("You can't move bookmarks to that profile.");
+        }
+
+        var bookmarks = await db.Bookmarks
+            .Include(b => b.Category)
+            .Include(b => b.ShareTargets)
+            .Where(b => ids.Contains(b.Id) && b.ProfileId == profile.ProfileId)
+            .OrderBy(b => b.Category!.IsSystem)
+            .ThenBy(b => b.Category!.SortOrder)
+            .ThenBy(b => b.SortOrder)
+            .ToListAsync(ct);
+        if (bookmarks.Any(b => b.IsDocker))
+        {
+            throw new RuleViolationException("Docker bookmarks can't be moved; they follow their container.");
+        }
+
+        if (bookmarks.Count == 0)
+        {
+            return 0;
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var lookup = new CategoryLookup(db, target.Id);
+        var moves = new List<(Bookmark Bookmark, Category From, int FromSortOrder, Category To)>();
+        foreach (var bookmark in bookmarks)
+        {
+            var from = bookmark.Category!;
+            moves.Add((bookmark, from, bookmark.SortOrder, await lookup.GetOrCreateAsync(from.IsSystem ? null : from.Name, ct)));
+        }
+
+        // New categories need their ids before bookmarks can point at them.
+        await db.SaveChangesAsync(ct);
+        var moving = bookmarks.Select(b => b.Id).ToList();
+        await db.SharedPlacements
+            .Where(p => p.ProfileId == target.Id && moving.Contains(p.BookmarkId))
+            .ExecuteDeleteAsync(ct);
+
+        foreach (var (bookmark, from, fromSortOrder, to) in moves)
+        {
+            bookmark.ProfileId = target.Id;
+            bookmark.CategoryId = to.Id;
+            bookmark.Category = to;
+            bookmark.SortOrder = await lookup.NextSortOrderAsync(to, ct);
+
+            // Its new owner can't be in its own audience.
+            bookmark.ShareTargets.RemoveAll(t => t.ProfileId == target.Id);
+            if (bookmark is { IsShared: true, ShareWithEveryone: false, ShareTargets.Count: 0 })
+            {
+                bookmark.IsShared = false;
+            }
+
+            if (bookmark is { IsShared: true, ShareWithEveryone: true })
+            {
+                // Everyone now includes the profile it left, which keeps it in the slot it had.
+                db.SharedPlacements.Add(new SharedPlacement
+                {
+                    ProfileId = profile.ProfileId,
+                    BookmarkId = bookmark.Id,
+                    CategoryId = from.Id,
+                    SortOrder = fromSortOrder,
+                });
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var emptied = moves.Select(m => m.From.Id).Distinct().ToList();
+        await db.Categories
+            .Where(c => emptied.Contains(c.Id) && !c.IsSystem)
+            .Where(c => !db.Bookmarks.Any(b => b.CategoryId == c.Id) && !db.SharedPlacements.Any(p => p.CategoryId == c.Id))
+            .ExecuteDeleteAsync(ct);
+
+        await transaction.CommitAsync(ct);
+        notifier.BookmarksChanged();
+        return bookmarks.Count;
+    }
+
+    /// <summary>
     /// Sets who the bookmark is shared with, without saving. A choice it already has is kept
     /// even if the caller couldn't make it now (they lost Default editor rights, say), so
     /// narrowing always works; anything new must be theirs to make.
