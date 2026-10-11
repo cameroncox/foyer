@@ -10,6 +10,8 @@ shared bookmarks, planned on top of it. Where the code and these differ, the cod
 | [project-layout-plan.md](project-layout-plan.md) | Project Layout Plan: repo tree, stack choices, tests, CI, build order |
 | [spec-1.1.md](spec-1.1.md) | Foyer 1.1 spec: profiles, Default editors, shared bookmarks, new config, data model and API changes |
 | [project-layout-plan-1.1.md](project-layout-plan-1.1.md) | Foyer 1.1 Project Layout Plan: backend and frontend changes, migration, request pipeline, tests, build order |
+| [spec-1.2.md](spec-1.2.md) | Foyer 1.2 spec: Docker bookmarks on your own profile, sharing with chosen profiles |
+| [spec-1.3.md](spec-1.3.md) | Foyer 1.3 spec: moving bookmarks between profiles, no Default banner, switching profiles with P |
 | [wireframes/](wireframes/) | Foyer Wireframes: 14 desktop and phone artboards for 1.0, and 12 for 1.1 in [wireframes/1.1/](wireframes/1.1/), as PNGs |
 | [screenshots/](screenshots/) | The main page in light and dark, from a demo instance, for the README |
 
